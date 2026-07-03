@@ -31,6 +31,10 @@
             <span class="pitch-eyebrow">GT OTC Reset · Financial Exposure</span>
             <h1 class="hook-title">ทุกครั้งที่ OTC ถูก Reset<br>คุณกำลัง<em>เผาเงิน</em>ไปกับ MW ที่หายไป</h1>
             <p class="hook-sub">Over Temperature Controller ที่ถูก Reset ระหว่าง Maintenance ต้องใช้เวลาหลายชั่วโมงกว่าจะ Recover กลับสู่ระดับที่ทำ Load ได้เต็มที่ — และ Startup มักเสร็จก่อนที่มันจะพร้อม</p>
+            <div class="hero-chart-frame">
+              <span class="hero-chart-tag" id="heroChartTag">Y Recovery · illustrative</span>
+              <canvas id="heroChart" aria-hidden="true"></canvas>
+            </div>
           </div>
           <div class="scroll-hint">
             <span>Scroll</span>
@@ -42,7 +46,7 @@
           <div class="pitch-inner">
             <span class="pitch-eyebrow tone-teal">The Mechanism</span>
             <h2 class="section-title">ทำไม Startup ถึงเสร็จ ทั้งที่ OTC ยังไม่พร้อม</h2>
-            <p class="section-lede">Y ต้องไต่จาก 0°C กลับไป Reference 572°C ตาม Ramp Rate ของ Controller แต่ Startup Duration บางแบบสั้นกว่าที่ Y จะไปถึง — ช่องว่างตรงนี้คือสิ่งที่ทำให้ Active Power หายไป</p>
+            <p class="section-lede">Y ต้องไต่จาก 0°C กลับไป Reference 572°C ตาม Ramp Rate — แต่ Startup มักเสร็จก่อนที่ Y จะไปถึง ช่องว่างตรงนี้คือ MW ที่หายไป</p>
             <div class="mech-track">
               <div class="mech-step">
                 <div class="mech-dot"></div>
@@ -81,8 +85,8 @@
         <section class="pitch-section" id="pitchScenarios">
           <div class="pitch-inner">
             <span class="pitch-eyebrow">Scenario Comparison</span>
-            <h2 class="section-title">ผลกระทบต่างกันแค่ไหน ในแต่ละแบบ Startup</h2>
-            <p class="section-lede">คลิกที่การ์ดเพื่อโฟกัส Scenario นั้นสำหรับตัวเลขและกราฟด้านล่าง</p>
+            <h2 class="section-title">แต่ละแบบ Startup เสียหายเท่าไหร่</h2>
+            <p class="section-lede">กรอกสมมติฐานที่มุมล่างซ้าย แล้วกด Condition ที่ต้องการดูผลกระทบ</p>
             <div class="scenario-grid" id="scenarioGrid"></div>
           </div>
         </section>
@@ -90,10 +94,13 @@
         <section class="pitch-section" id="pitchBignum">
           <div class="pitch-inner bignum-wrap">
             <span class="pitch-eyebrow">Estimated Annual Exposure</span>
-            <div class="bignum-label" id="bignumScenarioLabel">Based on Cold Start scenario</div>
-            <div class="bignum" id="bignumValue">฿0</div>
-            <p class="bignum-sub">ประเมินจากจำนวนครั้งที่ OTC Reset เกิดขึ้นต่อปี คูณกับ Estimated Penalty ต่อครั้งของ Scenario ที่เลือก — เป็น Engineering Estimate ตาม Config และสมมติฐานของ Model</p>
-            <div class="bignum-basis" id="bignumBasis"></div>
+            <div id="bignumLocked" class="locked-prompt">เลือก <strong>Condition</strong> ด้านบนหลังจากกรอกสมมติฐาน เพื่อเปิดเผยตัวเลขผลกระทบทางการเงิน</div>
+            <div id="bignumContent" hidden>
+              <div class="bignum-label" id="bignumScenarioLabel">Based on Cold Start scenario</div>
+              <div class="bignum" id="bignumValue">฿0</div>
+              <p class="bignum-sub">ประเมินจากจำนวนครั้งที่ OTC Reset เกิดขึ้นต่อปี คูณกับ Estimated Penalty ต่อครั้ง — เป็น Engineering Estimate ตามสมมติฐานที่กำหนด</p>
+              <div class="bignum-basis" id="bignumBasis"></div>
+            </div>
           </div>
         </section>
 
@@ -101,25 +108,28 @@
           <div class="pitch-inner">
             <span class="pitch-eyebrow tone-mw">The Fix</span>
             <h2 class="section-title">ถ้าปรับ Ramp Rate ให้เร็วขึ้น จะเกิดอะไรขึ้น</h2>
-            <p class="section-lede">เทียบ Annual Exposure ระหว่างสถานะปัจจุบัน กับสถานะหลังปรับปรุง TU (ปรับค่าได้ในหน้า Technical)</p>
-            <div class="compare-grid">
-              <div class="compare-card bad">
-                <span class="tag" id="compareBadTag">Current · TU 1.0 °C/min</span>
-                <h3>ไม่แก้ไข</h3>
-                <div class="value" id="compareBadValue">฿0</div>
-                <div class="value-note">Estimated Annual Exposure</div>
+            <p class="section-lede">เทียบ Annual Exposure ระหว่างสถานะปัจจุบัน กับสถานะหลังปรับปรุง Ramp Rate</p>
+            <div id="compareLocked" class="locked-prompt">ตัวเลขจะขึ้นหลังจากเลือก Condition ด้านบน</div>
+            <div id="compareContent" hidden>
+              <div class="compare-grid">
+                <div class="compare-card bad">
+                  <span class="tag" id="compareBadTag">Current · TU 1.0 °C/min</span>
+                  <h3>ไม่แก้ไข</h3>
+                  <div class="value" id="compareBadValue">฿0</div>
+                  <div class="value-note">Estimated Annual Exposure</div>
+                </div>
+                <div class="compare-vs">VS</div>
+                <div class="compare-card good">
+                  <span class="tag" id="compareGoodTag">After Fix · TU 2.0 °C/min</span>
+                  <h3>แก้ไขแล้ว</h3>
+                  <div class="value" id="compareGoodValue">฿0</div>
+                  <div class="value-note">Estimated Annual Exposure</div>
+                </div>
               </div>
-              <div class="compare-vs">VS</div>
-              <div class="compare-card good">
-                <span class="tag" id="compareGoodTag">After Fix · TU 2.0 °C/min</span>
-                <h3>แก้ไขแล้ว</h3>
-                <div class="value" id="compareGoodValue">฿0</div>
-                <div class="value-note">Estimated Annual Exposure</div>
+              <div class="savings-banner">
+                <span>Potential Annual Savings</span>
+                <strong id="savingsValue">฿0</strong>
               </div>
-            </div>
-            <div class="savings-banner">
-              <span>Potential Annual Savings</span>
-              <strong id="savingsValue">฿0</strong>
             </div>
           </div>
         </section>
@@ -148,18 +158,19 @@
           <div class="pill-select" id="scenarioPills">
             <button type="button" data-scenario="hot">Hot</button>
             <button type="button" data-scenario="warm">Warm</button>
-            <button type="button" data-scenario="cold" class="active">Cold</button>
+            <button type="button" data-scenario="cold">Cold</button>
           </div>
         </label>
         <label>Current OTC Y after reset (°C)
-          <input id="quickResetY" type="number" value="0" step="1">
+          <input id="quickResetY" type="number" placeholder="เช่น 0" step="1">
         </label>
         <label>Penalty Rate (THB / hr)
-          <input id="quickPenaltyRate" type="number" value="100000" step="1000">
+          <input id="quickPenaltyRate" type="number" placeholder="เช่น 100000" step="1000">
         </label>
         <label>OTC Reset events / year
-          <input id="quickAnnualEvents" type="number" value="6" min="0" step="1">
+          <input id="quickAnnualEvents" type="number" placeholder="เช่น 6" min="0" step="1">
         </label>
+        <button type="button" class="run-forecast-btn" id="runForecastButton">Run Forecast →</button>
       </div>
     </div>
 

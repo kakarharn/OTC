@@ -26,11 +26,13 @@ let appliedConfig = {
 let draftThresholdEnabled = false;
 
 let execState = {
-  scenario: "cold",
-  resetY: 0,
-  penaltyRate: 100000,
-  annualEvents: 6
+  scenario: null,
+  resetY: null,
+  penaltyRate: null,
+  annualEvents: null
 };
+
+let revealed = false;
 
 /* ---------- DOM: shared ---------- */
 
@@ -678,6 +680,14 @@ const quickPenaltyRate = document.querySelector("#quickPenaltyRate");
 const quickAnnualEvents = document.querySelector("#quickAnnualEvents");
 const assumeToggle = document.querySelector("#assumeToggle");
 const assumePanel = document.querySelector("#assumePanel");
+const runForecastButton = document.querySelector("#runForecastButton");
+const bignumLocked = document.querySelector("#bignumLocked");
+const bignumContent = document.querySelector("#bignumContent");
+const compareLocked = document.querySelector("#compareLocked");
+const compareContent = document.querySelector("#compareContent");
+const heroChart = document.querySelector("#heroChart");
+const heroChartTag = document.querySelector("#heroChartTag");
+const heroCtx = heroChart ? heroChart.getContext("2d") : null;
 
 const SCENARIOS = [
   { key: "hot", label: "Hot Start", tag: "HOT", durationKey: "hotMin" },
@@ -715,26 +725,53 @@ function animateNumber(el, from, to, duration, formatter) {
 
 let bignumAnimated = false;
 
-function renderExecutive() {
-  const rate = currentRampRateCPerMin();
-  const results = {};
-  SCENARIOS.forEach((sc) => {
-    results[sc.key] = computeScenario(appliedConfig[sc.durationKey], rate, execState.resetY, execState.penaltyRate);
-  });
+function inputsReady() {
+  return (
+    Number.isFinite(Number.parseFloat(quickResetY.value)) &&
+    Number.isFinite(Number.parseFloat(quickPenaltyRate.value)) &&
+    Number.isFinite(Number.parseFloat(quickAnnualEvents.value))
+  );
+}
 
-  const ranked = [...SCENARIOS].sort((a, b) => results[a.key].estimatedPenalty - results[b.key].estimatedPenalty);
-  const severityByKey = {};
-  const severityClasses = ["severity-low", "severity-mid", "severity-high"];
-  ranked.forEach((sc, idx) => { severityByKey[sc.key] = severityClasses[Math.min(idx, 2)]; });
+function flashMissingInputs() {
+  [quickResetY, quickPenaltyRate, quickAnnualEvents].forEach((el) => {
+    if (!Number.isFinite(Number.parseFloat(el.value))) {
+      el.classList.add("field-missing");
+      setTimeout(() => el.classList.remove("field-missing"), 1200);
+    }
+  });
+}
+
+function renderExecutive() {
+  const unlocked = revealed && inputsReady();
+  const rate = currentRampRateCPerMin();
+
+  let results = {};
+  let severityByKey = {};
+  if (unlocked) {
+    SCENARIOS.forEach((sc) => {
+      results[sc.key] = computeScenario(appliedConfig[sc.durationKey], rate, execState.resetY, execState.penaltyRate);
+    });
+    const ranked = [...SCENARIOS].sort((a, b) => results[a.key].estimatedPenalty - results[b.key].estimatedPenalty);
+    const severityClasses = ["severity-low", "severity-mid", "severity-high"];
+    ranked.forEach((sc, idx) => { severityByKey[sc.key] = severityClasses[Math.min(idx, 2)]; });
+  }
 
   scenarioGrid.innerHTML = SCENARIOS.map((sc) => {
-    const r = results[sc.key];
     const selected = sc.key === execState.scenario ? "selected" : "";
+    if (!unlocked) {
+      return `
+        <div class="scenario-card ${selected}" data-scenario-card="${sc.key}">
+          <span class="tag">${sc.tag} · ${appliedConfig[sc.durationKey]} min</span>
+          <h3>${sc.label}</h3>
+          <div class="metric-row"><span>คลิกเพื่อดูผลกระทบ</span><strong class="value-dash">—</strong></div>
+        </div>`;
+    }
+    const r = results[sc.key];
     return `
       <div class="scenario-card ${severityByKey[sc.key]} ${selected}" data-scenario-card="${sc.key}">
         <span class="tag">${sc.tag} · ${appliedConfig[sc.durationKey]} min</span>
         <h3>${sc.label}</h3>
-        <div class="metric-row"><span>Y at Startup Complete</span><strong>${r.yAtComplete.toFixed(0)}°C</strong></div>
         <div class="metric-row"><span>Predicted Active Power</span><strong>${r.predictedPower.toFixed(0)} MW</strong></div>
         <div class="metric-row"><span>MW Loss</span><strong>${r.mwLoss.toFixed(0)} MW</strong></div>
         <div class="metric-row"><span>Recovery Remaining</span><strong>${formatHoursMinutes(r.recoveryRemainingMin)}</strong></div>
@@ -744,22 +781,40 @@ function renderExecutive() {
 
   scenarioGrid.querySelectorAll("[data-scenario-card]").forEach((card) => {
     card.addEventListener("click", () => {
+      if (!inputsReady()) {
+        assumePanel.classList.add("open");
+        flashMissingInputs();
+        return;
+      }
       execState.scenario = card.dataset.scenarioCard;
+      revealed = true;
       syncScenarioPills();
       renderExecutive();
     });
   });
 
+  if (!unlocked) {
+    bignumLocked.hidden = false;
+    bignumContent.hidden = true;
+    compareLocked.hidden = false;
+    compareContent.hidden = true;
+    return;
+  }
+
+  bignumLocked.hidden = true;
+  bignumContent.hidden = false;
+  compareLocked.hidden = true;
+  compareContent.hidden = false;
+
   const selectedResult = results[execState.scenario];
   const selectedMeta = SCENARIOS.find((sc) => sc.key === execState.scenario);
-  mechGapNote.textContent = `Y ${selectedResult.yAtComplete.toFixed(0)}°C / ${appliedConfig.referenceY}°C`;
 
   bignumScenarioLabel.textContent = `Based on ${selectedMeta.label} scenario · ${execState.annualEvents} events / year`;
   const annualExposure = selectedResult.estimatedPenalty * execState.annualEvents;
   const targetText = `฿${formatBaht(annualExposure)}`;
   if (!bignumAnimated) {
     bignumAnimated = true;
-    animateNumber(bignumValue, 0, annualExposure, 1400, (v) => `฿${formatBaht(v)}`);
+    animateNumber(bignumValue, 0, annualExposure, 1200, (v) => `฿${formatBaht(v)}`);
   } else {
     bignumValue.textContent = targetText;
   }
@@ -797,21 +852,34 @@ scenarioPills.forEach((btn) => {
   btn.addEventListener("click", () => {
     execState.scenario = btn.dataset.scenario;
     syncScenarioPills();
-    renderExecutive();
+    if (revealed) renderExecutive();
   });
 });
 
 quickResetY.addEventListener("input", () => {
-  execState.resetY = numberValue(quickResetY, 0);
+  execState.resetY = Number.parseFloat(quickResetY.value);
   renderExecutive();
 });
 quickPenaltyRate.addEventListener("input", () => {
-  execState.penaltyRate = numberValue(quickPenaltyRate, 100000);
+  execState.penaltyRate = Number.parseFloat(quickPenaltyRate.value);
   renderExecutive();
 });
 quickAnnualEvents.addEventListener("input", () => {
-  execState.annualEvents = numberValue(quickAnnualEvents, 6);
+  execState.annualEvents = Number.parseFloat(quickAnnualEvents.value);
   renderExecutive();
+});
+
+runForecastButton.addEventListener("click", () => {
+  if (!inputsReady()) {
+    flashMissingInputs();
+    return;
+  }
+  if (!execState.scenario) execState.scenario = "cold";
+  revealed = true;
+  syncScenarioPills();
+  assumePanel.classList.remove("open");
+  renderExecutive();
+  document.querySelector("#pitchScenarios").scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
 assumeToggle.addEventListener("click", () => assumePanel.classList.toggle("open"));
@@ -844,6 +912,89 @@ function setView(view) {
 
 viewSwitchButtons.forEach((btn) => btn.addEventListener("click", () => setView(btn.dataset.view)));
 document.querySelector("#ctaToTechnical").addEventListener("click", () => setView("technical"));
+
+/* ---------- Hero mini chart (always animating, decorative -> real) ---------- */
+
+function drawHeroChart(now) {
+  if (heroCtx && heroChart.parentElement) {
+    const rect = heroChart.parentElement.getBoundingClientRect();
+    const scale = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(200, rect.width);
+    const h = Math.max(100, rect.height);
+    heroChart.width = Math.round(w * scale);
+    heroChart.height = Math.round(h * scale);
+    heroCtx.setTransform(scale, 0, 0, scale, 0, 0);
+    heroCtx.clearRect(0, 0, w, h);
+
+    const unlocked = revealed && inputsReady() && execState.scenario;
+    const curveReferenceY = appliedConfig.referenceY;
+    const curveRate = Math.max(0.1, currentRampRateCPerMin());
+    let curveResetY = 0;
+    let curveDurationMin = 300;
+
+    if (unlocked) {
+      const sc = SCENARIOS.find((s) => s.key === execState.scenario);
+      curveResetY = execState.resetY;
+      curveDurationMin = appliedConfig[sc.durationKey];
+      heroChartTag.textContent = `${sc.label} · Y Recovery`;
+    } else {
+      heroChartTag.textContent = "Y Recovery · illustrative";
+    }
+
+    const totalMin = Math.max(curveDurationMin * 1.35, (curveReferenceY - curveResetY) / curveRate * 1.05);
+    const pad = { left: 12, right: 12, top: 16, bottom: 16 };
+    const plotW = w - pad.left - pad.right;
+    const plotH = h - pad.top - pad.bottom;
+    const yFor = (val) => pad.top + (1 - (val - curveResetY) / (curveReferenceY - curveResetY)) * plotH;
+    const xFor = (min) => pad.left + (min / totalMin) * plotW;
+    const lineColor = unlocked ? "#f5a524" : "#2dd9c2";
+
+    heroCtx.beginPath();
+    const steps = 48;
+    for (let i = 0; i <= steps; i += 1) {
+      const min = (totalMin / steps) * i;
+      const y = Math.min(curveReferenceY, curveResetY + curveRate * min);
+      const px = xFor(min);
+      const py = yFor(y);
+      if (i === 0) heroCtx.moveTo(px, py);
+      else heroCtx.lineTo(px, py);
+    }
+    heroCtx.strokeStyle = lineColor;
+    heroCtx.lineWidth = 2.2;
+    heroCtx.stroke();
+
+    heroCtx.setLineDash([3, 4]);
+    heroCtx.strokeStyle = "#324451";
+    heroCtx.lineWidth = 1;
+    heroCtx.beginPath();
+    heroCtx.moveTo(pad.left, yFor(curveReferenceY));
+    heroCtx.lineTo(w - pad.right, yFor(curveReferenceY));
+    heroCtx.stroke();
+    heroCtx.setLineDash([]);
+
+    const markerX = xFor(Math.min(curveDurationMin, totalMin));
+    heroCtx.strokeStyle = "#58202b";
+    heroCtx.lineWidth = 1;
+    heroCtx.beginPath();
+    heroCtx.moveTo(markerX, pad.top);
+    heroCtx.lineTo(markerX, h - pad.bottom);
+    heroCtx.stroke();
+
+    const loopMs = 3200;
+    const t = (now % loopMs) / loopMs;
+    const dotMin = t * totalMin;
+    const dotY = Math.min(curveReferenceY, curveResetY + curveRate * dotMin);
+    heroCtx.beginPath();
+    heroCtx.arc(xFor(dotMin), yFor(dotY), 4, 0, Math.PI * 2);
+    heroCtx.fillStyle = lineColor;
+    heroCtx.shadowColor = lineColor;
+    heroCtx.shadowBlur = 10;
+    heroCtx.fill();
+    heroCtx.shadowBlur = 0;
+  }
+  requestAnimationFrame(drawHeroChart);
+}
+requestAnimationFrame(drawHeroChart);
 
 /* ============================================================
    Boot
