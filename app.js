@@ -15,6 +15,9 @@ const inputs = {
   window: document.querySelector("#windowInput")
 };
 
+const applyRampButton = document.querySelector("#applyRampButton");
+const rampPendingNote = document.querySelector("#rampPendingNote");
+
 const chart = document.querySelector("#chart");
 const ctx = chart.getContext("2d");
 const xReadout = document.querySelector("#xReadout");
@@ -53,7 +56,9 @@ let state = {
   lastYa: 0,
   accumulatedFine: 0,
   lastFrame: performance.now(),
-  accumulator: 0
+  accumulator: 0,
+  tuSeconds: 60,
+  tdSeconds: 60
 };
 
 function numberValue(input, fallback) {
@@ -71,17 +76,38 @@ function getSettings() {
   return {
     initialY: numberValue(inputs.initialY, 573.4),
     x: state.xTarget,
-    tuValue: Math.max(0.001, numberValue(inputs.tu, 1)),
-    tdValue: Math.max(0.001, numberValue(inputs.td, 1)),
+    tuValue: state.tuSeconds / multiplier,
+    tdValue: state.tdSeconds / multiplier,
     timeUnit: unit,
-    tuSeconds: Math.max(0.001, numberValue(inputs.tu, 1)) * multiplier,
-    tdSeconds: Math.max(0.001, numberValue(inputs.td, 1)) * multiplier,
+    tuSeconds: state.tuSeconds,
+    tdSeconds: state.tdSeconds,
     nrm: Math.max(0.01, numberValue(inputs.nrm, 1)),
     normalTemp: numberValue(inputs.normalTemp, 573.4),
     baseMw: numberValue(inputs.baseMw, 230),
     fineRate: Math.max(0, numberValue(inputs.fineRate, 2500)),
     windowSeconds: Math.max(30, numberValue(inputs.window, 180))
   };
+}
+
+function applyRampSettings() {
+  const unit = inputs.timeUnit.value;
+  const multiplier = secondsPerUnit(unit);
+  state.tuSeconds = Math.max(0.001, numberValue(inputs.tu, 1)) * multiplier;
+  state.tdSeconds = Math.max(0.001, numberValue(inputs.td, 1)) * multiplier;
+  refreshRampPendingUI();
+}
+
+function refreshRampPendingUI() {
+  if (!rampPendingNote) return;
+  const unit = inputs.timeUnit.value;
+  const multiplier = secondsPerUnit(unit);
+  const typedTuSeconds = Math.max(0.001, numberValue(inputs.tu, 1)) * multiplier;
+  const typedTdSeconds = Math.max(0.001, numberValue(inputs.td, 1)) * multiplier;
+  const pending =
+    Math.abs(typedTuSeconds - state.tuSeconds) > 0.0005 ||
+    Math.abs(typedTdSeconds - state.tdSeconds) > 0.0005;
+  rampPendingNote.hidden = !pending;
+  if (applyRampButton) applyRampButton.classList.toggle("pending", pending);
 }
 
 function secondsPerUnit(unit) {
@@ -385,7 +411,17 @@ inputs.initialY.addEventListener("keydown", (event) => {
 });
 inputs.timeUnit.addEventListener("change", () => {
   convertTimeInputs(inputs.timeUnit.value);
+  refreshRampPendingUI();
 });
+inputs.tu.addEventListener("input", refreshRampPendingUI);
+inputs.td.addEventListener("input", refreshRampPendingUI);
+inputs.tu.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") applyRampSettings();
+});
+inputs.td.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") applyRampSettings();
+});
+if (applyRampButton) applyRampButton.addEventListener("click", applyRampSettings);
 nudgeButtons.forEach((button) => {
   button.addEventListener("click", () => setX(numberValue(inputs.x, 573.4) + Number.parseFloat(button.dataset.xNudge)));
 });
@@ -428,6 +464,7 @@ window.addEventListener("keydown", (event) => {
   if (event.key === "Escape") closeControls();
 });
 
+applyRampSettings();
 resetAll();
 requestAnimationFrame(tick);
 

@@ -150,11 +150,15 @@
                 <option value="ms">ms</option>
               </select>
             </label>
+            <div class="apply-row">
+              <button id="applyRampButton" class="secondary-action" type="button">Change</button>
+              <span id="rampPendingNote" class="pending-note" hidden>Unapplied — click Change to update the ramp</span>
+            </div>
             <label>
               NRM normalization (C)
               <input id="nrmInput" type="number" value="1" min="0.01" step="0.01">
             </label>
-            <p class="hint">Example: NRM 1 and TU 1 min means Y changes about 1 C per minute.</p>
+            <p class="hint">Example: NRM 1 and TU 1 min means Y changes about 1 C per minute. TU/TD only take effect after you click Change.</p>
           </div>
         </details>
 

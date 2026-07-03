@@ -1,0 +1,1482 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>GT OTC Simulation</title>
+    <meta name="theme-color" content="#0f171f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+/* ============================================================
+   GT OTC Simulation — control-room instrument theme
+   Palette: deep slate panels, teal signal / amber ramp / mint MW / rose penalty
+   Type: Space Grotesk (display) + IBM Plex Sans (body) + IBM Plex Mono (data)
+   ============================================================ */
+
+:root {
+  --bg-950: #0a1116;
+  --bg-900: #0f171f;
+  --panel: #131e27;
+  --panel-raised: #182531;
+  --panel-soft: #101a22;
+  --line: #24333e;
+  --line-soft: #1b2830;
+  --ink: #e9f1f4;
+  --muted: #7d93a1;
+  --muted-dim: #56666f;
+
+  --teal: #2dd9c2;
+  --teal-dim: #0f2d29;
+  --teal-line: #1f5148;
+
+  --amber: #f5a524;
+  --amber-dim: #33230a;
+
+  --mw: #35d68f;
+  --mw-dim: #10301f;
+
+  --rose: #fb7185;
+  --rose-dim: #351019;
+
+  --shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  --shadow-soft: 0 10px 26px rgba(0, 0, 0, 0.32);
+  --radius: 10px;
+  --font-display: "Space Grotesk", "Segoe UI", sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(1100px 520px at 100% -10%, rgba(45, 217, 194, 0.08), transparent 60%),
+    var(--bg-950);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+::selection {
+  background: var(--teal-dim);
+  color: var(--teal);
+}
+
+/* ---------- Shell ---------- */
+
+.app-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 348px;
+  gap: 16px;
+  min-height: 100vh;
+  padding: 16px;
+}
+
+.main-panel {
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  gap: 14px;
+  min-width: 0;
+}
+
+.topbar,
+.readout,
+.rge-panel,
+.chart-panel,
+.controls {
+  background: linear-gradient(180deg, var(--panel-raised), var(--panel));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+}
+
+/* ---------- Topbar ---------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 118px;
+  padding: 22px 26px;
+  border-top: 3px solid var(--teal);
+  position: sticky;
+  top: 16px;
+  z-index: 5;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--teal);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 2.6vw, 2.5rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.subtitle {
+  max-width: 720px;
+  margin-top: 7px;
+  color: var(--muted);
+  line-height: 1.5;
+  font-size: 0.92rem;
+}
+
+.status-pill {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: max-content;
+  padding: 9px 15px;
+  border: 1px solid var(--teal-line);
+  border-radius: 999px;
+  color: var(--teal);
+  background: var(--teal-dim);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.status-pill::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 0 0 rgba(45, 217, 194, 0.55);
+  animation: pulse-dot 2.2s ease-out infinite;
+}
+
+@keyframes pulse-dot {
+  0% { box-shadow: 0 0 0 0 rgba(45, 217, 194, 0.55); }
+  70% { box-shadow: 0 0 0 8px rgba(45, 217, 194, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(45, 217, 194, 0); }
+}
+
+/* ---------- Readouts ---------- */
+
+.readout-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.readout {
+  min-width: 0;
+  padding: 14px 15px;
+  border-left: 3px solid var(--muted-dim);
+  background: linear-gradient(180deg, var(--panel-raised), var(--panel-soft));
+}
+
+.readout-target { border-left-color: var(--teal); }
+.readout-y { border-left-color: var(--amber); }
+.readout-mw { border-left-color: var(--mw); }
+.readout-money { border-left-color: var(--rose); }
+
+.readout span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.readout strong {
+  display: block;
+  margin-top: 7px;
+  font-family: var(--font-mono);
+  font-size: 1.28rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.readout-target strong { color: var(--teal); }
+.readout-y strong { color: var(--amber); }
+.readout-mw strong { color: var(--mw); }
+.readout-money strong { color: var(--rose); }
+
+/* ---------- RGE schematic ---------- */
+
+.rge-panel {
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px;
+}
+
+.rge-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rge-title span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.rge-diagram {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px minmax(0, 1fr);
+  gap: 0;
+  align-items: center;
+}
+
+.pin-stack {
+  display: grid;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.pin-stack div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel-soft);
+}
+
+.pin-stack span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pin-stack strong {
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.pin-left {
+  margin-right: -1px;
+  border-right: 1px dashed var(--line);
+  padding-right: 18px;
+}
+
+.pin-right {
+  margin-left: -1px;
+  border-left: 1px dashed var(--line);
+  padding-left: 18px;
+}
+
+.rge-block {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 132px;
+  border: 1px solid var(--teal-line);
+  border-radius: 10px;
+  color: var(--teal);
+  background: radial-gradient(140% 140% at 50% 0%, var(--teal-dim), var(--panel-soft) 70%);
+  text-align: center;
+  box-shadow: 0 0 0 1px rgba(45, 217, 194, 0.08), 0 0 34px -6px rgba(45, 217, 194, 0.35);
+}
+
+.rge-block span {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.rge-block small {
+  margin-top: 8px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+/* ---------- Chart ---------- */
+
+.chart-panel {
+  display: grid;
+  grid-template-rows: auto minmax(380px, 1fr);
+  gap: 12px;
+  min-height: 0;
+  padding: 18px 20px 20px;
+}
+
+.chart-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.chart-header p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  max-width: 46ch;
+}
+
+.legend {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--panel-soft);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+}
+
+.legend i {
+  width: 18px;
+  height: 3px;
+  border-radius: 3px;
+}
+
+.line-x { background: var(--teal); }
+.line-y { background: var(--amber); }
+.line-mw { background: var(--mw); }
+
+#chart {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 560px;
+  min-height: 380px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg-900);
+}
+
+/* ---------- Controls (desktop sidebar / mobile drawer) ---------- */
+
+.controls {
+  overflow: auto;
+  max-height: calc(100vh - 32px);
+  padding: 16px 16px 18px;
+  position: sticky;
+  top: 16px;
+  align-self: start;
+}
+
+.drawer-header {
+  display: none;
+}
+
+.control-section {
+  padding: 4px 0 16px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--line-soft);
+  border: none;
+}
+
+.control-section:last-of-type {
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.control-section > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 2px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.control-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.control-section > summary::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  margin-left: 10px;
+  border-right: 1.6px solid var(--muted);
+  border-bottom: 1.6px solid var(--muted);
+  transform: rotate(45deg);
+  transition: transform 0.18s ease;
+  flex: none;
+}
+
+.control-section[open] > summary::after {
+  transform: rotate(-135deg);
+}
+
+.control-section > summary > h2 {
+  color: var(--ink);
+}
+
+.control-body {
+  display: grid;
+  gap: 12px;
+  padding-top: 2px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+input,
+select {
+  width: 100%;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0 11px;
+  color: var(--ink);
+  background: var(--panel-soft);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+select {
+  font-family: var(--font-body);
+}
+
+input:focus,
+select:focus,
+button:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 1px;
+  border-color: var(--teal);
+}
+
+input[type="range"] {
+  padding: 0;
+  height: 34px;
+  accent-color: var(--teal);
+  background: transparent;
+}
+
+.range-pair,
+.action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.apply-row {
+  display: grid;
+  gap: 8px;
+  margin-top: -2px;
+}
+
+.apply-row .secondary-action {
+  min-height: 40px;
+  justify-self: start;
+  padding: 0 18px;
+}
+
+.apply-row .secondary-action.pending {
+  border-color: var(--amber);
+  background: var(--amber-dim);
+  color: var(--amber);
+}
+
+.pending-note {
+  color: var(--amber);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.preset-grid button,
+.secondary-action {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  background: var(--panel-soft);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.preset-grid button:hover,
+.secondary-action:hover {
+  border-color: var(--teal-line);
+  background: var(--teal-dim);
+}
+
+.primary-action {
+  min-height: 46px;
+  border: 1px solid var(--teal-line);
+  border-radius: 6px;
+  color: #06231f;
+  background: var(--teal);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary-action:hover {
+  background: #4be3cd;
+}
+
+.secondary-action {
+  min-height: 46px;
+}
+
+.hint {
+  color: var(--muted-dim);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+/* ---------- Mobile toolbar & drawer (hidden on desktop) ---------- */
+
+.mobile-toolbar,
+.controls-backdrop,
+.drawer-close {
+  display: none;
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+
+@media (max-width: 1050px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-shell {
+    padding: 10px;
+    padding-bottom: 84px;
+    gap: 10px;
+  }
+
+  .topbar {
+    top: 10px;
+    min-height: auto;
+    padding: 14px 16px;
+    flex-wrap: wrap;
+  }
+
+  .subtitle {
+    display: none;
+  }
+
+  .status-pill {
+    order: -1;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .readout-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .readout {
+    padding: 12px 13px;
+  }
+
+  .readout strong {
+    font-size: 1.12rem;
+  }
+
+  .rge-diagram {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .pin-left,
+  .pin-right {
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .chart-panel {
+    grid-template-rows: auto minmax(320px, 1fr);
+    padding: 14px;
+  }
+
+  .legend {
+    justify-content: flex-start;
+  }
+
+  /* Controls become an off-canvas drawer */
+  .controls {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 40;
+    width: min(88vw, 380px);
+    max-height: 100vh;
+    height: 100vh;
+    border-radius: 0;
+    border-left: 1px solid var(--line);
+    box-shadow: -20px 0 50px rgba(0, 0, 0, 0.5);
+    transform: translateX(100%);
+    transition: transform 0.28s ease;
+    padding-bottom: 24px;
+  }
+
+  .controls.open {
+    transform: translateX(0);
+  }
+
+  .drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 4px 2px 14px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--line-soft);
+    position: sticky;
+    top: 0;
+    background: var(--panel);
+  }
+
+  .drawer-header h2 {
+    font-size: 1.05rem;
+  }
+
+  .drawer-close {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel-soft);
+    color: var(--muted);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .controls-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 35;
+    background: rgba(5, 9, 12, 0.6);
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  .controls-backdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .mobile-toolbar {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 8px;
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    z-index: 45;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: linear-gradient(180deg, var(--panel-raised), var(--panel));
+    box-shadow: var(--shadow);
+  }
+
+  .mobile-toolbar button {
+    min-height: 48px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--panel-soft);
+    color: var(--ink);
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .mobile-toolbar .primary-action {
+    border-color: var(--teal-line);
+  }
+
+  .mobile-toolbar .menu-button {
+    width: 52px;
+    display: grid;
+    place-items: center;
+    color: var(--teal);
+    border-color: var(--teal-line);
+    background: var(--teal-dim);
+  }
+}
+
+@media (max-width: 520px) {
+  .readout-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-pill::before {
+    animation: none;
+  }
+
+  .controls {
+    transition: none;
+  }
+
+  .controls-backdrop {
+    transition: none;
+  }
+}
+
+</style>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="main-panel">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Operator training simulator</p>
+            <h1>GT OTC Simulation</h1>
+            <p class="subtitle">Realtime RGE ramp response: adjust X, watch Y follow TU/TD/NRM, and see the MW impact immediately.</p>
+          </div>
+          <div class="status-pill">TA fixed 8 ms</div>
+        </header>
+
+        <section class="readout-grid">
+          <div class="readout readout-target">
+            <span>X Target</span>
+            <strong id="xReadout">573.40 C</strong>
+          </div>
+          <div class="readout readout-y">
+            <span>Y Output</span>
+            <strong id="yReadout">573.40 C</strong>
+          </div>
+          <div class="readout readout-mw">
+            <span>GT MW</span>
+            <strong id="mwReadout">230.00 MW</strong>
+          </div>
+          <div class="readout">
+            <span>MW Loss</span>
+            <strong id="mwLossReadout">0.00 MW</strong>
+          </div>
+          <div class="readout readout-money">
+            <span>Fine Rate</span>
+            <strong id="fineRateReadout">0 THB/hr</strong>
+          </div>
+          <div class="readout readout-money">
+            <span>Accumulated Fine</span>
+            <strong id="fineTotalReadout">0 THB</strong>
+          </div>
+          <div class="readout">
+            <span>Ramp Rate</span>
+            <strong id="rateReadout">0.000 C/min</strong>
+          </div>
+        </section>
+
+        <section class="rge-panel">
+          <div class="rge-title">
+            <h2>RGE Logic Snapshot</h2>
+            <span>Live values inside the ramp generator</span>
+          </div>
+          <div class="rge-diagram">
+            <div class="pin-stack pin-left">
+              <div><span>X</span><strong id="blockX">573.40 C</strong></div>
+              <div><span>NRM</span><strong id="blockNrm">1.00 C</strong></div>
+              <div><span>TU</span><strong id="blockTu">1.00 min</strong></div>
+              <div><span>TD</span><strong id="blockTd">1.00 min</strong></div>
+            </div>
+            <div class="rge-block">
+              <span>RGE</span>
+              <small>Y(n)=Y(n-1)+YA</small>
+            </div>
+            <div class="pin-stack pin-right">
+              <div><span>Y</span><strong id="blockY">573.40 C</strong></div>
+              <div><span>YA / scan</span><strong id="blockYa">0.000000 C</strong></div>
+              <div><span>Rate</span><strong id="blockRate">0.000 C/min</strong></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="chart-panel">
+          <div class="chart-header">
+            <div>
+              <h2>Realtime Trend</h2>
+              <p>X target, Y output, and GT MW are plotted together so the ramp slope and MW loss are easy to see.</p>
+            </div>
+            <div class="legend">
+              <span><i class="line-x"></i>X target</span>
+              <span><i class="line-y"></i>Y temp</span>
+              <span><i class="line-mw"></i>MW</span>
+            </div>
+          </div>
+          <canvas id="chart" width="1100" height="560" aria-label="Realtime Y and MW trend"></canvas>
+        </section>
+      </section>
+
+      <aside class="controls" id="controlsPanel">
+        <div class="drawer-header">
+          <h2>Controls</h2>
+          <button type="button" class="drawer-close" id="controlsClose" aria-label="Close controls">&times;</button>
+        </div>
+
+        <details class="control-section" open>
+          <summary><h2>OTC Target</h2></summary>
+          <div class="control-body">
+            <label>
+              Initial Y start temperature (C)
+              <input id="initialYInput" type="number" value="573.4" step="0.1">
+            </label>
+            <label>
+              X target temperature (C)
+              <input id="xInput" type="number" value="573.4" step="0.1">
+            </label>
+            <input id="xSlider" type="range" value="573.4" min="400" max="700" step="0.1" aria-label="X target slider">
+            <div class="preset-grid">
+              <button type="button" data-x-nudge="-5">-5 C</button>
+              <button type="button" data-x-set="573.4">Normal</button>
+              <button type="button" data-x-nudge="5">+5 C</button>
+            </div>
+            <div class="preset-grid">
+              <button type="button" data-x-set="560">Cool</button>
+              <button type="button" data-x-set="580">Warm</button>
+              <button type="button" data-x-set="590">Hot</button>
+            </div>
+          </div>
+        </details>
+
+        <details class="control-section" open>
+          <summary><h2>Ramp Setting</h2></summary>
+          <div class="control-body">
+            <div class="range-pair">
+              <label>
+                TU up time
+                <input id="tuInput" type="number" value="1" min="0.01" step="0.01">
+              </label>
+              <label>
+                TD down time
+                <input id="tdInput" type="number" value="1" min="0.01" step="0.01">
+              </label>
+            </div>
+            <label>
+              TU / TD unit
+              <select id="timeUnitInput">
+                <option value="min">min</option>
+                <option value="sec">sec</option>
+                <option value="ms">ms</option>
+              </select>
+            </label>
+            <div class="apply-row">
+              <button id="applyRampButton" class="secondary-action" type="button">Change</button>
+              <span id="rampPendingNote" class="pending-note" hidden>Unapplied — click Change to update the ramp</span>
+            </div>
+            <label>
+              NRM normalization (C)
+              <input id="nrmInput" type="number" value="1" min="0.01" step="0.01">
+            </label>
+            <p class="hint">Example: NRM 1 and TU 1 min means Y changes about 1 C per minute. TU/TD only take effect after you click Change.</p>
+          </div>
+        </details>
+
+        <details class="control-section" open>
+          <summary><h2>MW Mapping</h2></summary>
+          <div class="control-body">
+            <div class="range-pair">
+              <label>
+                Normal temp (C)
+                <input id="normalTempInput" type="number" value="573.4" step="0.1">
+              </label>
+              <label>
+                Base MW
+                <input id="baseMwInput" type="number" value="230" step="0.1">
+              </label>
+            </div>
+            <p class="hint">Simple model: MW = Base MW + (Y - Normal Temp) x 1.</p>
+          </div>
+        </details>
+
+        <details class="control-section" open>
+          <summary><h2>Penalty Cost</h2></summary>
+          <div class="control-body">
+            <label>
+              Fine rate (THB per MW-hr)
+              <input id="fineRateInput" type="number" value="2500" min="0" step="100">
+            </label>
+            <p class="hint">Accumulated fine = MW loss x elapsed time x THB per MW-hr, counted only when MW is below base.</p>
+          </div>
+        </details>
+
+        <details class="control-section" open>
+          <summary><h2>View</h2></summary>
+          <div class="control-body">
+            <label>
+              Graph window (s)
+              <input id="windowInput" type="number" value="180" min="30" step="10">
+            </label>
+            <div class="action-row">
+              <button id="runToggle" class="primary-action" type="button">Pause</button>
+              <button id="resetButton" class="secondary-action" type="button">Reset Y + Trend</button>
+            </div>
+            <button id="clearButton" class="secondary-action" type="button">Reset Trend</button>
+          </div>
+        </details>
+      </aside>
+
+      <div class="controls-backdrop" id="controlsBackdrop"></div>
+
+      <nav class="mobile-toolbar">
+        <button type="button" id="mobileRunToggle" class="primary-action">Pause</button>
+        <button type="button" id="mobileResetButton">Reset</button>
+        <button type="button" id="mobileMenuToggle" class="menu-button" aria-label="Open controls">&#9881;</button>
+      </nav>
+    </main>
+
+    <script>
+const TA_SECONDS = 0.008;
+const MW_PER_DEG = 1;
+
+const inputs = {
+  initialY: document.querySelector("#initialYInput"),
+  x: document.querySelector("#xInput"),
+  xSlider: document.querySelector("#xSlider"),
+  tu: document.querySelector("#tuInput"),
+  td: document.querySelector("#tdInput"),
+  timeUnit: document.querySelector("#timeUnitInput"),
+  nrm: document.querySelector("#nrmInput"),
+  normalTemp: document.querySelector("#normalTempInput"),
+  baseMw: document.querySelector("#baseMwInput"),
+  fineRate: document.querySelector("#fineRateInput"),
+  window: document.querySelector("#windowInput")
+};
+
+const applyRampButton = document.querySelector("#applyRampButton");
+const rampPendingNote = document.querySelector("#rampPendingNote");
+
+const chart = document.querySelector("#chart");
+const ctx = chart.getContext("2d");
+const xReadout = document.querySelector("#xReadout");
+const yReadout = document.querySelector("#yReadout");
+const mwReadout = document.querySelector("#mwReadout");
+const mwLossReadout = document.querySelector("#mwLossReadout");
+const fineRateReadout = document.querySelector("#fineRateReadout");
+const fineTotalReadout = document.querySelector("#fineTotalReadout");
+const rateReadout = document.querySelector("#rateReadout");
+const runToggle = document.querySelector("#runToggle");
+const resetButton = document.querySelector("#resetButton");
+const clearButton = document.querySelector("#clearButton");
+const controlsPanel = document.querySelector("#controlsPanel");
+const controlsBackdrop = document.querySelector("#controlsBackdrop");
+const controlsClose = document.querySelector("#controlsClose");
+const mobileMenuToggle = document.querySelector("#mobileMenuToggle");
+const mobileRunToggle = document.querySelector("#mobileRunToggle");
+const mobileResetButton = document.querySelector("#mobileResetButton");
+const nudgeButtons = document.querySelectorAll("[data-x-nudge]");
+const setButtons = document.querySelectorAll("[data-x-set]");
+const blockX = document.querySelector("#blockX");
+const blockNrm = document.querySelector("#blockNrm");
+const blockTu = document.querySelector("#blockTu");
+const blockTd = document.querySelector("#blockTd");
+const blockY = document.querySelector("#blockY");
+const blockYa = document.querySelector("#blockYa");
+const blockRate = document.querySelector("#blockRate");
+
+let history = [];
+let currentTimeUnit = "min";
+let state = {
+  running: true,
+  elapsed: 0,
+  xTarget: 573.4,
+  y: 573.4,
+  lastYa: 0,
+  accumulatedFine: 0,
+  lastFrame: performance.now(),
+  accumulator: 0,
+  tuSeconds: 60,
+  tdSeconds: 60
+};
+
+function numberValue(input, fallback) {
+  const value = Number.parseFloat(input.value);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function getSettings() {
+  const unit = inputs.timeUnit.value;
+  const multiplier = secondsPerUnit(unit);
+  return {
+    initialY: numberValue(inputs.initialY, 573.4),
+    x: state.xTarget,
+    tuValue: state.tuSeconds / multiplier,
+    tdValue: state.tdSeconds / multiplier,
+    timeUnit: unit,
+    tuSeconds: state.tuSeconds,
+    tdSeconds: state.tdSeconds,
+    nrm: Math.max(0.01, numberValue(inputs.nrm, 1)),
+    normalTemp: numberValue(inputs.normalTemp, 573.4),
+    baseMw: numberValue(inputs.baseMw, 230),
+    fineRate: Math.max(0, numberValue(inputs.fineRate, 2500)),
+    windowSeconds: Math.max(30, numberValue(inputs.window, 180))
+  };
+}
+
+function applyRampSettings() {
+  const unit = inputs.timeUnit.value;
+  const multiplier = secondsPerUnit(unit);
+  state.tuSeconds = Math.max(0.001, numberValue(inputs.tu, 1)) * multiplier;
+  state.tdSeconds = Math.max(0.001, numberValue(inputs.td, 1)) * multiplier;
+  refreshRampPendingUI();
+}
+
+function refreshRampPendingUI() {
+  if (!rampPendingNote) return;
+  const unit = inputs.timeUnit.value;
+  const multiplier = secondsPerUnit(unit);
+  const typedTuSeconds = Math.max(0.001, numberValue(inputs.tu, 1)) * multiplier;
+  const typedTdSeconds = Math.max(0.001, numberValue(inputs.td, 1)) * multiplier;
+  const pending =
+    Math.abs(typedTuSeconds - state.tuSeconds) > 0.0005 ||
+    Math.abs(typedTdSeconds - state.tdSeconds) > 0.0005;
+  rampPendingNote.hidden = !pending;
+  if (applyRampButton) applyRampButton.classList.toggle("pending", pending);
+}
+
+function secondsPerUnit(unit) {
+  if (unit === "ms") return 0.001;
+  if (unit === "sec") return 1;
+  return 60;
+}
+
+function convertTimeInputs(nextUnit) {
+  const prevMultiplier = secondsPerUnit(currentTimeUnit);
+  const nextMultiplier = secondsPerUnit(nextUnit);
+  const tuSeconds = numberValue(inputs.tu, 1) * prevMultiplier;
+  const tdSeconds = numberValue(inputs.td, 1) * prevMultiplier;
+  inputs.tu.value = Math.max(0.001, tuSeconds / nextMultiplier).toFixed(nextUnit === "ms" ? 0 : 3);
+  inputs.td.value = Math.max(0.001, tdSeconds / nextMultiplier).toFixed(nextUnit === "ms" ? 0 : 3);
+  currentTimeUnit = nextUnit;
+}
+
+function mwFromY(y, settings) {
+  return settings.baseMw + (y - settings.normalTemp) * MW_PER_DEG;
+}
+
+function stepRge(settings) {
+  const error = settings.x - state.y;
+  if (Math.abs(error) < 0.0000001) {
+    state.lastYa = 0;
+    return;
+  }
+
+  const timeConstant = error > 0 ? settings.tuSeconds : settings.tdSeconds;
+  const maxStep = (TA_SECONDS / timeConstant) * settings.nrm;
+  const ya = clamp(error, -maxStep, maxStep);
+  state.y += ya;
+  state.lastYa = ya;
+}
+
+function addPenalty(settings) {
+  const mwLoss = Math.max(0, settings.baseMw - mwFromY(state.y, settings));
+  state.accumulatedFine += mwLoss * (TA_SECONDS / 3600) * settings.fineRate;
+}
+
+function sample(settings) {
+  const mw = mwFromY(state.y, settings);
+  return {
+    time: state.elapsed,
+    x: settings.x,
+  y: state.y,
+  mw,
+  mwLoss: Math.max(0, settings.baseMw - mw),
+  mwChange: mw - settings.baseMw,
+  accumulatedFine: state.accumulatedFine,
+  ya: state.lastYa
+  };
+}
+
+function resetAll() {
+  const settings = getSettings();
+  state.elapsed = 0;
+  state.xTarget = settings.x;
+  state.y = settings.initialY;
+  state.lastYa = 0;
+  state.accumulatedFine = 0;
+  state.accumulator = 0;
+  state.lastFrame = performance.now();
+  history = [sample(settings)];
+  render(settings);
+}
+
+function clearTrace() {
+  const settings = getSettings();
+  state.elapsed = 0;
+  state.accumulator = 0;
+  state.lastFrame = performance.now();
+  history = [sample(settings)];
+  render(settings);
+}
+
+function tick(now) {
+  const settings = getSettings();
+  syncSliderToX(settings.x);
+  const frameDt = Math.min(0.25, Math.max(0, (now - state.lastFrame) / 1000));
+  state.lastFrame = now;
+
+  if (state.running) {
+    state.accumulator += frameDt;
+    const cycles = Math.min(2000, Math.floor(state.accumulator / TA_SECONDS));
+    for (let i = 0; i < cycles; i += 1) {
+      stepRge(settings);
+      addPenalty(settings);
+      state.elapsed += TA_SECONDS;
+      history.push(sample(settings));
+    }
+    state.accumulator -= cycles * TA_SECONDS;
+  }
+
+  trimHistory(settings.windowSeconds);
+  render(settings);
+  requestAnimationFrame(tick);
+}
+
+function trimHistory(windowSeconds) {
+  const start = Math.max(0, state.elapsed - windowSeconds);
+  while (history.length > 2 && history[1].time < start) history.shift();
+}
+
+function render(settings) {
+  if (history.length === 0) history = [sample(settings)];
+  const last = history[history.length - 1];
+  const liveMw = mwFromY(state.y, settings);
+  const liveLoss = Math.max(0, settings.baseMw - liveMw);
+  const liveFineRate = liveLoss * settings.fineRate;
+  const liveRate = currentRampRate(settings);
+  xReadout.textContent = `${settings.x.toFixed(2)} C`;
+  yReadout.textContent = `${last.y.toFixed(3)} C`;
+  mwReadout.textContent = `${liveMw.toFixed(2)} MW`;
+  mwLossReadout.textContent = `${liveLoss.toFixed(2)} MW`;
+  fineRateReadout.textContent = `${formatBaht(liveFineRate)}/hr`;
+  fineTotalReadout.textContent = `${formatBaht(state.accumulatedFine)}`;
+  rateReadout.textContent = `${liveRate.toFixed(3)} C/min`;
+  renderRgeBlock(settings, last, liveMw);
+  renderChart(settings);
+}
+
+function renderRgeBlock(settings) {
+  blockX.textContent = `${settings.x.toFixed(2)} C`;
+  blockNrm.textContent = `${settings.nrm.toFixed(2)} C`;
+  blockTu.textContent = formatTimeValue(settings.tuValue, settings.timeUnit);
+  blockTd.textContent = formatTimeValue(settings.tdValue, settings.timeUnit);
+  blockY.textContent = `${state.y.toFixed(3)} C`;
+  blockYa.textContent = `${state.lastYa.toFixed(9)} C`;
+  blockRate.textContent = `${currentRampRate(settings).toFixed(3)} C/min`;
+}
+
+function currentRampRate(settings) {
+  const error = settings.x - state.y;
+  if (Math.abs(error) < 0.0000001) return 0;
+  const seconds = error > 0 ? settings.tuSeconds : settings.tdSeconds;
+  const direction = error > 0 ? 1 : -1;
+  return direction * (settings.nrm / seconds) * 60;
+}
+
+function renderChart(settings) {
+  const rect = chart.getBoundingClientRect();
+  const scale = window.devicePixelRatio || 1;
+  chart.width = Math.max(720, Math.round(rect.width * scale));
+  chart.height = Math.max(420, Math.round(rect.height * scale));
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+
+  const width = chart.width / scale;
+  const height = chart.height / scale;
+  const pad = { left: 62, right: 18, top: 18, bottom: 36 };
+  const gap = 32;
+  const paneH = (height - pad.top - pad.bottom - gap) / 2;
+  const tempPane = { x: pad.left, y: pad.top, w: width - pad.left - pad.right, h: paneH };
+  const mwPane = { x: pad.left, y: pad.top + paneH + gap, w: width - pad.left - pad.right, h: paneH };
+  const windowStart = Math.max(0, state.elapsed - settings.windowSeconds);
+  const windowEnd = windowStart + settings.windowSeconds;
+
+  const tempAxis = axisFor(history.flatMap((row) => [row.x, row.y, 0, settings.normalTemp]), 2);
+  const mwAxis = axisFor(history.map((row) => row.mw), 2, { floor: 0 });
+  const xFor = (time) => tempPane.x + ((time - windowStart) / settings.windowSeconds) * tempPane.w;
+  const tempY = (value) => tempPane.y + (1 - (value - tempAxis.min) / (tempAxis.max - tempAxis.min)) * tempPane.h;
+  const mwY = (value) => mwPane.y + (1 - (value - mwAxis.min) / (mwAxis.max - mwAxis.min)) * mwPane.h;
+
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = "#f7f9fa";
+  ctx.fillRect(0, 0, width, height);
+  drawGrid(tempPane, windowStart, windowEnd, tempAxis, "Temperature C");
+  drawGrid(mwPane, windowStart, windowEnd, mwAxis, "GT MW");
+  drawReferenceLine(tempPane, tempY, 0, "0 C", "#aeb9bf");
+  drawReferenceLine(tempPane, tempY, settings.normalTemp, `${settings.normalTemp.toFixed(1)} C`, "#8aa0aa");
+  drawReferenceLine(mwPane, mwY, 0, "0 MW", "#aeb9bf");
+  drawSeries(history, xFor, tempY, "x", "#3347b7", [8, 6], 2.2);
+  drawSeries(history, xFor, tempY, "y", "#df7e24", [], 3);
+  drawSeries(history, xFor, mwY, "mw", "#0b8f72", [], 3);
+}
+
+function axisFor(values, minSpan, options = {}) {
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  const mid = (minValue + maxValue) / 2;
+  const span = Math.max(minSpan, maxValue - minValue);
+  let min = mid - span * 0.62;
+  let max = mid + span * 0.62;
+  if (Number.isFinite(options.floor)) {
+    min = Math.max(options.floor, min);
+    max = Math.max(max, options.floor + minSpan);
+  }
+  return { min, max };
+}
+
+function drawGrid(pane, windowStart, windowEnd, axis, label) {
+  ctx.save();
+  ctx.strokeStyle = "#d9e1e5";
+  ctx.lineWidth = 1;
+  ctx.fillStyle = "#607078";
+  ctx.font = "12px Segoe UI, Arial";
+
+  for (let i = 0; i <= 4; i += 1) {
+    const y = pane.y + (pane.h / 4) * i;
+    const value = axis.max - ((axis.max - axis.min) / 4) * i;
+    ctx.beginPath();
+    ctx.moveTo(pane.x, y);
+    ctx.lineTo(pane.x + pane.w, y);
+    ctx.stroke();
+    ctx.fillText(value.toFixed(2), 8, y + 4);
+  }
+
+  for (let i = 0; i <= 5; i += 1) {
+    const x = pane.x + (pane.w / 5) * i;
+    const time = windowStart + ((windowEnd - windowStart) / 5) * i;
+    ctx.beginPath();
+    ctx.moveTo(x, pane.y);
+    ctx.lineTo(x, pane.y + pane.h);
+    ctx.stroke();
+    ctx.fillText(`${time.toFixed(0)}s`, x - 10, pane.y + pane.h + 18);
+  }
+
+  ctx.strokeStyle = "#85939a";
+  ctx.strokeRect(pane.x, pane.y, pane.w, pane.h);
+  ctx.fillStyle = "#1c2529";
+  ctx.font = "700 12px Segoe UI, Arial";
+  ctx.fillText(label, pane.x + 8, pane.y + 16);
+  ctx.restore();
+}
+
+function drawReferenceLine(pane, yFor, value, label, color) {
+  if (value < 0 && label.endsWith("MW")) return;
+  const y = yFor(value);
+  if (y < pane.y || y > pane.y + pane.h) return;
+
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([2, 5]);
+  ctx.beginPath();
+  ctx.moveTo(pane.x, y);
+  ctx.lineTo(pane.x + pane.w, y);
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.font = "11px Segoe UI, Arial";
+  ctx.fillText(label, pane.x + pane.w - 58, y - 5);
+  ctx.restore();
+}
+
+function drawSeries(rows, xFor, yFor, key, color, dash, lineWidth) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.setLineDash(dash);
+  ctx.beginPath();
+  rows.forEach((row, index) => {
+    const x = xFor(row.time);
+    const y = yFor(row[key]);
+    if (index === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  ctx.restore();
+}
+
+function formatBaht(value) {
+  return value.toLocaleString("th-TH", {
+    maximumFractionDigits: value >= 100 ? 0 : 2
+  });
+}
+
+function formatTimeValue(value, unit) {
+  if (unit === "ms") return `${value.toFixed(0)} ms`;
+  if (value >= 100) return `${value.toFixed(0)} ${unit}`;
+  return `${value.toFixed(3).replace(/\.?0+$/, "")} ${unit}`;
+}
+
+function setX(value) {
+  if (!Number.isFinite(value)) return;
+  state.xTarget = value;
+  inputs.x.value = value.toFixed(1);
+  syncSliderToX(value);
+}
+
+function syncSliderToX(x) {
+  const minX = Number.parseFloat(inputs.xSlider.min);
+  const maxX = Number.parseFloat(inputs.xSlider.max);
+  if (document.activeElement !== inputs.xSlider) {
+    inputs.xSlider.value = clamp(x, minX, maxX);
+  }
+}
+
+inputs.xSlider.addEventListener("input", () => setX(Number.parseFloat(inputs.xSlider.value)));
+inputs.x.addEventListener("input", () => {
+  const value = Number.parseFloat(inputs.x.value);
+  if (Number.isFinite(value)) state.xTarget = value;
+});
+inputs.x.addEventListener("change", () => setX(numberValue(inputs.x, state.xTarget)));
+inputs.x.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") setX(numberValue(inputs.x, state.xTarget));
+});
+inputs.initialY.addEventListener("change", resetAll);
+inputs.initialY.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") resetAll();
+});
+inputs.timeUnit.addEventListener("change", () => {
+  convertTimeInputs(inputs.timeUnit.value);
+  refreshRampPendingUI();
+});
+inputs.tu.addEventListener("input", refreshRampPendingUI);
+inputs.td.addEventListener("input", refreshRampPendingUI);
+inputs.tu.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") applyRampSettings();
+});
+inputs.td.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") applyRampSettings();
+});
+if (applyRampButton) applyRampButton.addEventListener("click", applyRampSettings);
+nudgeButtons.forEach((button) => {
+  button.addEventListener("click", () => setX(numberValue(inputs.x, 573.4) + Number.parseFloat(button.dataset.xNudge)));
+});
+setButtons.forEach((button) => {
+  button.addEventListener("click", () => setX(Number.parseFloat(button.dataset.xSet)));
+});
+
+function setRunning(running) {
+  state.running = running;
+  state.lastFrame = performance.now();
+  const label = state.running ? "Pause" : "Run";
+  runToggle.textContent = label;
+  if (mobileRunToggle) mobileRunToggle.textContent = label;
+}
+
+function openControls() {
+  if (!controlsPanel) return;
+  controlsPanel.classList.add("open");
+  if (controlsBackdrop) controlsBackdrop.classList.add("open");
+}
+
+function closeControls() {
+  if (!controlsPanel) return;
+  controlsPanel.classList.remove("open");
+  if (controlsBackdrop) controlsBackdrop.classList.remove("open");
+}
+
+runToggle.addEventListener("click", () => setRunning(!state.running));
+resetButton.addEventListener("click", resetAll);
+clearButton.addEventListener("click", clearTrace);
+inputs.fineRate.addEventListener("input", () => render(getSettings()));
+window.addEventListener("resize", () => render(getSettings()));
+
+if (mobileRunToggle) mobileRunToggle.addEventListener("click", () => setRunning(!state.running));
+if (mobileResetButton) mobileResetButton.addEventListener("click", resetAll);
+if (mobileMenuToggle) mobileMenuToggle.addEventListener("click", openControls);
+if (controlsClose) controlsClose.addEventListener("click", closeControls);
+if (controlsBackdrop) controlsBackdrop.addEventListener("click", closeControls);
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeControls();
+});
+
+applyRampSettings();
+resetAll();
+requestAnimationFrame(tick);
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
+
+</script>
+  </body>
+</html>

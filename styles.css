@@ -505,6 +505,30 @@ input[type="range"] {
   gap: 10px;
 }
 
+.apply-row {
+  display: grid;
+  gap: 8px;
+  margin-top: -2px;
+}
+
+.apply-row .secondary-action {
+  min-height: 40px;
+  justify-self: start;
+  padding: 0 18px;
+}
+
+.apply-row .secondary-action.pending {
+  border-color: var(--amber);
+  background: var(--amber-dim);
+  color: var(--amber);
+}
+
+.pending-note {
+  color: var(--amber);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
 .preset-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
