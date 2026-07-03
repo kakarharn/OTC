@@ -27,6 +27,12 @@ const rateReadout = document.querySelector("#rateReadout");
 const runToggle = document.querySelector("#runToggle");
 const resetButton = document.querySelector("#resetButton");
 const clearButton = document.querySelector("#clearButton");
+const controlsPanel = document.querySelector("#controlsPanel");
+const controlsBackdrop = document.querySelector("#controlsBackdrop");
+const controlsClose = document.querySelector("#controlsClose");
+const mobileMenuToggle = document.querySelector("#mobileMenuToggle");
+const mobileRunToggle = document.querySelector("#mobileRunToggle");
+const mobileResetButton = document.querySelector("#mobileResetButton");
 const nudgeButtons = document.querySelectorAll("[data-x-nudge]");
 const setButtons = document.querySelectorAll("[data-x-set]");
 const blockX = document.querySelector("#blockX");
@@ -387,15 +393,40 @@ setButtons.forEach((button) => {
   button.addEventListener("click", () => setX(Number.parseFloat(button.dataset.xSet)));
 });
 
-runToggle.addEventListener("click", () => {
-  state.running = !state.running;
+function setRunning(running) {
+  state.running = running;
   state.lastFrame = performance.now();
-  runToggle.textContent = state.running ? "Pause" : "Run";
-});
+  const label = state.running ? "Pause" : "Run";
+  runToggle.textContent = label;
+  if (mobileRunToggle) mobileRunToggle.textContent = label;
+}
+
+function openControls() {
+  if (!controlsPanel) return;
+  controlsPanel.classList.add("open");
+  if (controlsBackdrop) controlsBackdrop.classList.add("open");
+}
+
+function closeControls() {
+  if (!controlsPanel) return;
+  controlsPanel.classList.remove("open");
+  if (controlsBackdrop) controlsBackdrop.classList.remove("open");
+}
+
+runToggle.addEventListener("click", () => setRunning(!state.running));
 resetButton.addEventListener("click", resetAll);
 clearButton.addEventListener("click", clearTrace);
 inputs.fineRate.addEventListener("input", () => render(getSettings()));
 window.addEventListener("resize", () => render(getSettings()));
+
+if (mobileRunToggle) mobileRunToggle.addEventListener("click", () => setRunning(!state.running));
+if (mobileResetButton) mobileResetButton.addEventListener("click", resetAll);
+if (mobileMenuToggle) mobileMenuToggle.addEventListener("click", openControls);
+if (controlsClose) controlsClose.addEventListener("click", closeControls);
+if (controlsBackdrop) controlsBackdrop.addEventListener("click", closeControls);
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeControls();
+});
 
 resetAll();
 requestAnimationFrame(tick);

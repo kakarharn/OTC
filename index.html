@@ -2,11 +2,17 @@
 <html lang="th">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>GT OTC Simulation</title>
-    <meta name="theme-color" content="#0b5c4a">
+    <meta name="theme-color" content="#0f171f">
     <link rel="manifest" href="manifest.webmanifest">
     <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
@@ -92,94 +98,117 @@
         </section>
       </section>
 
-      <aside class="controls">
-        <section class="control-section">
-          <h2>OTC Target</h2>
-          <label>
-            Initial Y start temperature (C)
-            <input id="initialYInput" type="number" value="573.4" step="0.1">
-          </label>
-          <label>
-            X target temperature (C)
-            <input id="xInput" type="number" value="573.4" step="0.1">
-          </label>
+      <aside class="controls" id="controlsPanel">
+        <div class="drawer-header">
+          <h2>Controls</h2>
+          <button type="button" class="drawer-close" id="controlsClose" aria-label="Close controls">&times;</button>
+        </div>
+
+        <details class="control-section" open>
+          <summary><h2>OTC Target</h2></summary>
+          <div class="control-body">
+            <label>
+              Initial Y start temperature (C)
+              <input id="initialYInput" type="number" value="573.4" step="0.1">
+            </label>
+            <label>
+              X target temperature (C)
+              <input id="xInput" type="number" value="573.4" step="0.1">
+            </label>
             <input id="xSlider" type="range" value="573.4" min="400" max="700" step="0.1" aria-label="X target slider">
-          <div class="preset-grid">
-            <button type="button" data-x-nudge="-5">-5 C</button>
-            <button type="button" data-x-set="573.4">Normal</button>
-            <button type="button" data-x-nudge="5">+5 C</button>
+            <div class="preset-grid">
+              <button type="button" data-x-nudge="-5">-5 C</button>
+              <button type="button" data-x-set="573.4">Normal</button>
+              <button type="button" data-x-nudge="5">+5 C</button>
+            </div>
+            <div class="preset-grid">
+              <button type="button" data-x-set="560">Cool</button>
+              <button type="button" data-x-set="580">Warm</button>
+              <button type="button" data-x-set="590">Hot</button>
+            </div>
           </div>
-          <div class="preset-grid">
-            <button type="button" data-x-set="560">Cool</button>
-            <button type="button" data-x-set="580">Warm</button>
-            <button type="button" data-x-set="590">Hot</button>
-          </div>
-        </section>
+        </details>
 
-        <section class="control-section">
-          <h2>Ramp Setting</h2>
-          <div class="range-pair">
+        <details class="control-section" open>
+          <summary><h2>Ramp Setting</h2></summary>
+          <div class="control-body">
+            <div class="range-pair">
+              <label>
+                TU up time
+                <input id="tuInput" type="number" value="1" min="0.01" step="0.01">
+              </label>
+              <label>
+                TD down time
+                <input id="tdInput" type="number" value="1" min="0.01" step="0.01">
+              </label>
+            </div>
             <label>
-              TU up time
-              <input id="tuInput" type="number" value="1" min="0.01" step="0.01">
+              TU / TD unit
+              <select id="timeUnitInput">
+                <option value="min">min</option>
+                <option value="sec">sec</option>
+                <option value="ms">ms</option>
+              </select>
             </label>
             <label>
-              TD down time
-              <input id="tdInput" type="number" value="1" min="0.01" step="0.01">
+              NRM normalization (C)
+              <input id="nrmInput" type="number" value="1" min="0.01" step="0.01">
             </label>
+            <p class="hint">Example: NRM 1 and TU 1 min means Y changes about 1 C per minute.</p>
           </div>
-          <label>
-            TU / TD unit
-            <select id="timeUnitInput">
-              <option value="min">min</option>
-              <option value="sec">sec</option>
-              <option value="ms">ms</option>
-            </select>
-          </label>
-          <label>
-            NRM normalization (C)
-            <input id="nrmInput" type="number" value="1" min="0.01" step="0.01">
-          </label>
-          <p class="hint">Example: NRM 1 and TU 1 min means Y changes about 1 C per minute.</p>
-        </section>
+        </details>
 
-        <section class="control-section">
-          <h2>MW Mapping</h2>
-          <div class="range-pair">
+        <details class="control-section" open>
+          <summary><h2>MW Mapping</h2></summary>
+          <div class="control-body">
+            <div class="range-pair">
+              <label>
+                Normal temp (C)
+                <input id="normalTempInput" type="number" value="573.4" step="0.1">
+              </label>
+              <label>
+                Base MW
+                <input id="baseMwInput" type="number" value="230" step="0.1">
+              </label>
+            </div>
+            <p class="hint">Simple model: MW = Base MW + (Y - Normal Temp) x 1.</p>
+          </div>
+        </details>
+
+        <details class="control-section" open>
+          <summary><h2>Penalty Cost</h2></summary>
+          <div class="control-body">
             <label>
-              Normal temp (C)
-              <input id="normalTempInput" type="number" value="573.4" step="0.1">
+              Fine rate (THB per MW-hr)
+              <input id="fineRateInput" type="number" value="2500" min="0" step="100">
             </label>
+            <p class="hint">Accumulated fine = MW loss x elapsed time x THB per MW-hr, counted only when MW is below base.</p>
+          </div>
+        </details>
+
+        <details class="control-section" open>
+          <summary><h2>View</h2></summary>
+          <div class="control-body">
             <label>
-              Base MW
-              <input id="baseMwInput" type="number" value="230" step="0.1">
+              Graph window (s)
+              <input id="windowInput" type="number" value="180" min="30" step="10">
             </label>
+            <div class="action-row">
+              <button id="runToggle" class="primary-action" type="button">Pause</button>
+              <button id="resetButton" class="secondary-action" type="button">Reset Y + Trend</button>
+            </div>
+            <button id="clearButton" class="secondary-action" type="button">Reset Trend</button>
           </div>
-          <p class="hint">Simple model: MW = Base MW + (Y - Normal Temp) x 1.</p>
-        </section>
-
-        <section class="control-section">
-          <h2>Penalty Cost</h2>
-          <label>
-            Fine rate (THB per MW-hr)
-            <input id="fineRateInput" type="number" value="2500" min="0" step="100">
-          </label>
-          <p class="hint">Accumulated fine = MW loss x elapsed time x THB per MW-hr, counted only when MW is below base.</p>
-        </section>
-
-        <section class="control-section">
-          <h2>View</h2>
-          <label>
-            Graph window (s)
-            <input id="windowInput" type="number" value="180" min="30" step="10">
-          </label>
-          <div class="action-row">
-            <button id="runToggle" class="primary-action" type="button">Pause</button>
-            <button id="resetButton" class="secondary-action" type="button">Reset Y + Trend</button>
-          </div>
-          <button id="clearButton" class="secondary-action" type="button">Reset Trend</button>
-        </section>
+        </details>
       </aside>
+
+      <div class="controls-backdrop" id="controlsBackdrop"></div>
+
+      <nav class="mobile-toolbar">
+        <button type="button" id="mobileRunToggle" class="primary-action">Pause</button>
+        <button type="button" id="mobileResetButton">Reset</button>
+        <button type="button" id="mobileMenuToggle" class="menu-button" aria-label="Open controls">&#9881;</button>
+      </nav>
     </main>
 
     <script src="app.js"></script>
