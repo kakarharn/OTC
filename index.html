@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GT OTC Simulation</title>
+    <meta name="theme-color" content="#0b5c4a">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="main-panel">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Operator training simulator</p>
+            <h1>GT OTC Simulation</h1>
+            <p class="subtitle">Realtime RGE ramp response: adjust X, watch Y follow TU/TD/NRM, and see the MW impact immediately.</p>
+          </div>
+          <div class="status-pill">TA fixed 8 ms</div>
+        </header>
+
+        <section class="readout-grid">
+          <div class="readout readout-target">
+            <span>X Target</span>
+            <strong id="xReadout">573.40 C</strong>
+          </div>
+          <div class="readout readout-y">
+            <span>Y Output</span>
+            <strong id="yReadout">573.40 C</strong>
+          </div>
+          <div class="readout readout-mw">
+            <span>GT MW</span>
+            <strong id="mwReadout">230.00 MW</strong>
+          </div>
+          <div class="readout">
+            <span>MW Loss</span>
+            <strong id="mwLossReadout">0.00 MW</strong>
+          </div>
+          <div class="readout readout-money">
+            <span>Fine Rate</span>
+            <strong id="fineRateReadout">0 THB/hr</strong>
+          </div>
+          <div class="readout readout-money">
+            <span>Accumulated Fine</span>
+            <strong id="fineTotalReadout">0 THB</strong>
+          </div>
+          <div class="readout">
+            <span>Ramp Rate</span>
+            <strong id="rateReadout">0.000 C/min</strong>
+          </div>
+        </section>
+
+        <section class="rge-panel">
+          <div class="rge-title">
+            <h2>RGE Logic Snapshot</h2>
+            <span>Live values inside the ramp generator</span>
+          </div>
+          <div class="rge-diagram">
+            <div class="pin-stack pin-left">
+              <div><span>X</span><strong id="blockX">573.40 C</strong></div>
+              <div><span>NRM</span><strong id="blockNrm">1.00 C</strong></div>
+              <div><span>TU</span><strong id="blockTu">1.00 min</strong></div>
+              <div><span>TD</span><strong id="blockTd">1.00 min</strong></div>
+            </div>
+            <div class="rge-block">
+              <span>RGE</span>
+              <small>Y(n)=Y(n-1)+YA</small>
+            </div>
+            <div class="pin-stack pin-right">
+              <div><span>Y</span><strong id="blockY">573.40 C</strong></div>
+              <div><span>YA / scan</span><strong id="blockYa">0.000000 C</strong></div>
+              <div><span>Rate</span><strong id="blockRate">0.000 C/min</strong></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="chart-panel">
+          <div class="chart-header">
+            <div>
+              <h2>Realtime Trend</h2>
+              <p>X target, Y output, and GT MW are plotted together so the ramp slope and MW loss are easy to see.</p>
+            </div>
+            <div class="legend">
+              <span><i class="line-x"></i>X target</span>
+              <span><i class="line-y"></i>Y temp</span>
+              <span><i class="line-mw"></i>MW</span>
+            </div>
+          </div>
+          <canvas id="chart" width="1100" height="560" aria-label="Realtime Y and MW trend"></canvas>
+        </section>
+      </section>
+
+      <aside class="controls">
+        <section class="control-section">
+          <h2>OTC Target</h2>
+          <label>
+            Initial Y start temperature (C)
+            <input id="initialYInput" type="number" value="573.4" step="0.1">
+          </label>
+          <label>
+            X target temperature (C)
+            <input id="xInput" type="number" value="573.4" step="0.1">
+          </label>
+            <input id="xSlider" type="range" value="573.4" min="400" max="700" step="0.1" aria-label="X target slider">
+          <div class="preset-grid">
+            <button type="button" data-x-nudge="-5">-5 C</button>
+            <button type="button" data-x-set="573.4">Normal</button>
+            <button type="button" data-x-nudge="5">+5 C</button>
+          </div>
+          <div class="preset-grid">
+            <button type="button" data-x-set="560">Cool</button>
+            <button type="button" data-x-set="580">Warm</button>
+            <button type="button" data-x-set="590">Hot</button>
+          </div>
+        </section>
+
+        <section class="control-section">
+          <h2>Ramp Setting</h2>
+          <div class="range-pair">
+            <label>
+              TU up time
+              <input id="tuInput" type="number" value="1" min="0.01" step="0.01">
+            </label>
+            <label>
+              TD down time
+              <input id="tdInput" type="number" value="1" min="0.01" step="0.01">
+            </label>
+          </div>
+          <label>
+            TU / TD unit
+            <select id="timeUnitInput">
+              <option value="min">min</option>
+              <option value="sec">sec</option>
+              <option value="ms">ms</option>
+            </select>
+          </label>
+          <label>
+            NRM normalization (C)
+            <input id="nrmInput" type="number" value="1" min="0.01" step="0.01">
+          </label>
+          <p class="hint">Example: NRM 1 and TU 1 min means Y changes about 1 C per minute.</p>
+        </section>
+
+        <section class="control-section">
+          <h2>MW Mapping</h2>
+          <div class="range-pair">
+            <label>
+              Normal temp (C)
+              <input id="normalTempInput" type="number" value="573.4" step="0.1">
+            </label>
+            <label>
+              Base MW
+              <input id="baseMwInput" type="number" value="230" step="0.1">
+            </label>
+          </div>
+          <p class="hint">Simple model: MW = Base MW + (Y - Normal Temp) x 1.</p>
+        </section>
+
+        <section class="control-section">
+          <h2>Penalty Cost</h2>
+          <label>
+            Fine rate (THB per MW-hr)
+            <input id="fineRateInput" type="number" value="2500" min="0" step="100">
+          </label>
+          <p class="hint">Accumulated fine = MW loss x elapsed time x THB per MW-hr, counted only when MW is below base.</p>
+        </section>
+
+        <section class="control-section">
+          <h2>View</h2>
+          <label>
+            Graph window (s)
+            <input id="windowInput" type="number" value="180" min="30" step="10">
+          </label>
+          <div class="action-row">
+            <button id="runToggle" class="primary-action" type="button">Pause</button>
+            <button id="resetButton" class="secondary-action" type="button">Reset Y + Trend</button>
+          </div>
+          <button id="clearButton" class="secondary-action" type="button">Reset Trend</button>
+        </section>
+      </aside>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
