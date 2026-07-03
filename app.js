@@ -1,5 +1,43 @@
 const TA_SECONDS = 0.008;
-const MW_PER_DEG = 1;
+
+/* ============================================================
+   Config model: appliedConfig is the committed source of truth.
+   pendingConfig is derived live from sidebar inputs / RGE pins
+   and only written into appliedConfig when Apply is clicked.
+   ============================================================ */
+
+let appliedConfig = {
+  tuSeconds: 60,
+  tdSeconds: 60,
+  nrm: 1,
+  hotMin: 180,
+  warmMin: 270,
+  coldMin: 450,
+  referenceY: 572,
+  refActivePower: 710,
+  mwLossFactor: 1.5,
+  resumptionHr: 4,
+  penaltyRate: 100000,
+  annualEvents: 6,
+  thresholdEnabled: false,
+  rampRateAfterFix: 2
+};
+
+let draftThresholdEnabled = false;
+
+let execState = {
+  scenario: "cold",
+  resetY: 0,
+  penaltyRate: 100000,
+  annualEvents: 6
+};
+
+/* ---------- DOM: shared ---------- */
+
+const bodyEl = document.body;
+const viewSwitchButtons = document.querySelectorAll(".view-switch button");
+
+/* ---------- DOM: technical ---------- */
 
 const inputs = {
   initialY: document.querySelector("#initialYInput"),
@@ -9,15 +47,22 @@ const inputs = {
   td: document.querySelector("#tdInput"),
   timeUnit: document.querySelector("#timeUnitInput"),
   nrm: document.querySelector("#nrmInput"),
-  normalTemp: document.querySelector("#normalTempInput"),
-  baseMw: document.querySelector("#baseMwInput"),
-  fineRate: document.querySelector("#fineRateInput"),
+  hotMin: document.querySelector("#hotMinInput"),
+  warmMin: document.querySelector("#warmMinInput"),
+  coldMin: document.querySelector("#coldMinInput"),
+  referenceY: document.querySelector("#referenceYInput"),
+  refActivePower: document.querySelector("#refActivePowerInput"),
+  mwLossFactor: document.querySelector("#mwLossFactorInput"),
+  resumptionHr: document.querySelector("#resumptionHrInput"),
+  penaltyRate: document.querySelector("#penaltyRateInput"),
+  annualEvents: document.querySelector("#annualEventsInput"),
+  tuAfterFix: document.querySelector("#tuAfterFixInput"),
   window: document.querySelector("#windowInput")
 };
 
-const applyRampButton = document.querySelector("#applyRampButton");
-const rampPendingNote = document.querySelector("#rampPendingNote");
+const thresholdToggle = document.querySelector("#thresholdToggle");
 
+const chartFrame = document.querySelector(".chart-frame");
 const chart = document.querySelector("#chart");
 const ctx = chart.getContext("2d");
 const xReadout = document.querySelector("#xReadout");
@@ -30,12 +75,6 @@ const rateReadout = document.querySelector("#rateReadout");
 const runToggle = document.querySelector("#runToggle");
 const resetButton = document.querySelector("#resetButton");
 const clearButton = document.querySelector("#clearButton");
-const controlsPanel = document.querySelector("#controlsPanel");
-const controlsBackdrop = document.querySelector("#controlsBackdrop");
-const controlsClose = document.querySelector("#controlsClose");
-const mobileMenuToggle = document.querySelector("#mobileMenuToggle");
-const mobileRunToggle = document.querySelector("#mobileRunToggle");
-const mobileResetButton = document.querySelector("#mobileResetButton");
 const nudgeButtons = document.querySelectorAll("[data-x-nudge]");
 const setButtons = document.querySelectorAll("[data-x-set]");
 const blockX = document.querySelector("#blockX");
@@ -45,21 +84,34 @@ const blockTd = document.querySelector("#blockTd");
 const blockY = document.querySelector("#blockY");
 const blockYa = document.querySelector("#blockYa");
 const blockRate = document.querySelector("#blockRate");
+const rgeDiagram = document.querySelector(".rge-diagram");
+
+const controlsPanel = document.querySelector("#controlsPanel");
+const controlsBackdrop = document.querySelector("#controlsBackdrop");
+const controlsClose = document.querySelector("#controlsClose");
+const mobileMenuToggle = document.querySelector("#mobileMenuToggle");
+const mobileRunToggle = document.querySelector("#mobileRunToggle");
+const mobileResetButton = document.querySelector("#mobileResetButton");
+
+const applyBar = document.querySelector("#applyBar");
+const applyBarText = document.querySelector("#applyBarText");
+const applyButton = document.querySelector("#applyButton");
+const discardButton = document.querySelector("#discardButton");
 
 let history = [];
 let currentTimeUnit = "min";
 let state = {
   running: true,
   elapsed: 0,
-  xTarget: 573.4,
-  y: 573.4,
+  xTarget: 572,
+  y: 572,
   lastYa: 0,
   accumulatedFine: 0,
   lastFrame: performance.now(),
-  accumulator: 0,
-  tuSeconds: 60,
-  tdSeconds: 60
+  accumulator: 0
 };
+
+/* ---------- helpers ---------- */
 
 function numberValue(input, fallback) {
   const value = Number.parseFloat(input.value);
@@ -70,51 +122,144 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-function getSettings() {
-  const unit = inputs.timeUnit.value;
-  const multiplier = secondsPerUnit(unit);
-  return {
-    initialY: numberValue(inputs.initialY, 573.4),
-    x: state.xTarget,
-    tuValue: state.tuSeconds / multiplier,
-    tdValue: state.tdSeconds / multiplier,
-    timeUnit: unit,
-    tuSeconds: state.tuSeconds,
-    tdSeconds: state.tdSeconds,
-    nrm: Math.max(0.01, numberValue(inputs.nrm, 1)),
-    normalTemp: numberValue(inputs.normalTemp, 573.4),
-    baseMw: numberValue(inputs.baseMw, 230),
-    fineRate: Math.max(0, numberValue(inputs.fineRate, 2500)),
-    windowSeconds: Math.max(30, numberValue(inputs.window, 180))
-  };
-}
-
-function applyRampSettings() {
-  const unit = inputs.timeUnit.value;
-  const multiplier = secondsPerUnit(unit);
-  state.tuSeconds = Math.max(0.001, numberValue(inputs.tu, 1)) * multiplier;
-  state.tdSeconds = Math.max(0.001, numberValue(inputs.td, 1)) * multiplier;
-  refreshRampPendingUI();
-}
-
-function refreshRampPendingUI() {
-  if (!rampPendingNote) return;
-  const unit = inputs.timeUnit.value;
-  const multiplier = secondsPerUnit(unit);
-  const typedTuSeconds = Math.max(0.001, numberValue(inputs.tu, 1)) * multiplier;
-  const typedTdSeconds = Math.max(0.001, numberValue(inputs.td, 1)) * multiplier;
-  const pending =
-    Math.abs(typedTuSeconds - state.tuSeconds) > 0.0005 ||
-    Math.abs(typedTdSeconds - state.tdSeconds) > 0.0005;
-  rampPendingNote.hidden = !pending;
-  if (applyRampButton) applyRampButton.classList.toggle("pending", pending);
-}
-
 function secondsPerUnit(unit) {
   if (unit === "ms") return 0.001;
   if (unit === "sec") return 1;
   return 60;
 }
+
+function formatBaht(value) {
+  return value.toLocaleString("th-TH", { maximumFractionDigits: value >= 100 ? 0 : 2 });
+}
+
+function formatHoursMinutes(totalMinutes) {
+  const safe = Math.max(0, totalMinutes);
+  const h = Math.floor(safe / 60);
+  const m = Math.round(safe - h * 60);
+  return `${h}h ${String(m).padStart(2, "0")}m`;
+}
+
+function formatTimeValue(value, unit) {
+  if (unit === "ms") return `${value.toFixed(0)} ms`;
+  if (value >= 100) return `${value.toFixed(0)} ${unit}`;
+  return `${value.toFixed(3).replace(/\.?0+$/, "")} ${unit}`;
+}
+
+/* ============================================================
+   Pending / Apply flow
+   ============================================================ */
+
+const PENDING_FIELDS = [
+  { key: "nrm", input: inputs.nrm, min: 0.01 },
+  { key: "hotMin", input: inputs.hotMin, min: 1 },
+  { key: "warmMin", input: inputs.warmMin, min: 1 },
+  { key: "coldMin", input: inputs.coldMin, min: 1 },
+  { key: "referenceY", input: inputs.referenceY, min: -1000 },
+  { key: "refActivePower", input: inputs.refActivePower, min: 0 },
+  { key: "mwLossFactor", input: inputs.mwLossFactor, min: 0 },
+  { key: "resumptionHr", input: inputs.resumptionHr, min: 0 },
+  { key: "penaltyRate", input: inputs.penaltyRate, min: 0 },
+  { key: "annualEvents", input: inputs.annualEvents, min: 0 },
+  { key: "rampRateAfterFix", input: inputs.tuAfterFix, min: 0.01 }
+];
+
+function typedTuSeconds() {
+  return Math.max(0.001, numberValue(inputs.tu, 1)) * secondsPerUnit(inputs.timeUnit.value);
+}
+
+function typedTdSeconds() {
+  return Math.max(0.001, numberValue(inputs.td, 1)) * secondsPerUnit(inputs.timeUnit.value);
+}
+
+function refreshPending() {
+  let pendingCount = 0;
+
+  const tuPending = Math.abs(typedTuSeconds() - appliedConfig.tuSeconds) > 0.0005;
+  const tdPending = Math.abs(typedTdSeconds() - appliedConfig.tdSeconds) > 0.0005;
+  setFieldPendingUI(inputs.tu, tuPending);
+  setFieldPendingUI(inputs.td, tdPending);
+  setPinPendingUI("tu", tuPending);
+  setPinPendingUI("td", tdPending);
+  if (tuPending) pendingCount += 1;
+  if (tdPending) pendingCount += 1;
+
+  PENDING_FIELDS.forEach((field) => {
+    const typed = Math.max(field.min, numberValue(field.input, appliedConfig[field.key]));
+    const isPending = Math.abs(typed - appliedConfig[field.key]) > 0.0005;
+    setFieldPendingUI(field.input, isPending);
+    if (field.key === "nrm") setPinPendingUI("nrm", isPending);
+    if (isPending) pendingCount += 1;
+  });
+
+  const thresholdPending = draftThresholdEnabled !== appliedConfig.thresholdEnabled;
+  if (thresholdPending) pendingCount += 1;
+
+  if (pendingCount > 0) {
+    applyBar.classList.add("visible");
+    applyBarText.textContent = `${pendingCount} ค่ายังไม่ยืนยัน — คลิก Apply เพื่อนำไปใช้`;
+  } else {
+    applyBar.classList.remove("visible");
+  }
+}
+
+function setFieldPendingUI(input, isPending) {
+  if (!input) return;
+  input.classList.toggle("field-pending", isPending);
+}
+
+function setPinPendingUI(pinKey, isPending) {
+  const pin = rgeDiagram.querySelector(`.pin[data-pin="${pinKey}"]`);
+  if (pin) pin.classList.toggle("pending", isPending);
+}
+
+function applyAllChanges() {
+  appliedConfig.tuSeconds = typedTuSeconds();
+  appliedConfig.tdSeconds = typedTdSeconds();
+  PENDING_FIELDS.forEach((field) => {
+    appliedConfig[field.key] = Math.max(field.min, numberValue(field.input, appliedConfig[field.key]));
+  });
+  appliedConfig.thresholdEnabled = draftThresholdEnabled;
+
+  execState.penaltyRate = appliedConfig.penaltyRate;
+  execState.annualEvents = appliedConfig.annualEvents;
+  syncQuickInputsFromExecState();
+
+  refreshPending();
+  renderExecutive();
+  render(getSettings());
+}
+
+function discardAllChanges() {
+  currentTimeUnit = inputs.timeUnit.value;
+  inputs.tu.value = (appliedConfig.tuSeconds / secondsPerUnit(currentTimeUnit)).toFixed(currentTimeUnit === "ms" ? 0 : 3);
+  inputs.td.value = (appliedConfig.tdSeconds / secondsPerUnit(currentTimeUnit)).toFixed(currentTimeUnit === "ms" ? 0 : 3);
+  PENDING_FIELDS.forEach((field) => {
+    field.input.value = appliedConfig[field.key];
+  });
+  draftThresholdEnabled = appliedConfig.thresholdEnabled;
+  thresholdToggle.classList.toggle("on", draftThresholdEnabled);
+  thresholdToggle.setAttribute("aria-checked", String(draftThresholdEnabled));
+  refreshPending();
+}
+
+applyButton.addEventListener("click", applyAllChanges);
+discardButton.addEventListener("click", discardAllChanges);
+
+thresholdToggle.addEventListener("click", () => {
+  draftThresholdEnabled = !draftThresholdEnabled;
+  thresholdToggle.classList.toggle("on", draftThresholdEnabled);
+  thresholdToggle.setAttribute("aria-checked", String(draftThresholdEnabled));
+  refreshPending();
+});
+
+[inputs.nrm, inputs.hotMin, inputs.warmMin, inputs.coldMin, inputs.referenceY, inputs.refActivePower,
+  inputs.mwLossFactor, inputs.resumptionHr, inputs.penaltyRate, inputs.annualEvents, inputs.tuAfterFix,
+  inputs.tu, inputs.td].forEach((el) => el.addEventListener("input", refreshPending));
+
+inputs.timeUnit.addEventListener("change", () => {
+  convertTimeInputs(inputs.timeUnit.value);
+  refreshPending();
+});
 
 function convertTimeInputs(nextUnit) {
   const prevMultiplier = secondsPerUnit(currentTimeUnit);
@@ -126,8 +271,31 @@ function convertTimeInputs(nextUnit) {
   currentTimeUnit = nextUnit;
 }
 
+/* ============================================================
+   RGE sandbox simulation (X / initial Y are immediate, no Apply)
+   ============================================================ */
+
+function getSettings() {
+  return {
+    initialY: numberValue(inputs.initialY, 572),
+    x: state.xTarget,
+    tuSeconds: appliedConfig.tuSeconds,
+    tdSeconds: appliedConfig.tdSeconds,
+    tuValue: appliedConfig.tuSeconds / secondsPerUnit(inputs.timeUnit.value),
+    tdValue: appliedConfig.tdSeconds / secondsPerUnit(inputs.timeUnit.value),
+    timeUnit: inputs.timeUnit.value,
+    nrm: Math.max(0.01, appliedConfig.nrm),
+    referenceY: appliedConfig.referenceY,
+    refActivePower: appliedConfig.refActivePower,
+    mwLossFactor: appliedConfig.mwLossFactor,
+    penaltyRate: appliedConfig.penaltyRate,
+    windowSeconds: Math.max(30, numberValue(inputs.window, 180))
+  };
+}
+
 function mwFromY(y, settings) {
-  return settings.baseMw + (y - settings.normalTemp) * MW_PER_DEG;
+  const gap = Math.max(0, settings.referenceY - y);
+  return Math.max(0, settings.refActivePower - gap * settings.mwLossFactor);
 }
 
 function stepRge(settings) {
@@ -136,7 +304,6 @@ function stepRge(settings) {
     state.lastYa = 0;
     return;
   }
-
   const timeConstant = error > 0 ? settings.tuSeconds : settings.tdSeconds;
   const maxStep = (TA_SECONDS / timeConstant) * settings.nrm;
   const ya = clamp(error, -maxStep, maxStep);
@@ -145,8 +312,10 @@ function stepRge(settings) {
 }
 
 function addPenalty(settings) {
-  const mwLoss = Math.max(0, settings.baseMw - mwFromY(state.y, settings));
-  state.accumulatedFine += mwLoss * (TA_SECONDS / 3600) * settings.fineRate;
+  const mwLoss = Math.max(0, settings.referenceY - state.y) > 0 ? Math.max(0, settings.referenceY - state.y) : 0;
+  if (mwLoss > 0) {
+    state.accumulatedFine += settings.penaltyRate * (TA_SECONDS / 3600);
+  }
 }
 
 function sample(settings) {
@@ -154,12 +323,9 @@ function sample(settings) {
   return {
     time: state.elapsed,
     x: settings.x,
-  y: state.y,
-  mw,
-  mwLoss: Math.max(0, settings.baseMw - mw),
-  mwChange: mw - settings.baseMw,
-  accumulatedFine: state.accumulatedFine,
-  ya: state.lastYa
+    y: state.y,
+    mw,
+    accumulatedFine: state.accumulatedFine
   };
 }
 
@@ -217,8 +383,8 @@ function render(settings) {
   if (history.length === 0) history = [sample(settings)];
   const last = history[history.length - 1];
   const liveMw = mwFromY(state.y, settings);
-  const liveLoss = Math.max(0, settings.baseMw - liveMw);
-  const liveFineRate = liveLoss * settings.fineRate;
+  const liveLoss = Math.max(0, settings.refActivePower - liveMw);
+  const liveFineRate = liveLoss > 0 ? settings.penaltyRate : 0;
   const liveRate = currentRampRate(settings);
   xReadout.textContent = `${settings.x.toFixed(2)} C`;
   yReadout.textContent = `${last.y.toFixed(3)} C`;
@@ -227,7 +393,7 @@ function render(settings) {
   fineRateReadout.textContent = `${formatBaht(liveFineRate)}/hr`;
   fineTotalReadout.textContent = `${formatBaht(state.accumulatedFine)}`;
   rateReadout.textContent = `${liveRate.toFixed(3)} C/min`;
-  renderRgeBlock(settings, last, liveMw);
+  renderRgeBlock(settings);
   renderChart(settings);
 }
 
@@ -250,39 +416,38 @@ function currentRampRate(settings) {
 }
 
 function renderChart(settings) {
-  const rect = chart.getBoundingClientRect();
-  const scale = window.devicePixelRatio || 1;
-  chart.width = Math.max(720, Math.round(rect.width * scale));
-  chart.height = Math.max(420, Math.round(rect.height * scale));
+  const rect = chartFrame.getBoundingClientRect();
+  const scale = Math.min(window.devicePixelRatio || 1, 2);
+  const width = Math.max(280, rect.width);
+  const height = Math.max(220, rect.height);
+  chart.width = Math.round(width * scale);
+  chart.height = Math.round(height * scale);
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
 
-  const width = chart.width / scale;
-  const height = chart.height / scale;
-  const pad = { left: 62, right: 18, top: 18, bottom: 36 };
-  const gap = 32;
+  const pad = { left: 58, right: 16, top: 16, bottom: 32 };
+  const gap = 26;
   const paneH = (height - pad.top - pad.bottom - gap) / 2;
   const tempPane = { x: pad.left, y: pad.top, w: width - pad.left - pad.right, h: paneH };
   const mwPane = { x: pad.left, y: pad.top + paneH + gap, w: width - pad.left - pad.right, h: paneH };
   const windowStart = Math.max(0, state.elapsed - settings.windowSeconds);
   const windowEnd = windowStart + settings.windowSeconds;
 
-  const tempAxis = axisFor(history.flatMap((row) => [row.x, row.y, 0, settings.normalTemp]), 2);
-  const mwAxis = axisFor(history.map((row) => row.mw), 2, { floor: 0 });
+  const tempAxis = axisFor(history.flatMap((row) => [row.x, row.y, 0, settings.referenceY]), 2);
+  const mwAxis = axisFor(history.map((row) => row.mw).concat([settings.refActivePower]), 2, { floor: 0 });
   const xFor = (time) => tempPane.x + ((time - windowStart) / settings.windowSeconds) * tempPane.w;
   const tempY = (value) => tempPane.y + (1 - (value - tempAxis.min) / (tempAxis.max - tempAxis.min)) * tempPane.h;
   const mwY = (value) => mwPane.y + (1 - (value - mwAxis.min) / (mwAxis.max - mwAxis.min)) * mwPane.h;
 
   ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = "#f7f9fa";
+  ctx.fillStyle = "#0b1319";
   ctx.fillRect(0, 0, width, height);
   drawGrid(tempPane, windowStart, windowEnd, tempAxis, "Temperature C");
-  drawGrid(mwPane, windowStart, windowEnd, mwAxis, "GT MW");
-  drawReferenceLine(tempPane, tempY, 0, "0 C", "#aeb9bf");
-  drawReferenceLine(tempPane, tempY, settings.normalTemp, `${settings.normalTemp.toFixed(1)} C`, "#8aa0aa");
-  drawReferenceLine(mwPane, mwY, 0, "0 MW", "#aeb9bf");
-  drawSeries(history, xFor, tempY, "x", "#3347b7", [8, 6], 2.2);
-  drawSeries(history, xFor, tempY, "y", "#df7e24", [], 3);
-  drawSeries(history, xFor, mwY, "mw", "#0b8f72", [], 3);
+  drawGrid(mwPane, windowStart, windowEnd, mwAxis, "Predicted MW");
+  drawReferenceLine(tempPane, tempY, settings.referenceY, `${settings.referenceY.toFixed(1)} C`, "#3f5560");
+  drawReferenceLine(mwPane, mwY, settings.refActivePower, `${settings.refActivePower.toFixed(0)} MW`, "#3f5560");
+  drawSeries(history, xFor, tempY, "x", "#2dd9c2", [8, 6], 2);
+  drawSeries(history, xFor, tempY, "y", "#f5a524", [], 2.6);
+  drawSeries(history, xFor, mwY, "mw", "#35d68f", [], 2.6);
 }
 
 function axisFor(values, minSpan, options = {}) {
@@ -301,10 +466,10 @@ function axisFor(values, minSpan, options = {}) {
 
 function drawGrid(pane, windowStart, windowEnd, axis, label) {
   ctx.save();
-  ctx.strokeStyle = "#d9e1e5";
+  ctx.strokeStyle = "#1c2a34";
   ctx.lineWidth = 1;
-  ctx.fillStyle = "#607078";
-  ctx.font = "12px Segoe UI, Arial";
+  ctx.fillStyle = "#6d828f";
+  ctx.font = "11px IBM Plex Mono, monospace";
 
   for (let i = 0; i <= 4; i += 1) {
     const y = pane.y + (pane.h / 4) * i;
@@ -313,7 +478,7 @@ function drawGrid(pane, windowStart, windowEnd, axis, label) {
     ctx.moveTo(pane.x, y);
     ctx.lineTo(pane.x + pane.w, y);
     ctx.stroke();
-    ctx.fillText(value.toFixed(2), 8, y + 4);
+    ctx.fillText(value.toFixed(1), 6, y + 4);
   }
 
   for (let i = 0; i <= 5; i += 1) {
@@ -323,22 +488,20 @@ function drawGrid(pane, windowStart, windowEnd, axis, label) {
     ctx.moveTo(x, pane.y);
     ctx.lineTo(x, pane.y + pane.h);
     ctx.stroke();
-    ctx.fillText(`${time.toFixed(0)}s`, x - 10, pane.y + pane.h + 18);
+    ctx.fillText(`${time.toFixed(0)}s`, x - 10, pane.y + pane.h + 16);
   }
 
-  ctx.strokeStyle = "#85939a";
+  ctx.strokeStyle = "#324451";
   ctx.strokeRect(pane.x, pane.y, pane.w, pane.h);
-  ctx.fillStyle = "#1c2529";
-  ctx.font = "700 12px Segoe UI, Arial";
-  ctx.fillText(label, pane.x + 8, pane.y + 16);
+  ctx.fillStyle = "#dfe9ec";
+  ctx.font = "700 11px IBM Plex Sans, sans-serif";
+  ctx.fillText(label, pane.x + 8, pane.y + 15);
   ctx.restore();
 }
 
 function drawReferenceLine(pane, yFor, value, label, color) {
-  if (value < 0 && label.endsWith("MW")) return;
   const y = yFor(value);
   if (y < pane.y || y > pane.y + pane.h) return;
-
   ctx.save();
   ctx.strokeStyle = color;
   ctx.lineWidth = 1;
@@ -348,7 +511,7 @@ function drawReferenceLine(pane, yFor, value, label, color) {
   ctx.lineTo(pane.x + pane.w, y);
   ctx.stroke();
   ctx.fillStyle = color;
-  ctx.font = "11px Segoe UI, Arial";
+  ctx.font = "10px IBM Plex Mono, monospace";
   ctx.fillText(label, pane.x + pane.w - 58, y - 5);
   ctx.restore();
 }
@@ -367,18 +530,6 @@ function drawSeries(rows, xFor, yFor, key, color, dash, lineWidth) {
   });
   ctx.stroke();
   ctx.restore();
-}
-
-function formatBaht(value) {
-  return value.toLocaleString("th-TH", {
-    maximumFractionDigits: value >= 100 ? 0 : 2
-  });
-}
-
-function formatTimeValue(value, unit) {
-  if (unit === "ms") return `${value.toFixed(0)} ms`;
-  if (value >= 100) return `${value.toFixed(0)} ${unit}`;
-  return `${value.toFixed(3).replace(/\.?0+$/, "")} ${unit}`;
 }
 
 function setX(value) {
@@ -409,21 +560,8 @@ inputs.initialY.addEventListener("change", resetAll);
 inputs.initialY.addEventListener("keydown", (event) => {
   if (event.key === "Enter") resetAll();
 });
-inputs.timeUnit.addEventListener("change", () => {
-  convertTimeInputs(inputs.timeUnit.value);
-  refreshRampPendingUI();
-});
-inputs.tu.addEventListener("input", refreshRampPendingUI);
-inputs.td.addEventListener("input", refreshRampPendingUI);
-inputs.tu.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") applyRampSettings();
-});
-inputs.td.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") applyRampSettings();
-});
-if (applyRampButton) applyRampButton.addEventListener("click", applyRampSettings);
 nudgeButtons.forEach((button) => {
-  button.addEventListener("click", () => setX(numberValue(inputs.x, 573.4) + Number.parseFloat(button.dataset.xNudge)));
+  button.addEventListener("click", () => setX(numberValue(inputs.x, 572) + Number.parseFloat(button.dataset.xNudge)));
 });
 setButtons.forEach((button) => {
   button.addEventListener("click", () => setX(Number.parseFloat(button.dataset.xSet)));
@@ -438,23 +576,18 @@ function setRunning(running) {
 }
 
 function openControls() {
-  if (!controlsPanel) return;
   controlsPanel.classList.add("open");
-  if (controlsBackdrop) controlsBackdrop.classList.add("open");
+  controlsBackdrop.classList.add("open");
 }
-
 function closeControls() {
-  if (!controlsPanel) return;
   controlsPanel.classList.remove("open");
-  if (controlsBackdrop) controlsBackdrop.classList.remove("open");
+  controlsBackdrop.classList.remove("open");
 }
 
 runToggle.addEventListener("click", () => setRunning(!state.running));
 resetButton.addEventListener("click", resetAll);
 clearButton.addEventListener("click", clearTrace);
-inputs.fineRate.addEventListener("input", () => render(getSettings()));
 window.addEventListener("resize", () => render(getSettings()));
-
 if (mobileRunToggle) mobileRunToggle.addEventListener("click", () => setRunning(!state.running));
 if (mobileResetButton) mobileResetButton.addEventListener("click", resetAll);
 if (mobileMenuToggle) mobileMenuToggle.addEventListener("click", openControls);
@@ -464,7 +597,261 @@ window.addEventListener("keydown", (event) => {
   if (event.key === "Escape") closeControls();
 });
 
-applyRampSettings();
+/* ---------- RGE pin inline editing ---------- */
+
+function getPinRawValue(key) {
+  switch (key) {
+    case "x": return state.xTarget;
+    case "y": return state.y;
+    case "nrm": return numberValue(inputs.nrm, appliedConfig.nrm);
+    case "tu": return numberValue(inputs.tu, appliedConfig.tuSeconds / secondsPerUnit(currentTimeUnit));
+    case "td": return numberValue(inputs.td, appliedConfig.tdSeconds / secondsPerUnit(currentTimeUnit));
+    default: return 0;
+  }
+}
+
+function applyPinValue(key, val) {
+  switch (key) {
+    case "x": setX(val); break;
+    case "y": state.y = val; state.lastYa = 0; break;
+    case "nrm": inputs.nrm.value = val; refreshPending(); break;
+    case "tu": inputs.tu.value = val; refreshPending(); break;
+    case "td": inputs.td.value = val; refreshPending(); break;
+    default: break;
+  }
+}
+
+function startPinEdit(pin) {
+  if (pin.querySelector("input")) return;
+  const key = pin.dataset.pin;
+  const strong = pin.querySelector(".pin-value");
+  const rawVal = getPinRawValue(key);
+  const input = document.createElement("input");
+  input.type = "number";
+  input.step = "0.01";
+  input.className = "pin-input";
+  input.value = Number.isFinite(rawVal) ? rawVal.toFixed(2) : "0";
+  strong.replaceWith(input);
+  input.focus();
+  input.select();
+
+  const finish = () => {
+    const val = Number.parseFloat(input.value);
+    if (input.isConnected) input.replaceWith(strong);
+    if (Number.isFinite(val)) applyPinValue(key, val);
+  };
+
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") input.blur();
+    if (event.key === "Escape") {
+      input.value = rawVal;
+      input.blur();
+    }
+  });
+  input.addEventListener("blur", finish, { once: true });
+}
+
+rgeDiagram.addEventListener("click", (event) => {
+  const pin = event.target.closest(".pin.editable");
+  if (!pin) return;
+  startPinEdit(pin);
+});
+
+/* ============================================================
+   Executive pitch calculations & rendering
+   ============================================================ */
+
+const scenarioGrid = document.querySelector("#scenarioGrid");
+const scenarioPills = document.querySelectorAll("#scenarioPills [data-scenario]");
+const bignumValue = document.querySelector("#bignumValue");
+const bignumScenarioLabel = document.querySelector("#bignumScenarioLabel");
+const bignumBasis = document.querySelector("#bignumBasis");
+const mechGapNote = document.querySelector("#mechGapNote");
+const compareBadTag = document.querySelector("#compareBadTag");
+const compareGoodTag = document.querySelector("#compareGoodTag");
+const compareBadValue = document.querySelector("#compareBadValue");
+const compareGoodValue = document.querySelector("#compareGoodValue");
+const savingsValue = document.querySelector("#savingsValue");
+
+const quickResetY = document.querySelector("#quickResetY");
+const quickPenaltyRate = document.querySelector("#quickPenaltyRate");
+const quickAnnualEvents = document.querySelector("#quickAnnualEvents");
+const assumeToggle = document.querySelector("#assumeToggle");
+const assumePanel = document.querySelector("#assumePanel");
+
+const SCENARIOS = [
+  { key: "hot", label: "Hot Start", tag: "HOT", durationKey: "hotMin" },
+  { key: "warm", label: "Warm Start", tag: "WARM", durationKey: "warmMin" },
+  { key: "cold", label: "Cold Start", tag: "COLD", durationKey: "coldMin" }
+];
+
+function computeScenario(durationMin, rampRateCPerMin, resetY, penaltyRate) {
+  const yAtComplete = Math.min(appliedConfig.referenceY, resetY + rampRateCPerMin * durationMin);
+  const yGap = Math.max(0, appliedConfig.referenceY - yAtComplete);
+  const mwLoss = Math.max(0, yGap * appliedConfig.mwLossFactor);
+  const predictedPower = Math.max(0, appliedConfig.refActivePower - mwLoss);
+  const recoveryRemainingMin = rampRateCPerMin > 0 ? yGap / rampRateCPerMin : 0;
+  const totalPenaltyDurationHr = recoveryRemainingMin / 60 + appliedConfig.resumptionHr;
+  const estimatedPenalty = totalPenaltyDurationHr * penaltyRate;
+  return { yAtComplete, yGap, mwLoss, predictedPower, recoveryRemainingMin, totalPenaltyDurationHr, estimatedPenalty };
+}
+
+function currentRampRateCPerMin() {
+  const tuMinutes = appliedConfig.tuSeconds / 60;
+  return tuMinutes > 0 ? appliedConfig.nrm / tuMinutes : 0;
+}
+
+function animateNumber(el, from, to, duration, formatter) {
+  const start = performance.now();
+  function frame(now) {
+    const t = clamp((now - start) / duration, 0, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    const value = from + (to - from) * eased;
+    el.textContent = formatter(value);
+    if (t < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+let bignumAnimated = false;
+
+function renderExecutive() {
+  const rate = currentRampRateCPerMin();
+  const results = {};
+  SCENARIOS.forEach((sc) => {
+    results[sc.key] = computeScenario(appliedConfig[sc.durationKey], rate, execState.resetY, execState.penaltyRate);
+  });
+
+  const ranked = [...SCENARIOS].sort((a, b) => results[a.key].estimatedPenalty - results[b.key].estimatedPenalty);
+  const severityByKey = {};
+  const severityClasses = ["severity-low", "severity-mid", "severity-high"];
+  ranked.forEach((sc, idx) => { severityByKey[sc.key] = severityClasses[Math.min(idx, 2)]; });
+
+  scenarioGrid.innerHTML = SCENARIOS.map((sc) => {
+    const r = results[sc.key];
+    const selected = sc.key === execState.scenario ? "selected" : "";
+    return `
+      <div class="scenario-card ${severityByKey[sc.key]} ${selected}" data-scenario-card="${sc.key}">
+        <span class="tag">${sc.tag} · ${appliedConfig[sc.durationKey]} min</span>
+        <h3>${sc.label}</h3>
+        <div class="metric-row"><span>Y at Startup Complete</span><strong>${r.yAtComplete.toFixed(0)}°C</strong></div>
+        <div class="metric-row"><span>Predicted Active Power</span><strong>${r.predictedPower.toFixed(0)} MW</strong></div>
+        <div class="metric-row"><span>MW Loss</span><strong>${r.mwLoss.toFixed(0)} MW</strong></div>
+        <div class="metric-row"><span>Recovery Remaining</span><strong>${formatHoursMinutes(r.recoveryRemainingMin)}</strong></div>
+        <div class="metric-row penalty"><span>Estimated Penalty</span><strong>฿${formatBaht(r.estimatedPenalty)}</strong></div>
+      </div>`;
+  }).join("");
+
+  scenarioGrid.querySelectorAll("[data-scenario-card]").forEach((card) => {
+    card.addEventListener("click", () => {
+      execState.scenario = card.dataset.scenarioCard;
+      syncScenarioPills();
+      renderExecutive();
+    });
+  });
+
+  const selectedResult = results[execState.scenario];
+  const selectedMeta = SCENARIOS.find((sc) => sc.key === execState.scenario);
+  mechGapNote.textContent = `Y ${selectedResult.yAtComplete.toFixed(0)}°C / ${appliedConfig.referenceY}°C`;
+
+  bignumScenarioLabel.textContent = `Based on ${selectedMeta.label} scenario · ${execState.annualEvents} events / year`;
+  const annualExposure = selectedResult.estimatedPenalty * execState.annualEvents;
+  const targetText = `฿${formatBaht(annualExposure)}`;
+  if (!bignumAnimated) {
+    bignumAnimated = true;
+    animateNumber(bignumValue, 0, annualExposure, 1400, (v) => `฿${formatBaht(v)}`);
+  } else {
+    bignumValue.textContent = targetText;
+  }
+
+  bignumBasis.innerHTML = `
+    <div><span>Per-event Penalty</span><strong>฿${formatBaht(selectedResult.estimatedPenalty)}</strong></div>
+    <div><span>Total Penalty Duration</span><strong>${formatHoursMinutes(selectedResult.totalPenaltyDurationHr * 60)}</strong></div>
+    <div><span>MW Loss</span><strong>${selectedResult.mwLoss.toFixed(0)} MW</strong></div>
+  `;
+
+  const badRate = rate;
+  const goodRate = appliedConfig.rampRateAfterFix;
+  const badResult = computeScenario(appliedConfig[selectedMeta.durationKey], badRate, execState.resetY, execState.penaltyRate);
+  const goodResult = computeScenario(appliedConfig[selectedMeta.durationKey], goodRate, execState.resetY, execState.penaltyRate);
+  const badAnnual = badResult.estimatedPenalty * execState.annualEvents;
+  const goodAnnual = goodResult.estimatedPenalty * execState.annualEvents;
+
+  compareBadTag.textContent = `Current · ${badRate.toFixed(2)} °C/min`;
+  compareGoodTag.textContent = `After Fix · ${goodRate.toFixed(2)} °C/min`;
+  compareBadValue.textContent = `฿${formatBaht(badAnnual)}`;
+  compareGoodValue.textContent = `฿${formatBaht(goodAnnual)}`;
+  savingsValue.textContent = `฿${formatBaht(Math.max(0, badAnnual - goodAnnual))} / year`;
+}
+
+function syncScenarioPills() {
+  scenarioPills.forEach((btn) => btn.classList.toggle("active", btn.dataset.scenario === execState.scenario));
+}
+
+function syncQuickInputsFromExecState() {
+  quickPenaltyRate.value = execState.penaltyRate;
+  quickAnnualEvents.value = execState.annualEvents;
+}
+
+scenarioPills.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    execState.scenario = btn.dataset.scenario;
+    syncScenarioPills();
+    renderExecutive();
+  });
+});
+
+quickResetY.addEventListener("input", () => {
+  execState.resetY = numberValue(quickResetY, 0);
+  renderExecutive();
+});
+quickPenaltyRate.addEventListener("input", () => {
+  execState.penaltyRate = numberValue(quickPenaltyRate, 100000);
+  renderExecutive();
+});
+quickAnnualEvents.addEventListener("input", () => {
+  execState.annualEvents = numberValue(quickAnnualEvents, 6);
+  renderExecutive();
+});
+
+assumeToggle.addEventListener("click", () => assumePanel.classList.toggle("open"));
+document.addEventListener("click", (event) => {
+  if (!assumePanel.classList.contains("open")) return;
+  if (assumePanel.contains(event.target) || assumeToggle.contains(event.target)) return;
+  assumePanel.classList.remove("open");
+});
+
+/* ---------- scroll reveal ---------- */
+
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    if (entry.isIntersecting) entry.target.classList.add("in-view");
+  });
+}, { threshold: 0.3, rootMargin: "0px 0px -8% 0px" });
+
+document.querySelectorAll(".pitch-section").forEach((section) => revealObserver.observe(section));
+
+/* ============================================================
+   View switching
+   ============================================================ */
+
+function setView(view) {
+  bodyEl.classList.toggle("view-executive", view === "executive");
+  bodyEl.classList.toggle("view-technical", view === "technical");
+  viewSwitchButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.view === view));
+  if (view === "technical") render(getSettings());
+}
+
+viewSwitchButtons.forEach((btn) => btn.addEventListener("click", () => setView(btn.dataset.view)));
+document.querySelector("#ctaToTechnical").addEventListener("click", () => setView("technical"));
+
+/* ============================================================
+   Boot
+   ============================================================ */
+
+discardAllChanges();
+syncScenarioPills();
+renderExecutive();
 resetAll();
 requestAnimationFrame(tick);
 
