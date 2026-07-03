@@ -663,7 +663,20 @@ rgeDiagram.addEventListener("click", (event) => {
    Executive pitch calculations & rendering
    ============================================================ */
 
-const scenarioGrid = document.querySelector("#scenarioGrid");
+const conditionSelect = document.querySelector("#conditionSelect");
+const condHotMin = document.querySelector("#condHotMin");
+const condWarmMin = document.querySelector("#condWarmMin");
+const condColdMin = document.querySelector("#condColdMin");
+const resultLocked = document.querySelector("#resultLocked");
+const resultCard = document.querySelector("#resultCard");
+const resultTag = document.querySelector("#resultTag");
+const resYAtComplete = document.querySelector("#resYAtComplete");
+const resActivePower = document.querySelector("#resActivePower");
+const resMwLoss = document.querySelector("#resMwLoss");
+const resPenaltyDuration = document.querySelector("#resPenaltyDuration");
+const resPenalty = document.querySelector("#resPenalty");
+const narrativeLocked = document.querySelector("#narrativeLocked");
+const narrativeText = document.querySelector("#narrativeText");
 const bignumValue = document.querySelector("#bignumValue");
 const bignumScenarioLabel = document.querySelector("#bignumScenarioLabel");
 const bignumBasis = document.querySelector("#bignumBasis");
@@ -677,7 +690,6 @@ const savingsValue = document.querySelector("#savingsValue");
 const quickResetY = document.querySelector("#quickResetY");
 const quickPenaltyRate = document.querySelector("#quickPenaltyRate");
 const quickAnnualEvents = document.querySelector("#quickAnnualEvents");
-const runForecastButton = document.querySelector("#runForecastButton");
 const bignumLocked = document.querySelector("#bignumLocked");
 const bignumContent = document.querySelector("#bignumContent");
 const compareLocked = document.querySelector("#compareLocked");
@@ -725,13 +737,16 @@ let bignumAnimated = false;
 function inputsReady() {
   return (
     Number.isFinite(Number.parseFloat(quickResetY.value)) &&
-    Number.isFinite(Number.parseFloat(quickPenaltyRate.value)) &&
-    Number.isFinite(Number.parseFloat(quickAnnualEvents.value))
+    Number.isFinite(Number.parseFloat(quickPenaltyRate.value))
   );
 }
 
+function annualReady() {
+  return Number.isFinite(Number.parseFloat(quickAnnualEvents.value));
+}
+
 function flashMissingInputs() {
-  [quickResetY, quickPenaltyRate, quickAnnualEvents].forEach((el) => {
+  [quickResetY, quickPenaltyRate].forEach((el) => {
     if (!Number.isFinite(Number.parseFloat(el.value))) {
       el.classList.add("field-missing");
       setTimeout(() => el.classList.remove("field-missing"), 1200);
@@ -739,73 +754,93 @@ function flashMissingInputs() {
   });
 }
 
+function selectCondition(key) {
+  if (!inputsReady()) {
+    flashMissingInputs();
+    return;
+  }
+  execState.scenario = key;
+  revealed = true;
+  renderExecutive();
+}
+
+conditionSelect.querySelectorAll("[data-scenario]").forEach((btn) => {
+  btn.addEventListener("click", () => selectCondition(btn.dataset.scenario));
+});
+
+function buildNarrative(meta, r) {
+  return `OTC ปัจจุบันถูก Reset เหลือ Y ที่ ${execState.resetY.toFixed(0)}°C หลัง ${appliedConfig[meta.durationKey]} นาทีของ ${meta.label} คาดว่า Y จะอยู่ที่ประมาณ ${r.yAtComplete.toFixed(0)}°C ซึ่งยังห่างจาก Reference ${appliedConfig.referenceY.toFixed(0)}°C อยู่ ${r.yGap.toFixed(0)}°C ภายใต้สมมติฐาน MW Loss Factor ${appliedConfig.mwLossFactor} MW/°C จะเกิด MW Loss ประมาณ ${r.mwLoss.toFixed(0)} MW ทำให้ Predicted Active Power เหลือประมาณ ${r.predictedPower.toFixed(0)} MW จาก Reference ${appliedConfig.refActivePower.toFixed(0)} MW ต้องใช้เวลา Recovery เพิ่มอีกประมาณ ${formatHoursMinutes(r.recoveryRemainingMin)} ก่อนถึง Reference และเมื่อรวม Resumption Process อีก ${appliedConfig.resumptionHr} ชม. Total Penalty Duration จะอยู่ที่ประมาณ ${formatHoursMinutes(r.totalPenaltyDurationHr * 60)} จาก Penalty Rate ที่กำหนด โปรแกรมประเมิน Estimated Financial Penalty เท่ากับ ฿${formatBaht(r.estimatedPenalty)}`;
+}
+
 function renderExecutive() {
-  const unlocked = revealed && inputsReady();
+  const unlocked = revealed && inputsReady() && execState.scenario;
   const rate = currentRampRateCPerMin();
 
-  let results = {};
-  let severityByKey = {};
-  if (unlocked) {
-    SCENARIOS.forEach((sc) => {
-      results[sc.key] = computeScenario(appliedConfig[sc.durationKey], rate, execState.resetY, execState.penaltyRate);
-    });
-    const ranked = [...SCENARIOS].sort((a, b) => results[a.key].estimatedPenalty - results[b.key].estimatedPenalty);
-    const severityClasses = ["severity-low", "severity-mid", "severity-high"];
-    ranked.forEach((sc, idx) => { severityByKey[sc.key] = severityClasses[Math.min(idx, 2)]; });
-  }
-
-  scenarioGrid.innerHTML = SCENARIOS.map((sc) => {
-    const selected = sc.key === execState.scenario ? "selected" : "";
-    if (!unlocked) {
-      return `
-        <div class="scenario-card ${selected}" data-scenario-card="${sc.key}">
-          <span class="tag">${sc.tag} · ${appliedConfig[sc.durationKey]} min</span>
-          <h3>${sc.label}</h3>
-          <div class="metric-row"><span>คลิกเพื่อดูผลกระทบ</span><strong class="value-dash">—</strong></div>
-        </div>`;
-    }
-    const r = results[sc.key];
-    return `
-      <div class="scenario-card ${severityByKey[sc.key]} ${selected}" data-scenario-card="${sc.key}">
-        <span class="tag">${sc.tag} · ${appliedConfig[sc.durationKey]} min</span>
-        <h3>${sc.label}</h3>
-        <div class="metric-row"><span>Predicted Active Power</span><strong>${r.predictedPower.toFixed(0)} MW</strong></div>
-        <div class="metric-row"><span>MW Loss</span><strong>${r.mwLoss.toFixed(0)} MW</strong></div>
-        <div class="metric-row"><span>Recovery Remaining</span><strong>${formatHoursMinutes(r.recoveryRemainingMin)}</strong></div>
-        <div class="metric-row penalty"><span>Estimated Penalty</span><strong>฿${formatBaht(r.estimatedPenalty)}</strong></div>
-      </div>`;
-  }).join("");
-
-  scenarioGrid.querySelectorAll("[data-scenario-card]").forEach((card) => {
-    card.addEventListener("click", () => {
-      if (!inputsReady()) {
-        flashMissingInputs();
-        return;
-      }
-      execState.scenario = card.dataset.scenarioCard;
-      revealed = true;
-      renderExecutive();
-    });
+  condHotMin.textContent = `${appliedConfig.hotMin} min`;
+  condWarmMin.textContent = `${appliedConfig.warmMin} min`;
+  condColdMin.textContent = `${appliedConfig.coldMin} min`;
+  conditionSelect.querySelectorAll("[data-scenario]").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.scenario === execState.scenario);
   });
 
   if (!unlocked) {
-    bignumLocked.hidden = false;
-    bignumContent.hidden = true;
+    resultLocked.hidden = false;
+    resultCard.hidden = true;
+    narrativeLocked.hidden = false;
+    narrativeText.hidden = true;
     compareLocked.hidden = false;
     compareContent.hidden = true;
+    if (!annualReady()) {
+      bignumLocked.hidden = false;
+      bignumContent.hidden = true;
+    }
+    return;
+  }
+
+  const meta = SCENARIOS.find((sc) => sc.key === execState.scenario);
+  const r = computeScenario(appliedConfig[meta.durationKey], rate, execState.resetY, execState.penaltyRate);
+
+  resultLocked.hidden = true;
+  resultCard.hidden = false;
+  resultTag.textContent = `${meta.tag} START FORECAST`;
+  resYAtComplete.textContent = `${r.yAtComplete.toFixed(0)}°C`;
+  resActivePower.textContent = `${r.predictedPower.toFixed(0)} MW`;
+  resMwLoss.textContent = `${r.mwLoss.toFixed(0)} MW`;
+  resPenaltyDuration.textContent = formatHoursMinutes(r.totalPenaltyDurationHr * 60);
+  resPenalty.textContent = `฿${formatBaht(r.estimatedPenalty)}`;
+
+  narrativeLocked.hidden = true;
+  narrativeText.hidden = false;
+  narrativeText.textContent = buildNarrative(meta, r);
+
+  compareLocked.hidden = true;
+  compareContent.hidden = false;
+
+  const badRate = rate;
+  const goodRate = appliedConfig.rampRateAfterFix;
+  const badResult = computeScenario(appliedConfig[meta.durationKey], badRate, execState.resetY, execState.penaltyRate);
+  const goodResult = computeScenario(appliedConfig[meta.durationKey], goodRate, execState.resetY, execState.penaltyRate);
+  const annualForCompare = annualReady() ? execState.annualEvents : 1;
+  const badAnnual = badResult.estimatedPenalty * annualForCompare;
+  const goodAnnual = goodResult.estimatedPenalty * annualForCompare;
+
+  compareBadTag.textContent = `Current · ${badRate.toFixed(2)} °C/min`;
+  compareGoodTag.textContent = `Study Case · ${goodRate.toFixed(2)} °C/min`;
+  compareBadValue.textContent = `฿${formatBaht(badAnnual)}`;
+  compareGoodValue.textContent = `฿${formatBaht(goodAnnual)}`;
+  savingsValue.textContent = `฿${formatBaht(Math.max(0, badAnnual - goodAnnual))}${annualReady() ? " / year" : " / event"}`;
+
+  if (!annualReady()) {
+    bignumLocked.hidden = false;
+    bignumContent.hidden = true;
     return;
   }
 
   bignumLocked.hidden = true;
   bignumContent.hidden = false;
-  compareLocked.hidden = true;
-  compareContent.hidden = false;
 
-  const selectedResult = results[execState.scenario];
-  const selectedMeta = SCENARIOS.find((sc) => sc.key === execState.scenario);
-
-  bignumScenarioLabel.textContent = `Based on ${selectedMeta.label} scenario · ${execState.annualEvents} events / year`;
-  const annualExposure = selectedResult.estimatedPenalty * execState.annualEvents;
+  bignumScenarioLabel.textContent = `Based on ${meta.label} scenario · ${execState.annualEvents} events / year`;
+  const annualExposure = r.estimatedPenalty * execState.annualEvents;
   const targetText = `฿${formatBaht(annualExposure)}`;
   if (!bignumAnimated) {
     bignumAnimated = true;
@@ -815,23 +850,10 @@ function renderExecutive() {
   }
 
   bignumBasis.innerHTML = `
-    <div><span>Per-event Penalty</span><strong>฿${formatBaht(selectedResult.estimatedPenalty)}</strong></div>
-    <div><span>Total Penalty Duration</span><strong>${formatHoursMinutes(selectedResult.totalPenaltyDurationHr * 60)}</strong></div>
-    <div><span>MW Loss</span><strong>${selectedResult.mwLoss.toFixed(0)} MW</strong></div>
+    <div><span>Per-event Penalty</span><strong>฿${formatBaht(r.estimatedPenalty)}</strong></div>
+    <div><span>Total Penalty Duration</span><strong>${formatHoursMinutes(r.totalPenaltyDurationHr * 60)}</strong></div>
+    <div><span>MW Loss</span><strong>${r.mwLoss.toFixed(0)} MW</strong></div>
   `;
-
-  const badRate = rate;
-  const goodRate = appliedConfig.rampRateAfterFix;
-  const badResult = computeScenario(appliedConfig[selectedMeta.durationKey], badRate, execState.resetY, execState.penaltyRate);
-  const goodResult = computeScenario(appliedConfig[selectedMeta.durationKey], goodRate, execState.resetY, execState.penaltyRate);
-  const badAnnual = badResult.estimatedPenalty * execState.annualEvents;
-  const goodAnnual = goodResult.estimatedPenalty * execState.annualEvents;
-
-  compareBadTag.textContent = `Current · ${badRate.toFixed(2)} °C/min`;
-  compareGoodTag.textContent = `After Fix · ${goodRate.toFixed(2)} °C/min`;
-  compareBadValue.textContent = `฿${formatBaht(badAnnual)}`;
-  compareGoodValue.textContent = `฿${formatBaht(goodAnnual)}`;
-  savingsValue.textContent = `฿${formatBaht(Math.max(0, badAnnual - goodAnnual))} / year`;
 }
 
 function syncQuickInputsFromExecState() {
@@ -850,17 +872,6 @@ quickPenaltyRate.addEventListener("input", () => {
 quickAnnualEvents.addEventListener("input", () => {
   execState.annualEvents = Number.parseFloat(quickAnnualEvents.value);
   renderExecutive();
-});
-
-runForecastButton.addEventListener("click", () => {
-  if (!inputsReady()) {
-    flashMissingInputs();
-    return;
-  }
-  if (!execState.scenario) execState.scenario = "cold";
-  revealed = true;
-  renderExecutive();
-  scenarioGrid.scrollIntoView({ behavior: "smooth", block: "center" });
 });
 
 /* ---------- scroll reveal ---------- */

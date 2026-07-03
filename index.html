@@ -26,14 +26,38 @@
     <div id="view-executive">
       <div class="pitch">
 
-        <section class="pitch-section" id="pitchHook">
+        <section class="pitch-section" id="pitchHero">
           <div class="pitch-inner">
             <span class="pitch-eyebrow">GT OTC Reset · Financial Exposure</span>
-            <h1 class="hook-title">ทุกครั้งที่ OTC ถูก Reset<br>คุณกำลัง<em>เผาเงิน</em>ไปกับ MW ที่หายไป</h1>
-            <p class="hook-sub">Over Temperature Controller ที่ถูก Reset ระหว่าง Maintenance ต้องใช้เวลาหลายชั่วโมงกว่าจะ Recover กลับสู่ระดับที่ทำ Load ได้เต็มที่ — และ Startup มักเสร็จก่อนที่มันจะพร้อม</p>
-            <div class="hero-chart-frame">
-              <span class="hero-chart-tag" id="heroChartTag">Y Recovery · illustrative</span>
-              <canvas id="heroChart" aria-hidden="true"></canvas>
+            <h1 class="hook-title">OTC Reset ครั้งนี้<br>อาจสร้าง <em>Financial Exposure</em> เท่าไหร่</h1>
+            <p class="hook-sub">Outlet Temperature Control ที่ถูก Reset ระหว่าง Maintenance ต้องใช้เวลา Recover กลับสู่ระดับที่ทำ Load ได้เต็มที่ — เลือก Condition แล้วกรอกสมมติฐานด้านล่างเพื่อดู Forecast</p>
+
+            <div class="condition-select" id="conditionSelect">
+              <button type="button" data-scenario="hot"><span class="cond-tag">HOT</span><span class="cond-min" id="condHotMin">180 min</span></button>
+              <button type="button" data-scenario="warm"><span class="cond-tag">WARM</span><span class="cond-min" id="condWarmMin">270 min</span></button>
+              <button type="button" data-scenario="cold"><span class="cond-tag">COLD</span><span class="cond-min" id="condColdMin">450 min</span></button>
+            </div>
+
+            <div class="hero-inputs">
+              <label>Current OTC Y after reset (°C)
+                <input id="quickResetY" type="number" placeholder="เช่น 0" step="1">
+              </label>
+              <label>Penalty Rate (THB / hr)
+                <input id="quickPenaltyRate" type="number" placeholder="เช่น 100000" step="1000">
+              </label>
+            </div>
+
+            <div id="resultLocked" class="locked-prompt">เลือก <strong>Condition</strong> ด้านบน หลังจากกรอก Current Y และ Penalty Rate เพื่อดู Forecast</div>
+
+            <div id="resultCard" class="result-card" hidden>
+              <span class="result-tag" id="resultTag">COLD START FORECAST</span>
+              <div class="result-grid">
+                <div class="result-item"><span>Y at Startup Complete</span><strong id="resYAtComplete">—°C</strong></div>
+                <div class="result-item"><span>Predicted Active Power</span><strong id="resActivePower">— MW</strong></div>
+                <div class="result-item"><span>MW Loss</span><strong id="resMwLoss">— MW</strong></div>
+                <div class="result-item"><span>Penalty Duration</span><strong id="resPenaltyDuration">—</strong></div>
+                <div class="result-item highlight"><span>Estimated Penalty</span><strong id="resPenalty">฿—</strong></div>
+              </div>
             </div>
           </div>
           <div class="scroll-hint">
@@ -42,11 +66,23 @@
           </div>
         </section>
 
+        <section class="pitch-section" id="pitchChart">
+          <div class="pitch-inner">
+            <span class="pitch-eyebrow tone-teal">Y Recovery · Active Power</span>
+            <h2 class="section-title">เส้นทาง Recovery ของ Y</h2>
+            <p class="section-lede">จุดไล่ตามเส้นแสดง Y ไต่จาก Current Y ไปยัง Reference — เส้นประแดงคือจุด Startup Complete</p>
+            <div class="hero-chart-frame">
+              <span class="hero-chart-tag" id="heroChartTag">Y Recovery · illustrative</span>
+              <canvas id="heroChart" aria-hidden="true"></canvas>
+            </div>
+          </div>
+        </section>
+
         <section class="pitch-section" id="pitchMechanism">
           <div class="pitch-inner">
             <span class="pitch-eyebrow tone-teal">The Mechanism</span>
-            <h2 class="section-title">ทำไม Startup ถึงเสร็จ ทั้งที่ OTC ยังไม่พร้อม</h2>
-            <p class="section-lede">Y ต้องไต่จาก 0°C กลับไป Reference 572°C ตาม Ramp Rate — แต่ Startup มักเสร็จก่อนที่ Y จะไปถึง ช่องว่างตรงนี้คือ MW ที่หายไป</p>
+            <h2 class="section-title">ทำไมตัวเลขด้านบนถึงออกมาแบบนี้</h2>
+            <p class="section-lede">Y ต้องไต่จาก Current Y กลับไป Reference ตาม Ramp Rate — แต่ Startup มักเสร็จก่อนที่ Y จะไปถึง ช่องว่างตรงนี้คือ MW ที่หายไป</p>
             <div class="mech-track">
               <div class="mech-step">
                 <div class="mech-dot"></div>
@@ -82,37 +118,29 @@
           </div>
         </section>
 
-        <section class="pitch-section" id="pitchScenarios">
+        <section class="pitch-section" id="pitchNarrative">
           <div class="pitch-inner">
-            <span class="pitch-eyebrow">Scenario Comparison</span>
-            <h2 class="section-title">แต่ละแบบ Startup เสียหายเท่าไหร่</h2>
-            <p class="section-lede">กรอกสมมติฐาน 3 ช่องนี้ แล้วกด Condition ที่ต้องการดูผลกระทบ</p>
-
-            <div class="assumptions-bar">
-              <label>Current OTC Y after reset (°C)
-                <input id="quickResetY" type="number" placeholder="เช่น 0" step="1">
-              </label>
-              <label>Penalty Rate (THB / hr)
-                <input id="quickPenaltyRate" type="number" placeholder="เช่น 100000" step="1000">
-              </label>
-              <label>OTC Reset events / year
-                <input id="quickAnnualEvents" type="number" placeholder="เช่น 6" min="0" step="1">
-              </label>
-              <button type="button" class="run-forecast-btn" id="runForecastButton">Run Forecast →</button>
-            </div>
-
-            <div class="scenario-grid" id="scenarioGrid"></div>
+            <span class="pitch-eyebrow">Auto Explanation</span>
+            <h2 class="section-title">สรุปเป็นภาษาคน</h2>
+            <div id="narrativeLocked" class="locked-prompt">คำอธิบายจะขึ้นหลังจากเลือก Condition ด้านบนสุด</div>
+            <p class="narrative-text" id="narrativeText" hidden></p>
           </div>
         </section>
 
-        <section class="pitch-section" id="pitchBignum">
+        <section class="pitch-section" id="pitchAnnual">
           <div class="pitch-inner bignum-wrap">
-            <span class="pitch-eyebrow">Estimated Annual Exposure</span>
-            <div id="bignumLocked" class="locked-prompt">เลือก <strong>Condition</strong> ด้านบนหลังจากกรอกสมมติฐาน เพื่อเปิดเผยตัวเลขผลกระทบทางการเงิน</div>
+            <span class="pitch-eyebrow">Annual Exposure</span>
+            <h2 class="section-title">ถ้าเกิดซ้ำหลายครั้งต่อปี</h2>
+            <div class="annual-input">
+              <label>OTC Reset events / year
+                <input id="quickAnnualEvents" type="number" placeholder="เช่น 6" min="0" step="1">
+              </label>
+            </div>
+            <div id="bignumLocked" class="locked-prompt">กรอกจำนวนครั้งต่อปีด้านบน เพื่อคำนวณ Exposure สะสมทั้งปี</div>
             <div id="bignumContent" hidden>
               <div class="bignum-label" id="bignumScenarioLabel">Based on Cold Start scenario</div>
               <div class="bignum" id="bignumValue">฿0</div>
-              <p class="bignum-sub">ประเมินจากจำนวนครั้งที่ OTC Reset เกิดขึ้นต่อปี คูณกับ Estimated Penalty ต่อครั้ง — เป็น Engineering Estimate ตามสมมติฐานที่กำหนด</p>
+              <p class="bignum-sub">Per-event Penalty คูณจำนวนครั้งที่ OTC Reset เกิดขึ้นต่อปี — เป็น Engineering Estimate ตามสมมติฐานที่กำหนด</p>
               <div class="bignum-basis" id="bignumBasis"></div>
             </div>
           </div>
@@ -120,28 +148,28 @@
 
         <section class="pitch-section" id="pitchCompare">
           <div class="pitch-inner">
-            <span class="pitch-eyebrow tone-mw">The Fix</span>
+            <span class="pitch-eyebrow tone-mw">What-if Analysis</span>
             <h2 class="section-title">ถ้าปรับ Ramp Rate ให้เร็วขึ้น จะเกิดอะไรขึ้น</h2>
-            <p class="section-lede">เทียบ Annual Exposure ระหว่างสถานะปัจจุบัน กับสถานะหลังปรับปรุง Ramp Rate</p>
-            <div id="compareLocked" class="locked-prompt">ตัวเลขจะขึ้นหลังจากเลือก Condition ด้านบน</div>
+            <p class="section-lede">เทียบ Annual Exposure ระหว่างสถานะปัจจุบัน กับสถานะหลังปรับปรุง Ramp Rate — เป็น Study Case เบื้องต้น ยังไม่ใช่ข้อเสนอที่ผ่านการอนุมัติทาง Engineering</p>
+            <div id="compareLocked" class="locked-prompt">ตัวเลขจะขึ้นหลังจากเลือก Condition ด้านบนสุด</div>
             <div id="compareContent" hidden>
               <div class="compare-grid">
                 <div class="compare-card bad">
                   <span class="tag" id="compareBadTag">Current · TU 1.0 °C/min</span>
-                  <h3>ไม่แก้ไข</h3>
+                  <h3>ไม่เปลี่ยนแปลง</h3>
                   <div class="value" id="compareBadValue">฿0</div>
                   <div class="value-note">Estimated Annual Exposure</div>
                 </div>
                 <div class="compare-vs">VS</div>
                 <div class="compare-card good">
-                  <span class="tag" id="compareGoodTag">After Fix · TU 2.0 °C/min</span>
-                  <h3>แก้ไขแล้ว</h3>
+                  <span class="tag" id="compareGoodTag">Study Case · TU 2.0 °C/min</span>
+                  <h3>สมมติปรับปรุง</h3>
                   <div class="value" id="compareGoodValue">฿0</div>
                   <div class="value-note">Estimated Annual Exposure</div>
                 </div>
               </div>
               <div class="savings-banner">
-                <span>Potential Annual Savings</span>
+                <span>Potential Annual Savings (Study Case)</span>
                 <strong id="savingsValue">฿0</strong>
               </div>
             </div>
