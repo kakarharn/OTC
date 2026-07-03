@@ -158,6 +158,41 @@ body.view-technical #view-technical { display: block; }
   z-index: 2;
 }
 
+.assumptions-bar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 28px;
+  padding: 18px;
+  border: 1px solid var(--teal-line);
+  border-radius: 12px;
+  background: linear-gradient(160deg, var(--teal-dim), var(--panel-soft));
+}
+
+.assumptions-bar label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.assumptions-bar input {
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0 11px;
+  background: var(--bg-900);
+  color: var(--ink);
+  font-family: var(--font-mono);
+}
+
+.assumptions-bar .run-forecast-btn {
+  width: auto;
+  padding: 0 22px;
+  white-space: nowrap;
+}
 .locked-prompt {
   padding: 26px 24px;
   border: 1px dashed var(--line);
@@ -556,89 +591,6 @@ body.view-technical #view-technical { display: block; }
   line-height: 1.6;
 }
 
-/* --- Quick assumptions drawer (executive, level-1 inputs) --- */
-
-.assume-toggle {
-  position: fixed;
-  bottom: 18px;
-  left: 18px;
-  z-index: 190;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: rgba(11, 19, 25, 0.85);
-  backdrop-filter: blur(10px);
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.assume-panel {
-  position: fixed;
-  bottom: 66px;
-  left: 18px;
-  z-index: 190;
-  width: min(88vw, 320px);
-  padding: 18px;
-  border-radius: 14px;
-  border: 1px solid var(--line);
-  background: linear-gradient(160deg, var(--panel-raised), var(--panel));
-  box-shadow: var(--shadow);
-  display: grid;
-  gap: 12px;
-  opacity: 0;
-  transform: translateY(8px);
-  pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.assume-panel.open { opacity: 1; transform: translateY(0); pointer-events: auto; }
-.assume-panel h4 { font-family: var(--font-display); font-size: 0.95rem; }
-
-.assume-panel label {
-  display: grid;
-  gap: 5px;
-  font-size: 0.76rem;
-  color: var(--muted);
-}
-
-.assume-panel input, .assume-panel select {
-  height: 36px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 0 10px;
-  background: var(--panel-soft);
-  color: var(--ink);
-  font-family: var(--font-mono);
-}
-
-.pill-select {
-  display: flex;
-  gap: 6px;
-}
-
-.pill-select button {
-  flex: 1;
-  padding: 7px 0;
-  border-radius: 7px;
-  border: 1px solid var(--line);
-  background: var(--panel-soft);
-  color: var(--muted);
-  font-size: 0.76rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.pill-select button.active {
-  border-color: var(--rose-line);
-  background: var(--rose-dim);
-  color: var(--rose);
-}
-
 /* ============================================================
    TECHNICAL CONSOLE VIEW  (instrument panel)
    ============================================================ */
@@ -1004,6 +956,8 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
   .pitch-section { padding: 44px 18px; }
   #pitchHook { min-height: 74vh; padding-top: 70px; }
   .hero-chart-frame { margin-top: 22px; max-height: 160px; }
+  .assumptions-bar { grid-template-columns: 1fr; }
+  .assumptions-bar .run-forecast-btn { width: 100%; }
   .bignum-basis { flex-direction: column; gap: 10px; }
 
   .tech-shell { padding: 10px; padding-top: 64px; padding-bottom: 84px; gap: 10px; }
@@ -1072,5 +1026,5 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
   html { scroll-behavior: auto; }
   .status-pill::before, .scroll-hint { animation: none; }
   .pitch-inner { transition: none; opacity: 1; transform: none; }
-  .controls, .controls-backdrop, .apply-bar, .assume-panel { transition: none; }
+  .controls, .controls-backdrop, .apply-bar { transition: none; }
 }

@@ -86,7 +86,21 @@
           <div class="pitch-inner">
             <span class="pitch-eyebrow">Scenario Comparison</span>
             <h2 class="section-title">แต่ละแบบ Startup เสียหายเท่าไหร่</h2>
-            <p class="section-lede">กรอกสมมติฐานที่มุมล่างซ้าย แล้วกด Condition ที่ต้องการดูผลกระทบ</p>
+            <p class="section-lede">กรอกสมมติฐาน 3 ช่องนี้ แล้วกด Condition ที่ต้องการดูผลกระทบ</p>
+
+            <div class="assumptions-bar">
+              <label>Current OTC Y after reset (°C)
+                <input id="quickResetY" type="number" placeholder="เช่น 0" step="1">
+              </label>
+              <label>Penalty Rate (THB / hr)
+                <input id="quickPenaltyRate" type="number" placeholder="เช่น 100000" step="1000">
+              </label>
+              <label>OTC Reset events / year
+                <input id="quickAnnualEvents" type="number" placeholder="เช่น 6" min="0" step="1">
+              </label>
+              <button type="button" class="run-forecast-btn" id="runForecastButton">Run Forecast →</button>
+            </div>
+
             <div class="scenario-grid" id="scenarioGrid"></div>
           </div>
         </section>
@@ -146,31 +160,6 @@
           </div>
         </section>
 
-      </div>
-
-      <button type="button" class="assume-toggle" id="assumeToggle">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg>
-        Adjust Assumptions
-      </button>
-      <div class="assume-panel" id="assumePanel">
-        <h4>Quick Assumptions</h4>
-        <label>Focus Scenario
-          <div class="pill-select" id="scenarioPills">
-            <button type="button" data-scenario="hot">Hot</button>
-            <button type="button" data-scenario="warm">Warm</button>
-            <button type="button" data-scenario="cold">Cold</button>
-          </div>
-        </label>
-        <label>Current OTC Y after reset (°C)
-          <input id="quickResetY" type="number" placeholder="เช่น 0" step="1">
-        </label>
-        <label>Penalty Rate (THB / hr)
-          <input id="quickPenaltyRate" type="number" placeholder="เช่น 100000" step="1000">
-        </label>
-        <label>OTC Reset events / year
-          <input id="quickAnnualEvents" type="number" placeholder="เช่น 6" min="0" step="1">
-        </label>
-        <button type="button" class="run-forecast-btn" id="runForecastButton">Run Forecast →</button>
       </div>
     </div>
 

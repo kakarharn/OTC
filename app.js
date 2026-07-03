@@ -664,7 +664,6 @@ rgeDiagram.addEventListener("click", (event) => {
    ============================================================ */
 
 const scenarioGrid = document.querySelector("#scenarioGrid");
-const scenarioPills = document.querySelectorAll("#scenarioPills [data-scenario]");
 const bignumValue = document.querySelector("#bignumValue");
 const bignumScenarioLabel = document.querySelector("#bignumScenarioLabel");
 const bignumBasis = document.querySelector("#bignumBasis");
@@ -678,8 +677,6 @@ const savingsValue = document.querySelector("#savingsValue");
 const quickResetY = document.querySelector("#quickResetY");
 const quickPenaltyRate = document.querySelector("#quickPenaltyRate");
 const quickAnnualEvents = document.querySelector("#quickAnnualEvents");
-const assumeToggle = document.querySelector("#assumeToggle");
-const assumePanel = document.querySelector("#assumePanel");
 const runForecastButton = document.querySelector("#runForecastButton");
 const bignumLocked = document.querySelector("#bignumLocked");
 const bignumContent = document.querySelector("#bignumContent");
@@ -782,13 +779,11 @@ function renderExecutive() {
   scenarioGrid.querySelectorAll("[data-scenario-card]").forEach((card) => {
     card.addEventListener("click", () => {
       if (!inputsReady()) {
-        assumePanel.classList.add("open");
         flashMissingInputs();
         return;
       }
       execState.scenario = card.dataset.scenarioCard;
       revealed = true;
-      syncScenarioPills();
       renderExecutive();
     });
   });
@@ -839,22 +834,10 @@ function renderExecutive() {
   savingsValue.textContent = `฿${formatBaht(Math.max(0, badAnnual - goodAnnual))} / year`;
 }
 
-function syncScenarioPills() {
-  scenarioPills.forEach((btn) => btn.classList.toggle("active", btn.dataset.scenario === execState.scenario));
-}
-
 function syncQuickInputsFromExecState() {
   quickPenaltyRate.value = execState.penaltyRate;
   quickAnnualEvents.value = execState.annualEvents;
 }
-
-scenarioPills.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    execState.scenario = btn.dataset.scenario;
-    syncScenarioPills();
-    if (revealed) renderExecutive();
-  });
-});
 
 quickResetY.addEventListener("input", () => {
   execState.resetY = Number.parseFloat(quickResetY.value);
@@ -876,17 +859,8 @@ runForecastButton.addEventListener("click", () => {
   }
   if (!execState.scenario) execState.scenario = "cold";
   revealed = true;
-  syncScenarioPills();
-  assumePanel.classList.remove("open");
   renderExecutive();
-  document.querySelector("#pitchScenarios").scrollIntoView({ behavior: "smooth", block: "start" });
-});
-
-assumeToggle.addEventListener("click", () => assumePanel.classList.toggle("open"));
-document.addEventListener("click", (event) => {
-  if (!assumePanel.classList.contains("open")) return;
-  if (assumePanel.contains(event.target) || assumeToggle.contains(event.target)) return;
-  assumePanel.classList.remove("open");
+  scenarioGrid.scrollIntoView({ behavior: "smooth", block: "center" });
 });
 
 /* ---------- scroll reveal ---------- */
@@ -1001,7 +975,6 @@ requestAnimationFrame(drawHeroChart);
    ============================================================ */
 
 discardAllChanges();
-syncScenarioPills();
 renderExecutive();
 resetAll();
 requestAnimationFrame(tick);
