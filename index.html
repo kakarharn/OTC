@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>GT OTC Impact</title>
+    <meta name="theme-color" content="#070b0f">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body class="view-executive">
+    <nav class="view-switch">
+      <button type="button" data-view="executive" class="active">Executive</button>
+      <button type="button" data-view="technical">Technical</button>
+    </nav>
+
+    <!-- ============================================================
+         EXECUTIVE PITCH VIEW
+         ============================================================ -->
+    <div id="view-executive">
+      <div class="pitch">
+
+        <section class="pitch-section" id="pitchHook">
+          <div class="pitch-inner">
+            <span class="pitch-eyebrow">GT OTC Reset · Financial Exposure</span>
+            <h1 class="hook-title">ทุกครั้งที่ OTC ถูก Reset<br>คุณกำลัง<em>เผาเงิน</em>ไปกับ MW ที่หายไป</h1>
+            <p class="hook-sub">Over Temperature Controller ที่ถูก Reset ระหว่าง Maintenance ต้องใช้เวลาหลายชั่วโมงกว่าจะ Recover กลับสู่ระดับที่ทำ Load ได้เต็มที่ — และ Startup มักเสร็จก่อนที่มันจะพร้อม</p>
+            <div class="hero-chart-frame">
+              <span class="hero-chart-tag" id="heroChartTag">Y Recovery · illustrative</span>
+              <canvas id="heroChart" aria-hidden="true"></canvas>
+            </div>
+          </div>
+          <div class="scroll-hint">
+            <span>Scroll</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+          </div>
+        </section>
+
+        <section class="pitch-section" id="pitchMechanism">
+          <div class="pitch-inner">
+            <span class="pitch-eyebrow tone-teal">The Mechanism</span>
+            <h2 class="section-title">ทำไม Startup ถึงเสร็จ ทั้งที่ OTC ยังไม่พร้อม</h2>
+            <p class="section-lede">Y ต้องไต่จาก 0°C กลับไป Reference 572°C ตาม Ramp Rate — แต่ Startup มักเสร็จก่อนที่ Y จะไปถึง ช่องว่างตรงนี้คือ MW ที่หายไป</p>
+            <div class="mech-track">
+              <div class="mech-step">
+                <div class="mech-dot"></div>
+                <div class="mech-label">OTC Reset</div>
+                <div class="mech-note">Y: 572°C → 0°C</div>
+              </div>
+              <div class="mech-step">
+                <div class="mech-dot"></div>
+                <div class="mech-label">Startup Begins</div>
+                <div class="mech-note">Y ค่อยๆ Recover</div>
+              </div>
+              <div class="mech-step hot">
+                <div class="mech-dot"></div>
+                <div class="mech-label">Startup Complete</div>
+                <div class="mech-note" id="mechGapNote">Y ยังไม่ถึงเป้า</div>
+              </div>
+              <div class="mech-step hot">
+                <div class="mech-dot"></div>
+                <div class="mech-label">MW Loss เกิดขึ้น</div>
+                <div class="mech-note">Active Power ต่ำกว่าเป้า</div>
+              </div>
+              <div class="mech-step">
+                <div class="mech-dot"></div>
+                <div class="mech-label">Y ถึง 572°C</div>
+                <div class="mech-note">OTC พร้อมทำ Load</div>
+              </div>
+              <div class="mech-step ok">
+                <div class="mech-dot"></div>
+                <div class="mech-label">Resumption 4h</div>
+                <div class="mech-note">NCC รับ / ค่าความพร้อมคืน</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="pitch-section" id="pitchScenarios">
+          <div class="pitch-inner">
+            <span class="pitch-eyebrow">Scenario Comparison</span>
+            <h2 class="section-title">แต่ละแบบ Startup เสียหายเท่าไหร่</h2>
+            <p class="section-lede">กรอกสมมติฐาน 3 ช่องนี้ แล้วกด Condition ที่ต้องการดูผลกระทบ</p>
+
+            <div class="assumptions-bar">
+              <label>Current OTC Y after reset (°C)
+                <input id="quickResetY" type="number" placeholder="เช่น 0" step="1">
+              </label>
+              <label>Penalty Rate (THB / hr)
+                <input id="quickPenaltyRate" type="number" placeholder="เช่น 100000" step="1000">
+              </label>
+              <label>OTC Reset events / year
+                <input id="quickAnnualEvents" type="number" placeholder="เช่น 6" min="0" step="1">
+              </label>
+              <button type="button" class="run-forecast-btn" id="runForecastButton">Run Forecast →</button>
+            </div>
+
+            <div class="scenario-grid" id="scenarioGrid"></div>
+          </div>
+        </section>
+
+        <section class="pitch-section" id="pitchBignum">
+          <div class="pitch-inner bignum-wrap">
+            <span class="pitch-eyebrow">Estimated Annual Exposure</span>
+            <div id="bignumLocked" class="locked-prompt">เลือก <strong>Condition</strong> ด้านบนหลังจากกรอกสมมติฐาน เพื่อเปิดเผยตัวเลขผลกระทบทางการเงิน</div>
+            <div id="bignumContent" hidden>
+              <div class="bignum-label" id="bignumScenarioLabel">Based on Cold Start scenario</div>
+              <div class="bignum" id="bignumValue">฿0</div>
+              <p class="bignum-sub">ประเมินจากจำนวนครั้งที่ OTC Reset เกิดขึ้นต่อปี คูณกับ Estimated Penalty ต่อครั้ง — เป็น Engineering Estimate ตามสมมติฐานที่กำหนด</p>
+              <div class="bignum-basis" id="bignumBasis"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="pitch-section" id="pitchCompare">
+          <div class="pitch-inner">
+            <span class="pitch-eyebrow tone-mw">The Fix</span>
+            <h2 class="section-title">ถ้าปรับ Ramp Rate ให้เร็วขึ้น จะเกิดอะไรขึ้น</h2>
+            <p class="section-lede">เทียบ Annual Exposure ระหว่างสถานะปัจจุบัน กับสถานะหลังปรับปรุง Ramp Rate</p>
+            <div id="compareLocked" class="locked-prompt">ตัวเลขจะขึ้นหลังจากเลือก Condition ด้านบน</div>
+            <div id="compareContent" hidden>
+              <div class="compare-grid">
+                <div class="compare-card bad">
+                  <span class="tag" id="compareBadTag">Current · TU 1.0 °C/min</span>
+                  <h3>ไม่แก้ไข</h3>
+                  <div class="value" id="compareBadValue">฿0</div>
+                  <div class="value-note">Estimated Annual Exposure</div>
+                </div>
+                <div class="compare-vs">VS</div>
+                <div class="compare-card good">
+                  <span class="tag" id="compareGoodTag">After Fix · TU 2.0 °C/min</span>
+                  <h3>แก้ไขแล้ว</h3>
+                  <div class="value" id="compareGoodValue">฿0</div>
+                  <div class="value-note">Estimated Annual Exposure</div>
+                </div>
+              </div>
+              <div class="savings-banner">
+                <span>Potential Annual Savings</span>
+                <strong id="savingsValue">฿0</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="pitch-section" id="pitchCta">
+          <div class="pitch-inner cta-section">
+            <h2 class="cta-title">พร้อมดูรายละเอียดทางเทคนิคหรือยัง</h2>
+            <p class="cta-sub">RGE Ramp Logic, Startup Duration, MW Loss Factor และ Financial Model ทั้งหมดปรับได้ในหน้า Technical Console</p>
+            <button type="button" class="cta-button" id="ctaToTechnical">
+              เปิด Technical Console
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+            </button>
+            <p class="disclaimer">ตัวเลขทั้งหมดเป็น Engineering Estimate จาก Model และสมมติฐานที่กำหนดได้ในหน้า Technical ไม่ใช่ตัวเลขค่าปรับตามสัญญา PPA อย่างเป็นทางการ</p>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- ============================================================
+         TECHNICAL CONSOLE VIEW
+         ============================================================ -->
+    <div id="view-technical">
+      <main class="tech-shell">
+        <section class="tech-main">
+          <header class="panel tech-topbar">
+            <div>
+              <p class="eyebrow">RGE Engineering Console</p>
+              <h1>OTC Ramp &amp; Financial Model</h1>
+            </div>
+            <div class="status-pill">TA fixed 8 ms</div>
+          </header>
+
+          <div class="apply-bar" id="applyBar">
+            <div class="apply-bar-text"><span class="dot"></span><span id="applyBarText">มีการเปลี่ยนแปลงที่ยังไม่ยืนยัน</span></div>
+            <div class="apply-bar-actions">
+              <button type="button" class="btn" id="discardButton">Discard</button>
+              <button type="button" class="btn btn-amber" id="applyButton">Apply Changes</button>
+            </div>
+          </div>
+
+          <div class="panel readout-grid">
+            <div class="readout readout-target"><span>X Target</span><strong id="xReadout">572.00 C</strong></div>
+            <div class="readout readout-y"><span>Y Output</span><strong id="yReadout">572.00 C</strong></div>
+            <div class="readout readout-mw"><span>Predicted MW</span><strong id="mwReadout">710.00 MW</strong></div>
+            <div class="readout"><span>MW Loss</span><strong id="mwLossReadout">0.00 MW</strong></div>
+            <div class="readout readout-money"><span>Fine Rate</span><strong id="fineRateReadout">0 THB/hr</strong></div>
+            <div class="readout readout-money"><span>Accumulated Fine</span><strong id="fineTotalReadout">0 THB</strong></div>
+            <div class="readout"><span>Ramp Rate</span><strong id="rateReadout">0.000 C/min</strong></div>
+          </div>
+
+          <section class="panel rge-panel">
+            <div class="rge-title">
+              <h2>RGE Logic Snapshot</h2>
+              <span>คลิกที่ค่าเพื่อแก้ไขได้โดยตรง</span>
+            </div>
+            <div class="rge-diagram">
+              <div class="pin-stack pin-left">
+                <div class="pin editable" data-pin="x"><span class="pin-label">X</span><strong class="pin-value" id="blockX">572.00 C</strong></div>
+                <div class="pin editable" data-pin="nrm"><span class="pin-label">NRM</span><strong class="pin-value" id="blockNrm">1.00 C</strong></div>
+                <div class="pin editable" data-pin="tu"><span class="pin-label">TU</span><strong class="pin-value" id="blockTu">1.00 min</strong></div>
+                <div class="pin editable" data-pin="td"><span class="pin-label">TD</span><strong class="pin-value" id="blockTd">1.00 min</strong></div>
+              </div>
+              <div class="rge-block">
+                <span>RGE</span>
+                <small>Y(n)=Y(n-1)+YA</small>
+              </div>
+              <div class="pin-stack pin-right">
+                <div class="pin editable" data-pin="y"><span class="pin-label">Y (force)</span><strong class="pin-value" id="blockY">572.00 C</strong></div>
+                <div class="pin"><span class="pin-label">YA / scan</span><strong class="pin-value" id="blockYa">0.000000 C</strong></div>
+                <div class="pin"><span class="pin-label">Rate</span><strong class="pin-value" id="blockRate">0.000 C/min</strong></div>
+              </div>
+            </div>
+            <p class="rge-hint">X และ Y มีผลทันที (Y = บังคับกระโดดค่าปัจจุบัน) · TU / TD / NRM เข้าคิว Apply ด้านบน</p>
+          </section>
+
+          <section class="panel chart-panel">
+            <div class="chart-header">
+              <div>
+                <h2>Realtime Trend</h2>
+                <p>X target, Y output และ Predicted MW ตามโมเดล Recovery</p>
+              </div>
+              <div class="legend">
+                <span><i class="line-x"></i>X target</span>
+                <span><i class="line-y"></i>Y temp</span>
+                <span><i class="line-mw"></i>MW</span>
+              </div>
+            </div>
+            <div class="chart-frame"><canvas id="chart" aria-label="Realtime Y and MW trend"></canvas></div>
+          </section>
+        </section>
+
+        <aside class="controls panel" id="controlsPanel">
+          <div class="drawer-header">
+            <h2>Config</h2>
+            <button type="button" class="drawer-close" id="controlsClose" aria-label="Close controls">&times;</button>
+          </div>
+
+          <details class="control-section" open>
+            <summary><h2>OTC Sandbox Target</h2></summary>
+            <div class="control-body">
+              <label>Initial Y start temperature (C)
+                <input id="initialYInput" type="number" value="572" step="0.1">
+              </label>
+              <label>X target temperature (C)
+                <input id="xInput" type="number" value="572" step="0.1">
+              </label>
+              <input id="xSlider" type="range" value="572" min="400" max="700" step="0.1" aria-label="X target slider">
+              <div class="preset-grid">
+                <button type="button" data-x-nudge="-5">-5 C</button>
+                <button type="button" data-x-set="572">Normal</button>
+                <button type="button" data-x-nudge="5">+5 C</button>
+              </div>
+              <p class="hint">ค่านี้เป็น sandbox ปรับได้ทันที ไม่ผ่านคิว Apply</p>
+            </div>
+          </details>
+
+          <details class="control-section" open>
+            <summary><h2>Ramp Setting</h2></summary>
+            <div class="control-body">
+              <div class="range-pair">
+                <label>TU up time
+                  <input id="tuInput" type="number" value="1" min="0.01" step="0.01">
+                </label>
+                <label>TD down time
+                  <input id="tdInput" type="number" value="1" min="0.01" step="0.01">
+                </label>
+              </div>
+              <label>TU / TD unit
+                <select id="timeUnitInput">
+                  <option value="min">min</option>
+                  <option value="sec">sec</option>
+                  <option value="ms">ms</option>
+                </select>
+              </label>
+              <label>NRM normalization (C)
+                <input id="nrmInput" type="number" value="1" min="0.01" step="0.01">
+              </label>
+              <p class="hint">Example: NRM 1 และ TU 1 min หมายถึง Y เปลี่ยนประมาณ 1 C ต่อนาที</p>
+            </div>
+          </details>
+
+          <details class="control-section" open>
+            <summary><h2>Startup Scenarios</h2></summary>
+            <div class="control-body">
+              <label>Hot Start duration (min)
+                <input id="hotMinInput" type="number" value="180" min="1" step="1">
+              </label>
+              <label>Warm Start duration (min)
+                <input id="warmMinInput" type="number" value="270" min="1" step="1">
+              </label>
+              <label>Cold Start duration (min)
+                <input id="coldMinInput" type="number" value="450" min="1" step="1">
+              </label>
+            </div>
+          </details>
+
+          <details class="control-section" open>
+            <summary><h2>Financial Model</h2></summary>
+            <div class="control-body">
+              <label>Reference Y / OTC Ready (C)
+                <input id="referenceYInput" type="number" value="572" step="0.1">
+              </label>
+              <label>Reference Active Power (MW)
+                <input id="refActivePowerInput" type="number" value="710" step="1">
+              </label>
+              <label>MW Loss Factor (MW / C)
+                <input id="mwLossFactorInput" type="number" value="1.5" min="0" step="0.1">
+              </label>
+              <label>Resumption Time (hr)
+                <input id="resumptionHrInput" type="number" value="4" min="0" step="0.5">
+              </label>
+              <label>Penalty Rate (THB / hr)
+                <input id="penaltyRateInput" type="number" value="100000" min="0" step="1000">
+              </label>
+              <label>OTC Reset events / year
+                <input id="annualEventsInput" type="number" value="6" min="0" step="1">
+              </label>
+              <div class="toggle-row">
+                <span>Additional Threshold Penalty (&gt;20 MW)</span>
+                <div class="switch" id="thresholdToggle" role="switch" aria-checked="false"></div>
+              </div>
+              <p class="hint">ยังไม่เปิดใช้เป็น default — เตรียมโครงสร้างไว้รอสูตรที่ยืนยันแล้ว</p>
+            </div>
+          </details>
+
+          <details class="control-section" open>
+            <summary><h2>Fix Scenario (Compare)</h2></summary>
+            <div class="control-body">
+              <label>TU after fix (C / min)
+                <input id="tuAfterFixInput" type="number" value="2" min="0.01" step="0.1">
+              </label>
+              <p class="hint">ใช้เปรียบเทียบใน Executive Pitch หัวข้อ "The Fix"</p>
+            </div>
+          </details>
+
+          <details class="control-section" open>
+            <summary><h2>View</h2></summary>
+            <div class="control-body">
+              <label>Graph window (s)
+                <input id="windowInput" type="number" value="180" min="30" step="10">
+              </label>
+              <div class="action-row">
+                <button id="runToggle" class="primary-action" type="button">Pause</button>
+                <button id="resetButton" class="secondary-action" type="button">Reset Y + Trend</button>
+              </div>
+              <button id="clearButton" class="secondary-action" type="button">Reset Trend</button>
+            </div>
+          </details>
+        </aside>
+
+        <div class="controls-backdrop" id="controlsBackdrop"></div>
+
+        <nav class="mobile-toolbar">
+          <button type="button" id="mobileRunToggle" class="primary-action">Pause</button>
+          <button type="button" id="mobileResetButton">Reset</button>
+          <button type="button" id="mobileMenuToggle" class="menu-button" aria-label="Open config">&#9881;</button>
+        </nav>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
