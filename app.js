@@ -941,7 +941,8 @@ function setView(view) {
 }
 
 viewSwitchButtons.forEach((btn) => btn.addEventListener("click", () => setView(btn.dataset.view)));
-document.querySelector("#ctaToTechnical").addEventListener("click", () => setView("technical"));
+const ctaToTechnicalButton = document.querySelector("#ctaToTechnical");
+if (ctaToTechnicalButton) ctaToTechnicalButton.addEventListener("click", () => setView("technical"));
 
 /* ---------- Hero mini chart (always animating, decorative -> real) ---------- */
 
