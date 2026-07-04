@@ -685,16 +685,29 @@ const condColdMin = document.querySelector("#condColdMin");
 const resultLocked = document.querySelector("#resultLocked");
 const resultCard = document.querySelector("#resultCard");
 const resultTag = document.querySelector("#resultTag");
-const resYAtComplete = document.querySelector("#resYAtComplete");
+const resRefPower = document.querySelector("#resRefPower");
 const resActivePower = document.querySelector("#resActivePower");
 const resMwLoss = document.querySelector("#resMwLoss");
+const resAdditionalRecovery = document.querySelector("#resAdditionalRecovery");
 const resPenaltyDuration = document.querySelector("#resPenaltyDuration");
 const resPenalty = document.querySelector("#resPenalty");
+const detailToggle = document.querySelector("#detailToggle");
+const detailPanel = document.querySelector("#detailPanel");
+const detailYAtComplete = document.querySelector("#detailYAtComplete");
+const detailReferenceY = document.querySelector("#detailReferenceY");
+const detailRampRate = document.querySelector("#detailRampRate");
+const detailDuration = document.querySelector("#detailDuration");
+const penaltyTimelineLocked = document.querySelector("#penaltyTimelineLocked");
+const penaltyTimelineContent = document.querySelector("#penaltyTimelineContent");
+const ptRecoveryTime = document.querySelector("#ptRecoveryTime");
+const ptResumptionTime = document.querySelector("#ptResumptionTime");
+const ptTotalTime = document.querySelector("#ptTotalTime");
 const narrativeLocked = document.querySelector("#narrativeLocked");
 const narrativeText = document.querySelector("#narrativeText");
 const bignumValue = document.querySelector("#bignumValue");
 const bignumScenarioLabel = document.querySelector("#bignumScenarioLabel");
-const bignumBasis = document.querySelector("#bignumBasis");
+const annualPerEvent = document.querySelector("#annualPerEvent");
+const annualCount = document.querySelector("#annualCount");
 const mechGapNote = document.querySelector("#mechGapNote");
 const compareRateNote = document.querySelector("#compareRateNote");
 const savingsLabel = document.querySelector("#savingsLabel");
@@ -785,16 +798,42 @@ conditionSelect.querySelectorAll("[data-scenario]").forEach((btn) => {
   btn.addEventListener("click", () => selectCondition(btn.dataset.scenario));
 });
 
-function buildNarrative(meta, r) {
-  const otcNow = execState.resetY.toFixed(0);
-  const otcAtComplete = r.yAtComplete.toFixed(0);
-  const referenceY = appliedConfig.referenceY.toFixed(0);
+function animateDetailNumber(el, toValue, formatter) {
+  const to = Number.parseFloat(toValue);
+  if (!Number.isFinite(to)) return;
+  animateNumber(el, 0, to, 700, formatter);
+}
 
+detailToggle.addEventListener("click", () => {
+  const isOpen = detailToggle.getAttribute("aria-expanded") === "true";
+  detailToggle.setAttribute("aria-expanded", String(!isOpen));
+  detailPanel.hidden = isOpen;
+  detailToggle.classList.toggle("open", !isOpen);
+
+  if (!isOpen && execState.scenario) {
+    const meta = SCENARIOS.find((sc) => sc.key === execState.scenario);
+    const rate = currentRampRateCPerMin();
+    const r = computeScenario(appliedConfig[meta.durationKey], rate, execState.resetY, execState.penaltyRate);
+    animateDetailNumber(detailYAtComplete, r.yAtComplete, (v) => `${v.toFixed(0)}°C`);
+    animateDetailNumber(detailReferenceY, appliedConfig.referenceY, (v) => `${v.toFixed(0)}°C`);
+    animateDetailNumber(detailRampRate, rate, (v) => `${v.toFixed(2)} °C/min`);
+    animateDetailNumber(detailDuration, appliedConfig[meta.durationKey], (v) => `${v.toFixed(0)} min`);
+  }
+});
+
+function buildNarrative(meta, r) {
   if (r.estimatedPenalty <= 0) {
-    return `OTC ถูก Reset เหลือ ${otcNow}°C แต่ด้วย Ramp Rate ตอนนี้ OTC จะไต่กลับไปถึง ${referenceY}°C ได้ทันเวลา ก่อนที่ Startup แบบ ${meta.label} จะเสร็จ จึงไม่มี MW Loss และไม่ต้องเสียค่าปรับสักบาทเลย`;
+    return `สำหรับ ${meta.label} ภายใต้ค่าที่กำหนดใน Engineering Model ระบบประเมินว่า OTC Controller จะ Recovery กลับสู่ระดับพร้อมรับ Load ได้ทันเวลา ก่อนที่ Startup Process จะเสร็จสิ้น จึงไม่เกิด MW Loss และไม่มีค่าปรับ Post Event สำหรับเหตุการณ์นี้`;
   }
 
-  return `OTC ถูก Reset เหลือ ${otcNow}°C และใช้เวลา Recover แบบ ${meta.label} (${appliedConfig[meta.durationKey]} นาที) พอ Startup เสร็จ OTC จะขึ้นมาอยู่ที่ประมาณ ${otcAtComplete}°C ซึ่งยังไม่ถึงเป้า ${referenceY}°C ทำให้ผลิตไฟได้น้อยลงประมาณ ${r.mwLoss.toFixed(0)} MW จนกว่าจะฟื้นตัวเต็มที่ รวมแล้วคาดว่าจะมีค่าปรับประมาณ ฿${formatBaht(r.estimatedPenalty)}`;
+  const recoveryText = formatHoursMinutes(r.recoveryRemainingMin);
+  const postEventText = formatHoursMinutes(r.totalPenaltyDurationHr * 60);
+
+  return `สำหรับ ${meta.label} ภายใต้ค่าที่กำหนดใน Engineering Model ระบบประเมินว่า เมื่อ Startup Process เสร็จสิ้น OTC Controller อาจยัง Recovery ไม่สมบูรณ์ ส่งผลให้กำลังผลิตที่สามารถทำได้ต่ำกว่าระดับอ้างอิงประมาณ ${r.mwLoss.toFixed(0)} MW
+
+ระบบประเมินว่าต้องใช้เวลา Recovery เพิ่มเติมประมาณ ${recoveryText} และเมื่อรวม Resumption Process อีก ${appliedConfig.resumptionHr} ชั่วโมง ระยะเวลา Post Event โดยประมาณอยู่ที่ ${postEventText}
+
+จากอัตราค่าปรับ Post Event ที่กำหนด ค่าปรับ Post Event โดยประมาณสำหรับเหตุการณ์นี้อยู่ที่ ฿${formatBaht(r.estimatedPenalty)}`;
 }
 
 function renderExecutive() {
@@ -822,6 +861,8 @@ function renderExecutive() {
     resultCard.hidden = true;
     narrativeLocked.hidden = false;
     narrativeText.hidden = true;
+    penaltyTimelineLocked.hidden = false;
+    penaltyTimelineContent.hidden = true;
     if (!annualReady()) {
       bignumLocked.hidden = false;
       bignumContent.hidden = true;
@@ -835,16 +876,28 @@ function renderExecutive() {
   resultLocked.hidden = true;
   resultCard.hidden = false;
   resultCard.dataset.condition = meta.key;
-  resultTag.textContent = `${meta.tag} START FORECAST`;
-  resYAtComplete.textContent = `${r.yAtComplete.toFixed(0)}°C`;
+  resultTag.textContent = `ผลการประเมิน ${meta.tag} START`;
+  resRefPower.textContent = `${appliedConfig.refActivePower.toFixed(0)} MW`;
   resActivePower.textContent = `${r.predictedPower.toFixed(0)} MW`;
   resMwLoss.textContent = `${r.mwLoss.toFixed(0)} MW`;
+  resAdditionalRecovery.textContent = formatHoursMinutes(r.recoveryRemainingMin);
   resPenaltyDuration.textContent = formatHoursMinutes(r.totalPenaltyDurationHr * 60);
   resPenalty.textContent = `฿${formatBaht(r.estimatedPenalty)}`;
+
+  detailYAtComplete.textContent = `${r.yAtComplete.toFixed(0)}°C`;
+  detailReferenceY.textContent = `${appliedConfig.referenceY.toFixed(0)}°C`;
+  detailRampRate.textContent = `${rate.toFixed(2)} °C/min`;
+  detailDuration.textContent = `${appliedConfig[meta.durationKey]} min`;
 
   narrativeLocked.hidden = true;
   narrativeText.hidden = false;
   narrativeText.textContent = buildNarrative(meta, r);
+
+  penaltyTimelineLocked.hidden = true;
+  penaltyTimelineContent.hidden = false;
+  ptRecoveryTime.textContent = formatHoursMinutes(r.recoveryRemainingMin);
+  ptResumptionTime.textContent = formatHoursMinutes(appliedConfig.resumptionHr * 60);
+  ptTotalTime.textContent = formatHoursMinutes(r.totalPenaltyDurationHr * 60);
 
   if (!annualReady()) {
     bignumLocked.hidden = false;
@@ -855,7 +908,10 @@ function renderExecutive() {
   bignumLocked.hidden = true;
   bignumContent.hidden = false;
 
-  bignumScenarioLabel.textContent = `Based on ${meta.label} scenario · ${execState.annualEvents} events / year`;
+  bignumScenarioLabel.textContent = `อ้างอิงจาก ${meta.label}`;
+  annualPerEvent.textContent = `฿${formatBaht(r.estimatedPenalty)}`;
+  annualCount.textContent = `${execState.annualEvents} ครั้ง/ปี`;
+
   const annualExposure = r.estimatedPenalty * execState.annualEvents;
   const targetText = `฿${formatBaht(annualExposure)}`;
   if (!bignumAnimated) {
@@ -864,12 +920,6 @@ function renderExecutive() {
   } else {
     bignumValue.textContent = targetText;
   }
-
-  bignumBasis.innerHTML = `
-    <div><span>Per-event Penalty</span><strong>฿${formatBaht(r.estimatedPenalty)}</strong></div>
-    <div><span>Total Penalty Duration</span><strong>${formatHoursMinutes(r.totalPenaltyDurationHr * 60)}</strong></div>
-    <div><span>MW Loss</span><strong>${r.mwLoss.toFixed(0)} MW</strong></div>
-  `;
 }
 
 function renderCompareTable(rate) {
@@ -890,7 +940,7 @@ function renderCompareTable(rate) {
     const cells = compareCells[sc.key];
     cells.bad.textContent = `฿${formatBaht(badAnnual)}`;
     if (goodAnnual <= 0) {
-      cells.good.textContent = "฿0 · หมดปัญหา";
+      cells.good.textContent = "฿0 · ไม่มีค่าปรับ";
       cells.good.classList.add("zero");
     } else {
       cells.good.textContent = `฿${formatBaht(goodAnnual)}`;

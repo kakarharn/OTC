@@ -174,6 +174,24 @@ body.view-technical #view-technical { display: block; }
   z-index: 2;
 }
 
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 14px;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+.chart-legend .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.chart-legend .dot-line { background: var(--teal); }
+.chart-legend .dot-marker { background: var(--rose); }
+.chart-legend .dot-fill { background: var(--warm); }
+.chart-legend .dot-ready { background: var(--mw); }
+
 .condition-select {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -335,6 +353,54 @@ body.view-technical #view-technical { display: block; }
 .result-card[data-condition="cold"] .result-tag { color: var(--cold); }
 .result-card[data-condition="cold"] .result-item.highlight strong { color: var(--cold); }
 
+.detail-toggle {
+  margin-top: 18px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.detail-toggle:hover { color: var(--ink); border-color: var(--muted-dim); }
+.detail-toggle svg { transition: transform 0.25s ease; }
+.detail-toggle.open svg { transform: rotate(180deg); }
+
+.detail-panel {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: var(--panel-soft);
+  border: 1px solid var(--line-soft);
+}
+
+.detail-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 7px 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  border-top: 1px dashed var(--line-soft);
+}
+
+.detail-item:first-child { border-top: none; }
+
+.detail-item strong {
+  font-family: var(--font-mono);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
 .annual-input { max-width: 320px; margin: 0 auto 22px; }
 .annual-input input {
   height: 42px;
@@ -356,6 +422,7 @@ body.view-technical #view-technical { display: block; }
   border-left: 3px solid var(--teal);
   background: var(--panel-soft);
   border-radius: 8px;
+  white-space: pre-line;
 }
 
 .locked-prompt {
@@ -457,6 +524,23 @@ body.view-technical #view-technical { display: block; }
   line-height: 1.6;
 }
 
+.hero-subhead {
+  margin-top: 48px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.05rem, 2vw, 1.3rem);
+  color: var(--ink);
+}
+
+.hero-subhead-note {
+  margin-top: 6px;
+  margin-bottom: 22px;
+  max-width: 56ch;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
 .scroll-hint {
   position: absolute;
   bottom: 40px;
@@ -491,6 +575,14 @@ body.view-technical #view-technical { display: block; }
   margin-bottom: 12px;
 }
 
+.section-subhead {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+
 .section-lede {
   color: var(--muted);
   max-width: 62ch;
@@ -502,7 +594,7 @@ body.view-technical #view-technical { display: block; }
 .mech-track {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -551,6 +643,92 @@ body.view-technical #view-technical { display: block; }
 
 .mech-step.hot .mech-label { color: var(--rose); }
 
+/* --- Penalty Timeline --- */
+
+.penalty-timeline-wrap {
+  margin-top: 56px;
+  padding-top: 44px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.subsection-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.1rem, 2vw, 1.35rem);
+  margin-bottom: 10px;
+}
+
+.subsection-note {
+  color: var(--muted);
+  max-width: 62ch;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  font-size: 0.92rem;
+}
+
+.penalty-timeline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px 6px;
+}
+
+.pt-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 110px;
+  text-align: center;
+}
+
+.pt-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 0 1px var(--teal-line);
+}
+
+.pt-dot-hot { background: var(--rose); box-shadow: 0 0 0 1px var(--rose-line), 0 0 14px var(--rose-glow); }
+.pt-dot-ok { background: var(--mw); box-shadow: 0 0 0 1px var(--mw); }
+
+.pt-label {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--ink);
+  max-width: 120px;
+}
+
+.pt-time {
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--rose);
+}
+
+.pt-arrow {
+  align-self: center;
+  color: var(--muted-dim);
+  font-size: 1rem;
+  padding-top: 2px;
+}
+
+.pt-total {
+  margin-top: 24px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  max-width: 420px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+}
+
+.pt-total span { color: var(--muted); font-size: 0.82rem; }
+.pt-total strong { font-family: var(--font-mono); font-size: 1.1rem; color: var(--ink); }
+
 /* --- Big number --- */
 
 .bignum-wrap { text-align: center; }
@@ -562,6 +740,48 @@ body.view-technical #view-technical { display: block; }
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 18px;
+}
+
+.annual-tiers {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.annual-tier {
+  padding: 16px 26px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+  min-width: 200px;
+}
+
+.annual-tier span {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.annual-tier strong {
+  font-family: var(--font-mono);
+  font-size: 1.3rem;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.bignum-total-label {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-dim);
+  margin-bottom: 8px;
 }
 
 .bignum {

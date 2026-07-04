@@ -186,6 +186,24 @@ body.view-technical #view-technical { display: block; }
   z-index: 2;
 }
 
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 14px;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+.chart-legend .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.chart-legend .dot-line { background: var(--teal); }
+.chart-legend .dot-marker { background: var(--rose); }
+.chart-legend .dot-fill { background: var(--warm); }
+.chart-legend .dot-ready { background: var(--mw); }
+
 .condition-select {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -347,6 +365,54 @@ body.view-technical #view-technical { display: block; }
 .result-card[data-condition="cold"] .result-tag { color: var(--cold); }
 .result-card[data-condition="cold"] .result-item.highlight strong { color: var(--cold); }
 
+.detail-toggle {
+  margin-top: 18px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.detail-toggle:hover { color: var(--ink); border-color: var(--muted-dim); }
+.detail-toggle svg { transition: transform 0.25s ease; }
+.detail-toggle.open svg { transform: rotate(180deg); }
+
+.detail-panel {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: var(--panel-soft);
+  border: 1px solid var(--line-soft);
+}
+
+.detail-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 7px 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  border-top: 1px dashed var(--line-soft);
+}
+
+.detail-item:first-child { border-top: none; }
+
+.detail-item strong {
+  font-family: var(--font-mono);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
 .annual-input { max-width: 320px; margin: 0 auto 22px; }
 .annual-input input {
   height: 42px;
@@ -368,6 +434,7 @@ body.view-technical #view-technical { display: block; }
   border-left: 3px solid var(--teal);
   background: var(--panel-soft);
   border-radius: 8px;
+  white-space: pre-line;
 }
 
 .locked-prompt {
@@ -469,6 +536,23 @@ body.view-technical #view-technical { display: block; }
   line-height: 1.6;
 }
 
+.hero-subhead {
+  margin-top: 48px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.05rem, 2vw, 1.3rem);
+  color: var(--ink);
+}
+
+.hero-subhead-note {
+  margin-top: 6px;
+  margin-bottom: 22px;
+  max-width: 56ch;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
 .scroll-hint {
   position: absolute;
   bottom: 40px;
@@ -503,6 +587,14 @@ body.view-technical #view-technical { display: block; }
   margin-bottom: 12px;
 }
 
+.section-subhead {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+
 .section-lede {
   color: var(--muted);
   max-width: 62ch;
@@ -514,7 +606,7 @@ body.view-technical #view-technical { display: block; }
 .mech-track {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -563,6 +655,92 @@ body.view-technical #view-technical { display: block; }
 
 .mech-step.hot .mech-label { color: var(--rose); }
 
+/* --- Penalty Timeline --- */
+
+.penalty-timeline-wrap {
+  margin-top: 56px;
+  padding-top: 44px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.subsection-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1.1rem, 2vw, 1.35rem);
+  margin-bottom: 10px;
+}
+
+.subsection-note {
+  color: var(--muted);
+  max-width: 62ch;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  font-size: 0.92rem;
+}
+
+.penalty-timeline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px 6px;
+}
+
+.pt-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 110px;
+  text-align: center;
+}
+
+.pt-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--teal);
+  box-shadow: 0 0 0 1px var(--teal-line);
+}
+
+.pt-dot-hot { background: var(--rose); box-shadow: 0 0 0 1px var(--rose-line), 0 0 14px var(--rose-glow); }
+.pt-dot-ok { background: var(--mw); box-shadow: 0 0 0 1px var(--mw); }
+
+.pt-label {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--ink);
+  max-width: 120px;
+}
+
+.pt-time {
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--rose);
+}
+
+.pt-arrow {
+  align-self: center;
+  color: var(--muted-dim);
+  font-size: 1rem;
+  padding-top: 2px;
+}
+
+.pt-total {
+  margin-top: 24px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  max-width: 420px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+}
+
+.pt-total span { color: var(--muted); font-size: 0.82rem; }
+.pt-total strong { font-family: var(--font-mono); font-size: 1.1rem; color: var(--ink); }
+
 /* --- Big number --- */
 
 .bignum-wrap { text-align: center; }
@@ -574,6 +752,48 @@ body.view-technical #view-technical { display: block; }
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 18px;
+}
+
+.annual-tiers {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.annual-tier {
+  padding: 16px 26px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+  min-width: 200px;
+}
+
+.annual-tier span {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.annual-tier strong {
+  font-family: var(--font-mono);
+  font-size: 1.3rem;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.bignum-total-label {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-dim);
+  margin-bottom: 8px;
 }
 
 .bignum {
@@ -1179,9 +1399,12 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
 
         <section class="pitch-section" id="pitchHero">
           <div class="pitch-inner">
-            <span class="pitch-eyebrow">GT OTC Reset · Financial Exposure</span>
-            <h1 class="hook-title">OTC Reset ครั้งนี้<br>อาจสร้าง <em>Financial Exposure</em> เท่าไหร่</h1>
-            <p class="hook-sub">Outlet Temperature Control ที่ถูก Reset ระหว่าง Maintenance ต้องใช้เวลา Recover กลับสู่ระดับที่ทำ Load ได้เต็มที่ — เลือก Condition แล้วกรอกสมมติฐานด้านล่างเพื่อดู Forecast</p>
+            <span class="pitch-eyebrow">Gas Turbine OTC Controller Reset Impact</span>
+            <h1 class="hook-title">เมื่อ OTC Controller ถูก Reset<br>จะส่งผลต่อกำลังผลิตและค่าปรับ <em>Post Event</em> เท่าไร?</h1>
+            <p class="hook-sub">ประเมินผลกระทบจาก Gas Turbine OTC Controller Reset ต่อกำลังผลิต ระยะเวลาคืนความพร้อม และค่าปรับ Post Event จาก NCC ตาม Startup Condition ที่เลือก</p>
+
+            <h2 class="hero-subhead">ประเมินผลกระทบตาม Startup Condition</h2>
+            <p class="hero-subhead-note">เลือก Startup Condition เพื่อประเมินกำลังผลิตที่อาจหายไป ระยะเวลาคืนความพร้อม และค่าปรับ Post Event โดยประมาณ</p>
 
             <div class="condition-select" id="conditionSelect">
               <button type="button" data-scenario="hot"><span class="cond-tag">HOT</span><span class="cond-min" id="condHotMin">180 min</span></button>
@@ -1189,22 +1412,37 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
               <button type="button" data-scenario="cold"><span class="cond-tag">COLD</span><span class="cond-min" id="condColdMin">450 min</span></button>
             </div>
 
-            <div class="hero-inputs hero-inputs-single">
-              <label>Penalty Rate (THB / hr)
+            <div class="hero-inputs hero-inputs-double">
+              <label>อัตราค่าปรับ Post Event (บาท / ชั่วโมง)
                 <input id="quickPenaltyRate" type="number" placeholder="เช่น 100000" step="1000">
+              </label>
+              <label>จำนวน OTC Controller Reset ต่อปี (ครั้ง / ปี)
+                <input id="quickAnnualEvents" type="number" placeholder="เช่น 6" min="0" step="1">
               </label>
             </div>
 
-            <div id="resultLocked" class="locked-prompt">เลือก <strong>Condition</strong> ด้านบน หลังจากกรอก Penalty Rate เพื่อดู Forecast</div>
+            <div id="resultLocked" class="locked-prompt">เลือก <strong>Startup Condition</strong> ด้านบน หลังจากกรอกอัตราค่าปรับ Post Event เพื่อดูผลการประเมิน</div>
 
             <div id="resultCard" class="result-card" hidden>
-              <span class="result-tag" id="resultTag">COLD START FORECAST</span>
+              <span class="result-tag" id="resultTag">ผลการประเมิน COLD START</span>
               <div class="result-grid">
-                <div class="result-item"><span>OTC at Startup Complete</span><strong id="resYAtComplete">—°C</strong></div>
-                <div class="result-item"><span>Predicted Active Power</span><strong id="resActivePower">— MW</strong></div>
-                <div class="result-item"><span>MW Loss</span><strong id="resMwLoss">— MW</strong></div>
-                <div class="result-item"><span>Penalty Duration</span><strong id="resPenaltyDuration">—</strong></div>
-                <div class="result-item highlight"><span>Estimated Penalty</span><strong id="resPenalty">฿—</strong></div>
+                <div class="result-item"><span>กำลังผลิตอ้างอิง</span><strong id="resRefPower">— MW</strong></div>
+                <div class="result-item"><span>กำลังผลิตที่คาดว่าจะทำได้</span><strong id="resActivePower">— MW</strong></div>
+                <div class="result-item"><span>กำลังผลิตที่คาดว่าจะหายไป (MW Loss)</span><strong id="resMwLoss">— MW</strong></div>
+                <div class="result-item"><span>เวลา Recovery เพิ่มเติม</span><strong id="resAdditionalRecovery">—</strong></div>
+                <div class="result-item"><span>ระยะเวลา Post Event โดยประมาณ</span><strong id="resPenaltyDuration">—</strong></div>
+                <div class="result-item highlight"><span>ค่าปรับ Post Event โดยประมาณ</span><strong id="resPenalty">฿—</strong></div>
+              </div>
+
+              <button type="button" class="detail-toggle" id="detailToggle" aria-expanded="false">
+                <span>ดูรายละเอียดการคำนวณ</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div class="detail-panel" id="detailPanel" hidden>
+                <div class="detail-item"><span>OTC ที่ Startup Complete</span><strong id="detailYAtComplete">—°C</strong></div>
+                <div class="detail-item"><span>ค่า Reference (Setpoint)</span><strong id="detailReferenceY">—°C</strong></div>
+                <div class="detail-item"><span>Ramp Rate ที่ใช้คำนวณ</span><strong id="detailRampRate">— °C/min</strong></div>
+                <div class="detail-item"><span>Startup Duration</span><strong id="detailDuration">— min</strong></div>
               </div>
             </div>
           </div>
@@ -1216,51 +1454,99 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
 
         <section class="pitch-section" id="pitchChart">
           <div class="pitch-inner">
-            <span class="pitch-eyebrow tone-teal">OTC Recovery · Active Power</span>
-            <h2 class="section-title">เส้นทาง Recovery ของ OTC</h2>
-            <p class="section-lede">OTC หลัง Reset จะเริ่มจาก 0°C แล้วไต่กลับไปหา Reference 572°C ตาม Ramp Rate — พื้นที่แรเงาคือช่วงที่ OTC ยังไปไม่ถึงเป้าตอน Startup แต่ละ Condition เสร็จ พร้อมค่าปรับโดยประมาณของแต่ละ Condition</p>
+            <span class="pitch-eyebrow tone-teal">Controller Recovery · Active Power</span>
+            <h2 class="section-title">เส้นทางการคืนความพร้อมหลัง OTC Controller Reset</h2>
+            <p class="section-lede">เปรียบเทียบระยะเวลา Startup กับระยะเวลาที่ OTC Controller ต้องใช้ในการกลับสู่สภาวะพร้อมรับ Load เพื่อประเมินผลกระทบที่อาจเกิดขึ้นในแต่ละ Startup Condition</p>
             <div class="hero-chart-frame">
               <span class="hero-chart-tag" id="heroChartTag">OTC Recovery · illustrative</span>
               <canvas id="heroChart" aria-hidden="true"></canvas>
+            </div>
+            <div class="chart-legend">
+              <span><i class="dot dot-line"></i>Controller Recovery in Progress</span>
+              <span><i class="dot dot-marker"></i>Startup Complete</span>
+              <span><i class="dot dot-fill"></i>Additional Recovery Time</span>
+              <span><i class="dot dot-ready"></i>Controller Ready for Load</span>
             </div>
           </div>
         </section>
 
         <section class="pitch-section" id="pitchMechanism">
           <div class="pitch-inner">
-            <span class="pitch-eyebrow tone-teal">The Mechanism</span>
-            <h2 class="section-title">ทำไมตัวเลขด้านบนถึงออกมาแบบนี้</h2>
-            <p class="section-lede">OTC ต้องไต่จาก Current OTC กลับไป Reference ตาม Ramp Rate — แต่ Startup มักเสร็จก่อนที่ OTC จะไปถึง ช่องว่างตรงนี้คือ MW ที่หายไป</p>
+            <span class="pitch-eyebrow tone-teal">Reset Mechanism</span>
+            <h2 class="section-title">Gas Turbine OTC Controller Reset ส่งผลอย่างไร?</h2>
+            <p class="section-lede">เมื่อ OTC Controller ถูก Reset ระบบต้องใช้เวลาในการ Recovery กลับสู่ระดับพร้อมรับ Load หาก Startup เสร็จก่อนการ Recovery สมบูรณ์ ความสามารถในการรับ Load อาจต่ำกว่าระดับอ้างอิง ส่งผลให้เกิด MW Loss และต้องใช้เวลาเพิ่มเติมก่อนเข้าสู่กระบวนการ Resumption และการคืนค่าความพร้อม</p>
             <div class="mech-track">
               <div class="mech-step">
                 <div class="mech-dot"></div>
-                <div class="mech-label">OTC Reset</div>
-                <div class="mech-note">OTC: 572°C → 0°C</div>
+                <div class="mech-label">OTC Controller Reset</div>
+                <div class="mech-note">Controller เริ่มกระบวนการ Recovery ใหม่</div>
               </div>
               <div class="mech-step">
                 <div class="mech-dot"></div>
-                <div class="mech-label">Startup Begins</div>
-                <div class="mech-note">OTC ค่อยๆ Recover</div>
+                <div class="mech-label">Startup in Progress</div>
+                <div class="mech-note">เครื่องดำเนินการ Startup ขณะที่ OTC Controller กำลัง Recovery</div>
               </div>
               <div class="mech-step hot">
                 <div class="mech-dot"></div>
                 <div class="mech-label">Startup Complete</div>
-                <div class="mech-note" id="mechGapNote">OTC ยังไม่ถึงค่า Default</div>
+                <div class="mech-note" id="mechGapNote">Startup Process เสร็จสิ้น แต่ OTC Controller อาจยังไม่พร้อมรับ Load เต็มที่</div>
               </div>
               <div class="mech-step hot">
                 <div class="mech-dot"></div>
-                <div class="mech-label">MW Loss Deviation</div>
-                <div class="mech-note">GT Base Load Active Power Drop &amp; Post Event จาก NCC</div>
+                <div class="mech-label">Reduced Load Capability</div>
+                <div class="mech-note">กำลังผลิตที่สามารถทำได้อาจต่ำกว่าระดับอ้างอิง</div>
               </div>
               <div class="mech-step">
                 <div class="mech-dot"></div>
-                <div class="mech-label">OTC กลับมาเป็นค่าปกติ</div>
-                <div class="mech-note">GT พร้อมทำ Maximum Base Load</div>
+                <div class="mech-label">OTC Controller Ready</div>
+                <div class="mech-note">Controller กลับสู่ระดับพร้อมสำหรับการรับ Load</div>
               </div>
               <div class="mech-step ok">
                 <div class="mech-dot"></div>
-                <div class="mech-label">Resumption to NCC</div>
-                <div class="mech-note">คืนค่าความพร้อมจ่ายให้ศูนย์ควบคุม</div>
+                <div class="mech-label">Resumption Process</div>
+                <div class="mech-note">ดำเนินกระบวนการคืนความพร้อมตามขั้นตอน</div>
+              </div>
+              <div class="mech-step ok">
+                <div class="mech-dot"></div>
+                <div class="mech-label">NCC Accepted / Availability Restored</div>
+                <div class="mech-note">NCC รับคืนเครื่องและค่าความพร้อมกลับคืน</div>
+              </div>
+            </div>
+
+            <div class="penalty-timeline-wrap">
+              <h3 class="subsection-title">Penalty Timeline: จาก Startup Complete ถึง NCC รับคืนเครื่อง</h3>
+              <p class="subsection-note">การที่ OTC Controller Recovery ถึงระดับพร้อมรับ Load ไม่ได้หมายความว่า Post Event Process สิ้นสุดทันที เพราะยังมี Resumption Process ก่อน NCC รับคืนเครื่องและค่าความพร้อมกลับคืน</p>
+              <div id="penaltyTimelineLocked" class="locked-prompt">เลือก <strong>Startup Condition</strong> ด้านบนสุด เพื่อดู Penalty Timeline</div>
+              <div id="penaltyTimelineContent" hidden>
+                <div class="penalty-timeline">
+                  <div class="pt-step">
+                    <span class="pt-dot"></span>
+                    <span class="pt-label">Startup Complete</span>
+                  </div>
+                  <div class="pt-arrow">→</div>
+                  <div class="pt-step">
+                    <span class="pt-dot pt-dot-hot"></span>
+                    <span class="pt-label">Additional OTC Recovery</span>
+                    <span class="pt-time" id="ptRecoveryTime">—</span>
+                  </div>
+                  <div class="pt-arrow">→</div>
+                  <div class="pt-step">
+                    <span class="pt-dot"></span>
+                    <span class="pt-label">OTC Controller Ready</span>
+                  </div>
+                  <div class="pt-arrow">→</div>
+                  <div class="pt-step">
+                    <span class="pt-dot pt-dot-ok"></span>
+                    <span class="pt-label">Resumption Process</span>
+                    <span class="pt-time" id="ptResumptionTime">—</span>
+                  </div>
+                  <div class="pt-arrow">→</div>
+                  <div class="pt-step">
+                    <span class="pt-dot pt-dot-ok"></span>
+                    <span class="pt-label">NCC Accepted / Availability Restored</span>
+                  </div>
+                </div>
+                <div class="pt-total"><span>Total Post Event Duration</span><strong id="ptTotalTime">—</strong></div>
               </div>
             </div>
           </div>
@@ -1268,44 +1554,45 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
 
         <section class="pitch-section" id="pitchNarrative">
           <div class="pitch-inner">
-            <span class="pitch-eyebrow">Auto Explanation</span>
-            <h2 class="section-title">สรุปให้เข้าใจง่าย</h2>
-            <div id="narrativeLocked" class="locked-prompt">คำอธิบายจะขึ้นหลังจากเลือก Condition ด้านบนสุด</div>
+            <span class="pitch-eyebrow">Automatic Summary</span>
+            <h2 class="section-title">สรุปผลการประเมิน</h2>
+            <div id="narrativeLocked" class="locked-prompt">คำอธิบายจะขึ้นหลังจากเลือก <strong>Startup Condition</strong> ด้านบนสุด</div>
             <p class="narrative-text" id="narrativeText" hidden></p>
           </div>
         </section>
 
         <section class="pitch-section" id="pitchAnnual">
           <div class="pitch-inner bignum-wrap">
-            <span class="pitch-eyebrow">Annual Exposure</span>
-            <h2 class="section-title">ถ้าเกิดซ้ำหลายครั้งต่อปี</h2>
-            <div class="annual-input">
-              <label>OTC Reset events / year
-                <input id="quickAnnualEvents" type="number" placeholder="เช่น 6" min="0" step="1">
-              </label>
-            </div>
-            <div id="bignumLocked" class="locked-prompt">กรอกจำนวนครั้งต่อปีด้านบน เพื่อคำนวณ Exposure สะสมทั้งปี</div>
+            <span class="pitch-eyebrow">Post Event Penalty · Annual</span>
+            <h2 class="section-title">ประมาณการค่าปรับ Post Event ต่อปี</h2>
+            <p class="section-lede">ประเมินจากค่าปรับ Post Event โดยประมาณต่อเหตุการณ์ และจำนวน OTC Controller Reset ที่กำหนดต่อปี</p>
+            <div id="bignumLocked" class="locked-prompt">เลือก Startup Condition และกรอกจำนวน OTC Controller Reset ต่อปีด้านบนสุด เพื่อประมาณการค่าปรับต่อปี</div>
             <div id="bignumContent" hidden>
-              <div class="bignum-label" id="bignumScenarioLabel">Based on Cold Start scenario</div>
+              <div class="bignum-label" id="bignumScenarioLabel">อ้างอิงจาก Cold Start</div>
+              <div class="annual-tiers">
+                <div class="annual-tier"><span>ค่าปรับต่อเหตุการณ์</span><strong id="annualPerEvent">฿0</strong></div>
+                <div class="annual-tier"><span>จำนวน OTC Controller Reset</span><strong id="annualCount">0 ครั้ง/ปี</strong></div>
+              </div>
+              <div class="bignum-total-label">ค่าปรับ Post Event โดยประมาณต่อปี</div>
               <div class="bignum" id="bignumValue">฿0</div>
-              <p class="bignum-sub">Per-event Penalty คูณจำนวนครั้งที่ OTC Reset เกิดขึ้นต่อปี — เป็น Engineering Estimate ตามสมมติฐานที่กำหนด</p>
-              <div class="bignum-basis" id="bignumBasis"></div>
+              <p class="bignum-sub">เป็น Engineering Estimate ตามสมมติฐานที่กำหนด — ค่าปรับต่อเหตุการณ์ คูณจำนวนครั้งที่ OTC Controller Reset ต่อปี</p>
             </div>
           </div>
         </section>
 
         <section class="pitch-section" id="pitchCompare">
           <div class="pitch-inner">
-            <span class="pitch-eyebrow tone-mw">What-if Analysis</span>
-            <h2 class="section-title">ถ้าปรับ Ramp Rate ให้เร็วขึ้น ความเสียหายจะหายไปแค่ไหน</h2>
-            <p class="section-lede">เทียบ Annual Exposure ของทั้ง 3 Condition ระหว่างสถานะปัจจุบัน กับสถานะหลังปรับปรุง Ramp Rate — เป็น Study Case เบื้องต้น ยังไม่ใช่ข้อเสนอที่ผ่านการอนุมัติทาง Engineering</p>
-            <div id="compareLocked" class="locked-prompt">กรอก <strong>Penalty Rate</strong> ด้านบนสุด เพื่อดูตัวเลขเปรียบเทียบ</div>
+            <span class="pitch-eyebrow tone-mw">Improvement Scenario Analysis</span>
+            <h2 class="section-title">การวิเคราะห์ Scenario การปรับปรุง</h2>
+            <p class="section-subhead">หากระยะเวลา Recovery ลดลง จะช่วยลดผลกระทบได้เท่าไร?</p>
+            <p class="section-lede">เปรียบเทียบผลการประเมินระหว่าง Current Configuration และ Improvement Scenario เพื่อศึกษาผลต่อ Recovery Time และค่าปรับ Post Event โดยประมาณ — เป็น Scenario สำหรับการศึกษาเปรียบเทียบ ยังไม่ใช่ข้อเสนอที่ผ่านการอนุมัติทาง Engineering</p>
+            <div id="compareLocked" class="locked-prompt">กรอก <strong>อัตราค่าปรับ Post Event</strong> ด้านบนสุด เพื่อดูตัวเลขเปรียบเทียบ</div>
             <div id="compareContent" hidden>
               <div class="compare-table">
                 <div class="compare-row compare-row-head">
                   <span>Condition</span>
-                  <span>ตอนนี้</span>
-                  <span>หลังปรับปรุง Ramp Rate</span>
+                  <span>Current Configuration</span>
+                  <span>Improvement Scenario</span>
                 </div>
                 <div class="compare-row" data-scenario="hot">
                   <span class="compare-row-tag">HOT</span>
@@ -1323,9 +1610,9 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
                   <strong class="compare-row-good" id="compareGoodCold">฿0</strong>
                 </div>
               </div>
-              <p class="compare-footnote" id="compareRateNote">Current Ramp Rate — หลังปรับปรุง Ramp Rate</p>
+              <p class="compare-footnote" id="compareRateNote">Current Ramp Rate — Improvement Scenario Ramp Rate</p>
               <div class="savings-banner">
-                <span id="savingsLabel">Potential Annual Savings (รวมทั้ง 3 Condition)</span>
+                <span id="savingsLabel">ค่าปรับ Post Event ที่อาจลดลงได้ (รวมทั้ง 3 Condition)</span>
                 <strong id="savingsValue">฿0</strong>
               </div>
             </div>
@@ -1334,13 +1621,13 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
 
         <section class="pitch-section" id="pitchCta">
           <div class="pitch-inner cta-section">
-            <h2 class="cta-title">พร้อมดูรายละเอียดทางเทคนิคหรือยัง</h2>
-            <p class="cta-sub">RGE Ramp Logic, Startup Duration, MW Loss Factor และ Financial Model ทั้งหมดปรับได้ในหน้า Technical Console</p>
+            <h2 class="cta-title">รายละเอียดแบบจำลองทางวิศวกรรม</h2>
+            <p class="cta-sub">ตรวจสอบค่าที่ใช้ในการคำนวณ Controller Model, Startup Duration, Active Power Model, Recovery Time และ Post Event Penalty Model</p>
             <button type="button" class="cta-button" id="ctaToTechnical">
-              เปิด Technical Console
+              เปิด Engineering Console
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
             </button>
-            <p class="disclaimer">ตัวเลขทั้งหมดเป็น Engineering Estimate จาก Model และสมมติฐานที่กำหนดได้ในหน้า Technical ไม่ใช่ตัวเลขค่าปรับตามสัญญา PPA อย่างเป็นทางการ</p>
+            <p class="disclaimer">ผลลัพธ์จากโปรแกรมเป็นค่าประมาณจาก Engineering Model และสมมติฐานที่กำหนดในระบบ ใช้สำหรับการศึกษาและประเมินผลกระทบจาก Gas Turbine OTC Controller Reset เท่านั้น ผลลัพธ์อาจแตกต่างจากการคำนวณค่าปรับ Post Event อย่างเป็นทางการตามหลักเกณฑ์และเงื่อนไขที่เกี่ยวข้อง</p>
           </div>
         </section>
 
@@ -2237,16 +2524,29 @@ const condColdMin = document.querySelector("#condColdMin");
 const resultLocked = document.querySelector("#resultLocked");
 const resultCard = document.querySelector("#resultCard");
 const resultTag = document.querySelector("#resultTag");
-const resYAtComplete = document.querySelector("#resYAtComplete");
+const resRefPower = document.querySelector("#resRefPower");
 const resActivePower = document.querySelector("#resActivePower");
 const resMwLoss = document.querySelector("#resMwLoss");
+const resAdditionalRecovery = document.querySelector("#resAdditionalRecovery");
 const resPenaltyDuration = document.querySelector("#resPenaltyDuration");
 const resPenalty = document.querySelector("#resPenalty");
+const detailToggle = document.querySelector("#detailToggle");
+const detailPanel = document.querySelector("#detailPanel");
+const detailYAtComplete = document.querySelector("#detailYAtComplete");
+const detailReferenceY = document.querySelector("#detailReferenceY");
+const detailRampRate = document.querySelector("#detailRampRate");
+const detailDuration = document.querySelector("#detailDuration");
+const penaltyTimelineLocked = document.querySelector("#penaltyTimelineLocked");
+const penaltyTimelineContent = document.querySelector("#penaltyTimelineContent");
+const ptRecoveryTime = document.querySelector("#ptRecoveryTime");
+const ptResumptionTime = document.querySelector("#ptResumptionTime");
+const ptTotalTime = document.querySelector("#ptTotalTime");
 const narrativeLocked = document.querySelector("#narrativeLocked");
 const narrativeText = document.querySelector("#narrativeText");
 const bignumValue = document.querySelector("#bignumValue");
 const bignumScenarioLabel = document.querySelector("#bignumScenarioLabel");
-const bignumBasis = document.querySelector("#bignumBasis");
+const annualPerEvent = document.querySelector("#annualPerEvent");
+const annualCount = document.querySelector("#annualCount");
 const mechGapNote = document.querySelector("#mechGapNote");
 const compareRateNote = document.querySelector("#compareRateNote");
 const savingsLabel = document.querySelector("#savingsLabel");
@@ -2337,16 +2637,42 @@ conditionSelect.querySelectorAll("[data-scenario]").forEach((btn) => {
   btn.addEventListener("click", () => selectCondition(btn.dataset.scenario));
 });
 
-function buildNarrative(meta, r) {
-  const otcNow = execState.resetY.toFixed(0);
-  const otcAtComplete = r.yAtComplete.toFixed(0);
-  const referenceY = appliedConfig.referenceY.toFixed(0);
+function animateDetailNumber(el, toValue, formatter) {
+  const to = Number.parseFloat(toValue);
+  if (!Number.isFinite(to)) return;
+  animateNumber(el, 0, to, 700, formatter);
+}
 
+detailToggle.addEventListener("click", () => {
+  const isOpen = detailToggle.getAttribute("aria-expanded") === "true";
+  detailToggle.setAttribute("aria-expanded", String(!isOpen));
+  detailPanel.hidden = isOpen;
+  detailToggle.classList.toggle("open", !isOpen);
+
+  if (!isOpen && execState.scenario) {
+    const meta = SCENARIOS.find((sc) => sc.key === execState.scenario);
+    const rate = currentRampRateCPerMin();
+    const r = computeScenario(appliedConfig[meta.durationKey], rate, execState.resetY, execState.penaltyRate);
+    animateDetailNumber(detailYAtComplete, r.yAtComplete, (v) => `${v.toFixed(0)}°C`);
+    animateDetailNumber(detailReferenceY, appliedConfig.referenceY, (v) => `${v.toFixed(0)}°C`);
+    animateDetailNumber(detailRampRate, rate, (v) => `${v.toFixed(2)} °C/min`);
+    animateDetailNumber(detailDuration, appliedConfig[meta.durationKey], (v) => `${v.toFixed(0)} min`);
+  }
+});
+
+function buildNarrative(meta, r) {
   if (r.estimatedPenalty <= 0) {
-    return `OTC ถูก Reset เหลือ ${otcNow}°C แต่ด้วย Ramp Rate ตอนนี้ OTC จะไต่กลับไปถึง ${referenceY}°C ได้ทันเวลา ก่อนที่ Startup แบบ ${meta.label} จะเสร็จ จึงไม่มี MW Loss และไม่ต้องเสียค่าปรับสักบาทเลย`;
+    return `สำหรับ ${meta.label} ภายใต้ค่าที่กำหนดใน Engineering Model ระบบประเมินว่า OTC Controller จะ Recovery กลับสู่ระดับพร้อมรับ Load ได้ทันเวลา ก่อนที่ Startup Process จะเสร็จสิ้น จึงไม่เกิด MW Loss และไม่มีค่าปรับ Post Event สำหรับเหตุการณ์นี้`;
   }
 
-  return `OTC ถูก Reset เหลือ ${otcNow}°C และใช้เวลา Recover แบบ ${meta.label} (${appliedConfig[meta.durationKey]} นาที) พอ Startup เสร็จ OTC จะขึ้นมาอยู่ที่ประมาณ ${otcAtComplete}°C ซึ่งยังไม่ถึงเป้า ${referenceY}°C ทำให้ผลิตไฟได้น้อยลงประมาณ ${r.mwLoss.toFixed(0)} MW จนกว่าจะฟื้นตัวเต็มที่ รวมแล้วคาดว่าจะมีค่าปรับประมาณ ฿${formatBaht(r.estimatedPenalty)}`;
+  const recoveryText = formatHoursMinutes(r.recoveryRemainingMin);
+  const postEventText = formatHoursMinutes(r.totalPenaltyDurationHr * 60);
+
+  return `สำหรับ ${meta.label} ภายใต้ค่าที่กำหนดใน Engineering Model ระบบประเมินว่า เมื่อ Startup Process เสร็จสิ้น OTC Controller อาจยัง Recovery ไม่สมบูรณ์ ส่งผลให้กำลังผลิตที่สามารถทำได้ต่ำกว่าระดับอ้างอิงประมาณ ${r.mwLoss.toFixed(0)} MW
+
+ระบบประเมินว่าต้องใช้เวลา Recovery เพิ่มเติมประมาณ ${recoveryText} และเมื่อรวม Resumption Process อีก ${appliedConfig.resumptionHr} ชั่วโมง ระยะเวลา Post Event โดยประมาณอยู่ที่ ${postEventText}
+
+จากอัตราค่าปรับ Post Event ที่กำหนด ค่าปรับ Post Event โดยประมาณสำหรับเหตุการณ์นี้อยู่ที่ ฿${formatBaht(r.estimatedPenalty)}`;
 }
 
 function renderExecutive() {
@@ -2374,6 +2700,8 @@ function renderExecutive() {
     resultCard.hidden = true;
     narrativeLocked.hidden = false;
     narrativeText.hidden = true;
+    penaltyTimelineLocked.hidden = false;
+    penaltyTimelineContent.hidden = true;
     if (!annualReady()) {
       bignumLocked.hidden = false;
       bignumContent.hidden = true;
@@ -2387,16 +2715,28 @@ function renderExecutive() {
   resultLocked.hidden = true;
   resultCard.hidden = false;
   resultCard.dataset.condition = meta.key;
-  resultTag.textContent = `${meta.tag} START FORECAST`;
-  resYAtComplete.textContent = `${r.yAtComplete.toFixed(0)}°C`;
+  resultTag.textContent = `ผลการประเมิน ${meta.tag} START`;
+  resRefPower.textContent = `${appliedConfig.refActivePower.toFixed(0)} MW`;
   resActivePower.textContent = `${r.predictedPower.toFixed(0)} MW`;
   resMwLoss.textContent = `${r.mwLoss.toFixed(0)} MW`;
+  resAdditionalRecovery.textContent = formatHoursMinutes(r.recoveryRemainingMin);
   resPenaltyDuration.textContent = formatHoursMinutes(r.totalPenaltyDurationHr * 60);
   resPenalty.textContent = `฿${formatBaht(r.estimatedPenalty)}`;
+
+  detailYAtComplete.textContent = `${r.yAtComplete.toFixed(0)}°C`;
+  detailReferenceY.textContent = `${appliedConfig.referenceY.toFixed(0)}°C`;
+  detailRampRate.textContent = `${rate.toFixed(2)} °C/min`;
+  detailDuration.textContent = `${appliedConfig[meta.durationKey]} min`;
 
   narrativeLocked.hidden = true;
   narrativeText.hidden = false;
   narrativeText.textContent = buildNarrative(meta, r);
+
+  penaltyTimelineLocked.hidden = true;
+  penaltyTimelineContent.hidden = false;
+  ptRecoveryTime.textContent = formatHoursMinutes(r.recoveryRemainingMin);
+  ptResumptionTime.textContent = formatHoursMinutes(appliedConfig.resumptionHr * 60);
+  ptTotalTime.textContent = formatHoursMinutes(r.totalPenaltyDurationHr * 60);
 
   if (!annualReady()) {
     bignumLocked.hidden = false;
@@ -2407,7 +2747,10 @@ function renderExecutive() {
   bignumLocked.hidden = true;
   bignumContent.hidden = false;
 
-  bignumScenarioLabel.textContent = `Based on ${meta.label} scenario · ${execState.annualEvents} events / year`;
+  bignumScenarioLabel.textContent = `อ้างอิงจาก ${meta.label}`;
+  annualPerEvent.textContent = `฿${formatBaht(r.estimatedPenalty)}`;
+  annualCount.textContent = `${execState.annualEvents} ครั้ง/ปี`;
+
   const annualExposure = r.estimatedPenalty * execState.annualEvents;
   const targetText = `฿${formatBaht(annualExposure)}`;
   if (!bignumAnimated) {
@@ -2416,12 +2759,6 @@ function renderExecutive() {
   } else {
     bignumValue.textContent = targetText;
   }
-
-  bignumBasis.innerHTML = `
-    <div><span>Per-event Penalty</span><strong>฿${formatBaht(r.estimatedPenalty)}</strong></div>
-    <div><span>Total Penalty Duration</span><strong>${formatHoursMinutes(r.totalPenaltyDurationHr * 60)}</strong></div>
-    <div><span>MW Loss</span><strong>${r.mwLoss.toFixed(0)} MW</strong></div>
-  `;
 }
 
 function renderCompareTable(rate) {
@@ -2442,7 +2779,7 @@ function renderCompareTable(rate) {
     const cells = compareCells[sc.key];
     cells.bad.textContent = `฿${formatBaht(badAnnual)}`;
     if (goodAnnual <= 0) {
-      cells.good.textContent = "฿0 · หมดปัญหา";
+      cells.good.textContent = "฿0 · ไม่มีค่าปรับ";
       cells.good.classList.add("zero");
     } else {
       cells.good.textContent = `฿${formatBaht(goodAnnual)}`;
