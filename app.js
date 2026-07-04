@@ -20,7 +20,9 @@ let appliedConfig = {
   penaltyRate: 100000,
   annualEvents: 6,
   thresholdEnabled: false,
-  rampRateAfterFix: 2
+  rampRateAfterFix: 2,
+  tripFloorMw: 340,
+  tripRestartMin: 120
 };
 
 let draftThresholdEnabled = false;
@@ -59,6 +61,8 @@ const inputs = {
   penaltyRate: document.querySelector("#penaltyRateInput"),
   annualEvents: document.querySelector("#annualEventsInput"),
   tuAfterFix: document.querySelector("#tuAfterFixInput"),
+  tripFloorMw: document.querySelector("#tripFloorMwInput"),
+  tripRestartMin: document.querySelector("#tripRestartMinInput"),
   window: document.querySelector("#windowInput")
 };
 
@@ -177,7 +181,9 @@ const PENDING_FIELDS = [
   { key: "resumptionHr", input: inputs.resumptionHr, min: 0 },
   { key: "penaltyRate", input: inputs.penaltyRate, min: 0 },
   { key: "annualEvents", input: inputs.annualEvents, min: 0 },
-  { key: "rampRateAfterFix", input: inputs.tuAfterFix, min: 0.01 }
+  { key: "rampRateAfterFix", input: inputs.tuAfterFix, min: 0.01 },
+  { key: "tripFloorMw", input: inputs.tripFloorMw, min: 0 },
+  { key: "tripRestartMin", input: inputs.tripRestartMin, min: 0 }
 ];
 
 function typedTuSeconds() {
@@ -702,6 +708,11 @@ const penaltyTimelineContent = document.querySelector("#penaltyTimelineContent")
 const ptRecoveryTime = document.querySelector("#ptRecoveryTime");
 const ptResumptionTime = document.querySelector("#ptResumptionTime");
 const ptTotalTime = document.querySelector("#ptTotalTime");
+const tripRiskCard = document.querySelector("#tripRiskCard");
+const tripFloorPower = document.querySelector("#tripFloorPower");
+const tripMwLoss = document.querySelector("#tripMwLoss");
+const tripDuration = document.querySelector("#tripDuration");
+const tripPenalty = document.querySelector("#tripPenalty");
 const narrativeLocked = document.querySelector("#narrativeLocked");
 const narrativeText = document.querySelector("#narrativeText");
 const bignumValue = document.querySelector("#bignumValue");
@@ -738,6 +749,8 @@ const SCENARIO_COLORS = { hot: "#fb5d6f", warm: "#f2c94c", cold: "#38bdf8" };
 const NO_PENALTY_COLOR = "#35d68f";
 const AXIS_LABEL_COLOR = "#8298a6";
 const AXIS_LINE_COLOR = "#28414d";
+const POWER_LINE_COLOR = "#e8a53d";
+const RESTORATION_LINE_COLOR = "#7dd3fc";
 
 function computeScenario(durationMin, rampRateCPerMin, resetY, penaltyRate) {
   const yAtComplete = Math.min(appliedConfig.referenceY, resetY + rampRateCPerMin * durationMin);
@@ -748,6 +761,13 @@ function computeScenario(durationMin, rampRateCPerMin, resetY, penaltyRate) {
   const totalPenaltyDurationHr = recoveryRemainingMin / 60 + appliedConfig.resumptionHr;
   const estimatedPenalty = totalPenaltyDurationHr * penaltyRate;
   return { yAtComplete, yGap, mwLoss, predictedPower, recoveryRemainingMin, totalPenaltyDurationHr, estimatedPenalty };
+}
+
+function computeTripScenario(penaltyRate) {
+  const mwLoss = Math.max(0, appliedConfig.refActivePower - appliedConfig.tripFloorMw);
+  const totalPenaltyDurationHr = appliedConfig.tripRestartMin / 60 + appliedConfig.resumptionHr;
+  const estimatedPenalty = totalPenaltyDurationHr * penaltyRate;
+  return { floorMw: appliedConfig.tripFloorMw, mwLoss, totalPenaltyDurationHr, estimatedPenalty };
 }
 
 function currentRampRateCPerMin() {
@@ -863,6 +883,7 @@ function renderExecutive() {
     narrativeText.hidden = true;
     penaltyTimelineLocked.hidden = false;
     penaltyTimelineContent.hidden = true;
+    tripRiskCard.hidden = true;
     if (!annualReady()) {
       bignumLocked.hidden = false;
       bignumContent.hidden = true;
@@ -898,6 +919,17 @@ function renderExecutive() {
   ptRecoveryTime.textContent = formatHoursMinutes(r.recoveryRemainingMin);
   ptResumptionTime.textContent = formatHoursMinutes(appliedConfig.resumptionHr * 60);
   ptTotalTime.textContent = formatHoursMinutes(r.totalPenaltyDurationHr * 60);
+
+  if (meta.key === "hot" || meta.key === "warm") {
+    const tripR = computeTripScenario(execState.penaltyRate);
+    tripRiskCard.hidden = false;
+    tripFloorPower.textContent = `${tripR.floorMw.toFixed(0)} MW`;
+    tripMwLoss.textContent = `${tripR.mwLoss.toFixed(0)} MW`;
+    tripDuration.textContent = formatHoursMinutes(tripR.totalPenaltyDurationHr * 60);
+    tripPenalty.textContent = `฿${formatBaht(tripR.estimatedPenalty)}`;
+  } else {
+    tripRiskCard.hidden = true;
+  }
 
   if (!annualReady()) {
     bignumLocked.hidden = false;
@@ -1074,15 +1106,17 @@ function drawHeroChart(now) {
     heroCtx.stroke();
     heroCtx.setLineDash([]);
 
-    /* ---- Loss triangle: เฉพาะ Condition ที่เลือก จากจุดตัดยาวไปจนถึงจุดที่ OTC = 572°C ---- */
+    const steps = 48;
+
+    /* ---- Loss triangle + GT Active Power curve: เฉพาะ Condition ที่เลือก ---- */
     if (isSelected) {
       const sc = SCENARIOS.find((s) => s.key === execState.scenario);
       const duration = appliedConfig[sc.durationKey];
       const r = computeScenario(duration, curveRate, curveResetY, penaltyRateEffective);
       const noPenalty = r.estimatedPenalty <= 0;
+      const recoveryCompleteMin = Math.min(totalMin, (curveReferenceY - curveResetY) / curveRate);
 
       if (!noPenalty) {
-        const recoveryCompleteMin = Math.min(totalMin, (curveReferenceY - curveResetY) / curveRate);
         const p1x = xFor(Math.min(duration, totalMin));
         const p1y = yFor(r.yAtComplete);
         const topY = yFor(curveReferenceY);
@@ -1106,6 +1140,51 @@ function drawHeroChart(now) {
         heroCtx.setLineDash([]);
       }
 
+      /* ---- GT Active Power: นิ่งเต็มจนถึง Startup Complete แล้วตกตาม Gap ก่อนไต่กลับเต็มพร้อม OTC ---- */
+      const powerYFor = (mw) => pad.top + (1 - mw / appliedConfig.refActivePower) * plotH;
+      heroCtx.beginPath();
+      for (let i = 0; i <= steps; i += 1) {
+        const min = (totalMin / steps) * i;
+        let mw;
+        if (min <= duration) {
+          mw = appliedConfig.refActivePower;
+        } else {
+          const yAtMin = Math.min(curveReferenceY, curveResetY + curveRate * min);
+          const gapAtMin = Math.max(0, curveReferenceY - yAtMin);
+          mw = Math.max(0, appliedConfig.refActivePower - gapAtMin * appliedConfig.mwLossFactor);
+        }
+        const px = xFor(min);
+        const py = powerYFor(mw);
+        if (i === 0) heroCtx.moveTo(px, py);
+        else heroCtx.lineTo(px, py);
+      }
+      heroCtx.strokeStyle = POWER_LINE_COLOR;
+      heroCtx.lineWidth = 2;
+      heroCtx.stroke();
+
+      /* ---- Restoration Time marker: จุดที่ OTC กลับถึง 572°C พร้อม GT Active Power กลับเต็ม ---- */
+      if (!noPenalty) {
+        const restoreX = xFor(recoveryCompleteMin);
+        heroCtx.setLineDash([2, 3]);
+        heroCtx.strokeStyle = RESTORATION_LINE_COLOR;
+        heroCtx.lineWidth = 1.2;
+        heroCtx.beginPath();
+        heroCtx.moveTo(restoreX, pad.top);
+        heroCtx.lineTo(restoreX, h - pad.bottom);
+        heroCtx.stroke();
+        heroCtx.setLineDash([]);
+
+        const restoreLabel = `Restoration ~${recoveryCompleteMin.toFixed(0)}m`;
+        heroCtx.font = "600 9px 'IBM Plex Mono', monospace";
+        heroCtx.fillStyle = RESTORATION_LINE_COLOR;
+        const restoreWidth = heroCtx.measureText(restoreLabel).width;
+        const restoreLabelX = clamp(restoreX, pad.left + restoreWidth / 2 + 2, w - pad.right - restoreWidth / 2 - 2);
+        heroCtx.textAlign = "center";
+        heroCtx.textBaseline = "alphabetic";
+        heroCtx.fillText(restoreLabel, restoreLabelX, pad.top + 22);
+        heroCtx.textBaseline = "middle";
+      }
+
       const labelText = noPenalty ? "ไม่เสียค่าปรับ ฿0" : `฿${formatBahtCompact(r.estimatedPenalty)}`;
       heroCtx.font = "700 10.5px 'IBM Plex Mono', monospace";
       heroCtx.fillStyle = noPenalty ? NO_PENALTY_COLOR : curveColor;
@@ -1119,7 +1198,6 @@ function drawHeroChart(now) {
 
     /* ---- Recovery curve (0°C -> 572°C ตาม Ramp Rate ปัจจุบัน) ---- */
     heroCtx.beginPath();
-    const steps = 48;
     for (let i = 0; i <= steps; i += 1) {
       const min = (totalMin / steps) * i;
       const y = Math.min(curveReferenceY, curveResetY + curveRate * min);

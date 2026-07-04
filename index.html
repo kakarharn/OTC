@@ -74,6 +74,17 @@
                 <div class="detail-item"><span>Startup Duration</span><strong id="detailDuration">— min</strong></div>
               </div>
             </div>
+
+            <div id="tripRiskCard" class="trip-risk-card" hidden>
+              <span class="trip-risk-tag">⚠ Trip Risk Scenario · Worst Case</span>
+              <p class="trip-risk-note">หาก OTC ยังเบี่ยงเบนขณะ IGV ค้างที่ 100% ต่อเนื่องในช่วง Baseload Window มีความเสี่ยงเกิด <strong>Loss of Flame Trip</strong> — กำลังผลิตจะตกทันทีเหลือประมาณ Floor ที่กำหนด (1 GT + ST) จนกว่าจะ Restart และผ่าน Resumption Process ครบ ตัวเลขนี้เป็น Worst Case แยกจากค่าปรับปกติ ไม่ได้บวกรวมกัน และไม่ได้คูณด้วยจำนวนครั้ง/ปี เพราะยังไม่มีข้อมูล Probability ที่ยืนยันได้</p>
+              <div class="trip-risk-grid">
+                <div class="trip-risk-item"><span>กำลังผลิตที่เหลือ (Floor)</span><strong id="tripFloorPower">— MW</strong></div>
+                <div class="trip-risk-item"><span>กำลังผลิตที่หายไปทันที</span><strong id="tripMwLoss">— MW</strong></div>
+                <div class="trip-risk-item"><span>ระยะเวลารวมจนคืนความพร้อม</span><strong id="tripDuration">—</strong></div>
+                <div class="trip-risk-item highlight"><span>ค่าปรับ Post Event หาก Trip (Worst Case)</span><strong id="tripPenalty">฿—</strong></div>
+              </div>
+            </div>
           </div>
           <div class="scroll-hint">
             <span>Scroll</span>
@@ -91,10 +102,10 @@
               <canvas id="heroChart" aria-hidden="true"></canvas>
             </div>
             <div class="chart-legend">
-              <span><i class="dot dot-line"></i>Controller Recovery in Progress</span>
+              <span><i class="dot dot-line"></i>OTC Recovery (Temp)</span>
+              <span><i class="dot dot-power"></i>GT Active Power</span>
               <span><i class="dot dot-marker"></i>Startup Complete</span>
-              <span><i class="dot dot-fill"></i>Additional Recovery Time</span>
-              <span><i class="dot dot-ready"></i>Controller Ready for Load</span>
+              <span><i class="dot dot-restore"></i>Restoration Time</span>
             </div>
           </div>
         </section>
@@ -244,6 +255,7 @@
                 <span id="savingsLabel">ค่าปรับ Post Event ที่อาจลดลงได้ (รวมทั้ง 3 Condition)</span>
                 <strong id="savingsValue">฿0</strong>
               </div>
+              <p class="trip-risk-disclaimer">⚠ หมายเหตุ: Trip Risk Scenario (Worst Case สำหรับ HOT/WARM) ไม่ได้ลดลงจากการปรับ Ramp Rate ในตารางนี้ เพราะเป็นความเสี่ยงจาก Loss of Flame ที่เกิดจาก IGV ค้างที่ 100% ระหว่าง Baseload Window ไม่ใช่จากความเร็วของ OTC Recovery</p>
             </div>
           </div>
         </section>
@@ -436,7 +448,20 @@
               <label>TU after fix (C / min)
                 <input id="tuAfterFixInput" type="number" value="2" min="0.01" step="0.1">
               </label>
-              <p class="hint">ใช้เปรียบเทียบใน Executive Pitch หัวข้อ "The Fix"</p>
+              <p class="hint">ใช้เปรียบเทียบใน Executive Dashboard หัวข้อ "Improvement Scenario Analysis"</p>
+            </div>
+          </details>
+
+          <details class="control-section" open>
+            <summary><h2>Trip Risk Scenario (HOT / WARM)</h2></summary>
+            <div class="control-body">
+              <label>Trip Floor Active Power (MW)
+                <input id="tripFloorMwInput" type="number" value="340" min="0" step="1">
+              </label>
+              <label>Trip Restart Duration (min)
+                <input id="tripRestartMinInput" type="number" value="120" min="0" step="1">
+              </label>
+              <p class="hint">Worst-case: Loss of Flame Trip ระหว่าง Baseload Window — กำลังผลิตตกค้างที่ Floor นี้จนกว่าจะ Restart + Resumption เสร็จ ใช้เฉพาะ Startup Condition HOT/WARM ในหน้า Dashboard</p>
             </div>
           </details>
 

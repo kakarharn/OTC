@@ -188,9 +188,9 @@ body.view-technical #view-technical { display: block; }
 
 .chart-legend .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .chart-legend .dot-line { background: var(--teal); }
+.chart-legend .dot-power { background: #e8a53d; }
 .chart-legend .dot-marker { background: var(--rose); }
-.chart-legend .dot-fill { background: var(--warm); }
-.chart-legend .dot-ready { background: var(--mw); }
+.chart-legend .dot-restore { background: #7dd3fc; }
 
 .condition-select {
   display: grid;
@@ -399,6 +399,64 @@ body.view-technical #view-technical { display: block; }
   font-family: var(--font-mono);
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+}
+
+.trip-risk-card {
+  margin-top: 22px;
+  padding: 22px 24px;
+  border-radius: 14px;
+  border: 1px solid var(--hot-line);
+  background: linear-gradient(160deg, var(--hot-dim), var(--panel-soft));
+}
+
+.trip-risk-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hot);
+  margin-bottom: 12px;
+}
+
+.trip-risk-note {
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.6;
+  max-width: 62ch;
+  margin-bottom: 18px;
+}
+
+.trip-risk-grid { display: grid; gap: 0; }
+
+.trip-risk-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-top: 1px dashed var(--line-soft);
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+.trip-risk-item:first-child { border-top: none; }
+
+.trip-risk-item strong {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.trip-risk-item.highlight strong { font-size: 1.3rem; color: var(--hot); }
+
+.trip-risk-disclaimer {
+  margin-top: 16px;
+  color: var(--muted-dim);
+  font-size: 0.8rem;
+  line-height: 1.6;
+  max-width: 68ch;
 }
 
 .annual-input { max-width: 320px; margin: 0 auto 22px; }
