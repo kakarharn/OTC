@@ -22,7 +22,9 @@ let appliedConfig = {
   thresholdEnabled: false,
   rampRateAfterFix: 2,
   tripFloorMw: 340,
-  tripRestartMin: 120
+  tripRestartMin: 120,
+  gtUnitPower: 240,
+  gtPowerDeclineRate: 1
 };
 
 let draftThresholdEnabled = false;
@@ -63,6 +65,8 @@ const inputs = {
   tuAfterFix: document.querySelector("#tuAfterFixInput"),
   tripFloorMw: document.querySelector("#tripFloorMwInput"),
   tripRestartMin: document.querySelector("#tripRestartMinInput"),
+  gtUnitPower: document.querySelector("#gtUnitPowerInput"),
+  gtPowerDeclineRate: document.querySelector("#gtPowerDeclineRateInput"),
   window: document.querySelector("#windowInput")
 };
 
@@ -183,7 +187,9 @@ const PENDING_FIELDS = [
   { key: "annualEvents", input: inputs.annualEvents, min: 0 },
   { key: "rampRateAfterFix", input: inputs.tuAfterFix, min: 0.01 },
   { key: "tripFloorMw", input: inputs.tripFloorMw, min: 0 },
-  { key: "tripRestartMin", input: inputs.tripRestartMin, min: 0 }
+  { key: "tripRestartMin", input: inputs.tripRestartMin, min: 0 },
+  { key: "gtUnitPower", input: inputs.gtUnitPower, min: 0 },
+  { key: "gtPowerDeclineRate", input: inputs.gtPowerDeclineRate, min: 0.01 }
 ];
 
 function typedTuSeconds() {
@@ -708,6 +714,8 @@ const penaltyTimelineContent = document.querySelector("#penaltyTimelineContent")
 const ptRecoveryTime = document.querySelector("#ptRecoveryTime");
 const ptResumptionTime = document.querySelector("#ptResumptionTime");
 const ptTotalTime = document.querySelector("#ptTotalTime");
+const tripRiskWrap = document.querySelector("#tripRiskWrap");
+const tripRiskToggle = document.querySelector("#tripRiskToggle");
 const tripRiskCard = document.querySelector("#tripRiskCard");
 const tripFloorPower = document.querySelector("#tripFloorPower");
 const tripMwLoss = document.querySelector("#tripMwLoss");
@@ -841,6 +849,20 @@ detailToggle.addEventListener("click", () => {
   }
 });
 
+tripRiskToggle.addEventListener("click", () => {
+  const isOpen = tripRiskToggle.getAttribute("aria-expanded") === "true";
+  tripRiskToggle.setAttribute("aria-expanded", String(!isOpen));
+  tripRiskCard.hidden = isOpen;
+  tripRiskToggle.classList.toggle("open", !isOpen);
+
+  if (!isOpen) {
+    const tripR = computeTripScenario(execState.penaltyRate);
+    animateDetailNumber(tripFloorPower, tripR.floorMw, (v) => `${v.toFixed(0)} MW`);
+    animateDetailNumber(tripMwLoss, tripR.mwLoss, (v) => `${v.toFixed(0)} MW`);
+    animateDetailNumber(tripPenalty, tripR.estimatedPenalty, (v) => `฿${formatBaht(v)}`);
+  }
+});
+
 function buildNarrative(meta, r) {
   if (r.estimatedPenalty <= 0) {
     return `สำหรับ ${meta.label} ภายใต้ค่าที่กำหนดใน Engineering Model ระบบประเมินว่า OTC Controller จะ Recovery กลับสู่ระดับพร้อมรับ Load ได้ทันเวลา ก่อนที่ Startup Process จะเสร็จสิ้น จึงไม่เกิด MW Loss และไม่มีค่าปรับ Post Event สำหรับเหตุการณ์นี้`;
@@ -883,6 +905,7 @@ function renderExecutive() {
     narrativeText.hidden = true;
     penaltyTimelineLocked.hidden = false;
     penaltyTimelineContent.hidden = true;
+    tripRiskWrap.hidden = true;
     tripRiskCard.hidden = true;
     if (!annualReady()) {
       bignumLocked.hidden = false;
@@ -922,13 +945,16 @@ function renderExecutive() {
 
   if (meta.key === "hot" || meta.key === "warm") {
     const tripR = computeTripScenario(execState.penaltyRate);
-    tripRiskCard.hidden = false;
+    tripRiskWrap.hidden = false;
     tripFloorPower.textContent = `${tripR.floorMw.toFixed(0)} MW`;
     tripMwLoss.textContent = `${tripR.mwLoss.toFixed(0)} MW`;
     tripDuration.textContent = formatHoursMinutes(tripR.totalPenaltyDurationHr * 60);
     tripPenalty.textContent = `฿${formatBaht(tripR.estimatedPenalty)}`;
   } else {
+    tripRiskWrap.hidden = true;
     tripRiskCard.hidden = true;
+    tripRiskToggle.setAttribute("aria-expanded", "false");
+    tripRiskToggle.classList.remove("open");
   }
 
   if (!annualReady()) {
@@ -1047,7 +1073,8 @@ function drawHeroChart(now) {
     const totalMin = Math.max(maxDurationMin * 1.15, (curveReferenceY - curveResetY) / curveRate * 1.05);
 
     const isSelected = Boolean(execState.scenario);
-    const curveColor = isSelected ? SCENARIO_COLORS[execState.scenario] : "#2dd9c2";
+    const riskColor = isSelected ? SCENARIO_COLORS[execState.scenario] : "#2dd9c2";
+    const tempLineColor = "#2dd9c2";
 
     heroChartTag.textContent = isSelected
       ? `${SCENARIOS.find((s) => s.key === execState.scenario).label} · OTC Recovery`
@@ -1108,7 +1135,7 @@ function drawHeroChart(now) {
 
     const steps = 48;
 
-    /* ---- Loss triangle + GT Active Power curve: เฉพาะ Condition ที่เลือก ---- */
+    /* ---- Loss triangle: เฉพาะ Condition ที่เลือก (สียังตาม Condition เพื่อสื่อความเสี่ยง) ---- */
     if (isSelected) {
       const sc = SCENARIOS.find((s) => s.key === execState.scenario);
       const duration = appliedConfig[sc.durationKey];
@@ -1127,11 +1154,11 @@ function drawHeroChart(now) {
         heroCtx.lineTo(p1x, topY);
         heroCtx.lineTo(p3x, topY);
         heroCtx.closePath();
-        heroCtx.fillStyle = hexToRgba(curveColor, 0.22);
+        heroCtx.fillStyle = hexToRgba(riskColor, 0.16);
         heroCtx.fill();
 
         heroCtx.setLineDash([4, 3]);
-        heroCtx.strokeStyle = curveColor;
+        heroCtx.strokeStyle = riskColor;
         heroCtx.lineWidth = 1.4;
         heroCtx.beginPath();
         heroCtx.moveTo(p1x, pad.top);
@@ -1140,27 +1167,75 @@ function drawHeroChart(now) {
         heroCtx.setLineDash([]);
       }
 
-      /* ---- GT Active Power: นิ่งเต็มจนถึง Startup Complete แล้วตกตาม Gap ก่อนไต่กลับเต็มพร้อม OTC ---- */
-      const powerYFor = (mw) => pad.top + (1 - mw / appliedConfig.refActivePower) * plotH;
-      heroCtx.beginPath();
+      /* ---- GT Active Power (หน่วยเดียว): เต็ม 240 MW จนถึง Startup Complete แล้วลด 1 MW/min
+             จนกว่าจะ "ชน" เส้น OTC ที่ไต่ขึ้น (สัดส่วนเดียวกันบนกราฟ) แล้วไหลตามขึ้นไปจบที่ 240 พร้อม OTC ที่ 572°C
+             ถ้าลงถึง 0 ก่อนจะชนกัน ให้ค้างที่ 0 = GT Trip ---- */
+      const gtFull = appliedConfig.gtUnitPower;
+      const declineRate = appliedConfig.gtPowerDeclineRate;
+      const powerYFor = (mw) => pad.top + (1 - mw / gtFull) * plotH;
+
+      let crossed = false;
+      let tripped = false;
+      let tripMinX = null;
+      const powerPoints = [];
+
       for (let i = 0; i <= steps; i += 1) {
         const min = (totalMin / steps) * i;
         let mw;
-        if (min <= duration) {
-          mw = appliedConfig.refActivePower;
+        if (min < duration) {
+          mw = gtFull;
+        } else if (tripped) {
+          mw = 0;
+        } else if (crossed) {
+          const tempNow = Math.min(curveReferenceY, curveResetY + curveRate * min);
+          mw = gtFull * (tempNow / curveReferenceY);
         } else {
-          const yAtMin = Math.min(curveReferenceY, curveResetY + curveRate * min);
-          const gapAtMin = Math.max(0, curveReferenceY - yAtMin);
-          mw = Math.max(0, appliedConfig.refActivePower - gapAtMin * appliedConfig.mwLossFactor);
+          const decline = Math.max(0, gtFull - (min - duration) * declineRate);
+          const tempNow = Math.min(curveReferenceY, curveResetY + curveRate * min);
+          const tracked = gtFull * (tempNow / curveReferenceY);
+          if (tracked >= decline) {
+            crossed = true;
+            mw = tracked;
+          } else if (decline <= 0) {
+            tripped = true;
+            tripMinX = min;
+            mw = 0;
+          } else {
+            mw = decline;
+          }
         }
-        const px = xFor(min);
-        const py = powerYFor(mw);
+        powerPoints.push({ min, mw });
+      }
+
+      heroCtx.beginPath();
+      powerPoints.forEach((p, i) => {
+        const px = xFor(p.min);
+        const py = powerYFor(p.mw);
         if (i === 0) heroCtx.moveTo(px, py);
         else heroCtx.lineTo(px, py);
-      }
+      });
       heroCtx.strokeStyle = POWER_LINE_COLOR;
       heroCtx.lineWidth = 2;
       heroCtx.stroke();
+
+      if (tripped && tripMinX !== null) {
+        heroCtx.beginPath();
+        heroCtx.moveTo(xFor(tripMinX), powerYFor(0));
+        heroCtx.lineTo(xFor(totalMin), powerYFor(0));
+        heroCtx.strokeStyle = "#fb5d6f";
+        heroCtx.lineWidth = 2.4;
+        heroCtx.stroke();
+
+        heroCtx.font = "700 9.5px 'IBM Plex Mono', monospace";
+        heroCtx.fillStyle = "#fb5d6f";
+        const tripLabel = "GT TRIP";
+        const tripLabelWidth = heroCtx.measureText(tripLabel).width;
+        const tripLabelX = clamp(xFor(tripMinX) + 6 + tripLabelWidth / 2, pad.left + tripLabelWidth / 2 + 2, w - pad.right - tripLabelWidth / 2 - 2);
+        heroCtx.textAlign = "center";
+        heroCtx.textBaseline = "alphabetic";
+        heroCtx.fillText(tripLabel, tripLabelX, powerYFor(0) - 6);
+        heroCtx.textBaseline = "middle";
+      }
 
       /* ---- Restoration Time marker: จุดที่ OTC กลับถึง 572°C พร้อม GT Active Power กลับเต็ม ---- */
       if (!noPenalty) {
@@ -1187,7 +1262,7 @@ function drawHeroChart(now) {
 
       const labelText = noPenalty ? "ไม่เสียค่าปรับ ฿0" : `฿${formatBahtCompact(r.estimatedPenalty)}`;
       heroCtx.font = "700 10.5px 'IBM Plex Mono', monospace";
-      heroCtx.fillStyle = noPenalty ? NO_PENALTY_COLOR : curveColor;
+      heroCtx.fillStyle = noPenalty ? NO_PENALTY_COLOR : riskColor;
       const labelWidth = heroCtx.measureText(labelText).width;
       const labelX = clamp(xFor(Math.min(duration, totalMin)), pad.left + labelWidth / 2 + 2, w - pad.right - labelWidth / 2 - 2);
       heroCtx.textAlign = "center";
@@ -1196,7 +1271,7 @@ function drawHeroChart(now) {
       heroCtx.textBaseline = "middle";
     }
 
-    /* ---- Recovery curve (0°C -> 572°C ตาม Ramp Rate ปัจจุบัน) ---- */
+    /* ---- Recovery curve (0°C -> 572°C ตาม Ramp Rate ปัจจุบัน) — สีคงที่ ไม่เปลี่ยนตาม Condition ---- */
     heroCtx.beginPath();
     for (let i = 0; i <= steps; i += 1) {
       const min = (totalMin / steps) * i;
@@ -1206,7 +1281,7 @@ function drawHeroChart(now) {
       if (i === 0) heroCtx.moveTo(px, py);
       else heroCtx.lineTo(px, py);
     }
-    heroCtx.strokeStyle = curveColor;
+    heroCtx.strokeStyle = tempLineColor;
     heroCtx.lineWidth = 2.2;
     heroCtx.stroke();
 
@@ -1217,8 +1292,8 @@ function drawHeroChart(now) {
     const dotY = Math.min(curveReferenceY, curveResetY + curveRate * dotMin);
     heroCtx.beginPath();
     heroCtx.arc(xFor(dotMin), yFor(dotY), 4, 0, Math.PI * 2);
-    heroCtx.fillStyle = curveColor;
-    heroCtx.shadowColor = curveColor;
+    heroCtx.fillStyle = tempLineColor;
+    heroCtx.shadowColor = tempLineColor;
     heroCtx.shadowBlur = 10;
     heroCtx.fill();
     heroCtx.shadowBlur = 0;

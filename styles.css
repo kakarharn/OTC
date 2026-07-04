@@ -191,6 +191,7 @@ body.view-technical #view-technical { display: block; }
 .chart-legend .dot-power { background: #e8a53d; }
 .chart-legend .dot-marker { background: var(--rose); }
 .chart-legend .dot-restore { background: #7dd3fc; }
+.chart-legend .dot-trip { background: #fb5d6f; }
 
 .condition-select {
   display: grid;
@@ -401,8 +402,32 @@ body.view-technical #view-technical { display: block; }
   font-variant-numeric: tabular-nums;
 }
 
+.trip-risk-wrap { margin-top: 18px; }
+
+.trip-risk-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border: 1px dashed var(--hot-line);
+  border-radius: 8px;
+  background: none;
+  color: var(--hot);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.trip-risk-toggle:hover { background: var(--hot-dim); }
+.trip-risk-toggle svg { transition: transform 0.25s ease; }
+.trip-risk-toggle.open svg { transform: rotate(180deg); }
+
 .trip-risk-card {
-  margin-top: 22px;
+  margin-top: 14px;
   padding: 22px 24px;
   border-radius: 14px;
   border: 1px solid var(--hot-line);

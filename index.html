@@ -75,14 +75,20 @@
               </div>
             </div>
 
-            <div id="tripRiskCard" class="trip-risk-card" hidden>
-              <span class="trip-risk-tag">⚠ Trip Risk Scenario · Worst Case</span>
-              <p class="trip-risk-note">หาก OTC ยังเบี่ยงเบนขณะ IGV ค้างที่ 100% ต่อเนื่องในช่วง Baseload Window มีความเสี่ยงเกิด <strong>Loss of Flame Trip</strong> — กำลังผลิตจะตกทันทีเหลือประมาณ Floor ที่กำหนด (1 GT + ST) จนกว่าจะ Restart และผ่าน Resumption Process ครบ ตัวเลขนี้เป็น Worst Case แยกจากค่าปรับปกติ ไม่ได้บวกรวมกัน และไม่ได้คูณด้วยจำนวนครั้ง/ปี เพราะยังไม่มีข้อมูล Probability ที่ยืนยันได้</p>
-              <div class="trip-risk-grid">
-                <div class="trip-risk-item"><span>กำลังผลิตที่เหลือ (Floor)</span><strong id="tripFloorPower">— MW</strong></div>
-                <div class="trip-risk-item"><span>กำลังผลิตที่หายไปทันที</span><strong id="tripMwLoss">— MW</strong></div>
-                <div class="trip-risk-item"><span>ระยะเวลารวมจนคืนความพร้อม</span><strong id="tripDuration">—</strong></div>
-                <div class="trip-risk-item highlight"><span>ค่าปรับ Post Event หาก Trip (Worst Case)</span><strong id="tripPenalty">฿—</strong></div>
+            <div id="tripRiskWrap" class="trip-risk-wrap" hidden>
+              <button type="button" class="trip-risk-toggle" id="tripRiskToggle" aria-expanded="false">
+                <span>⚠ ดู Trip Risk Scenario (Worst Case)</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div id="tripRiskCard" class="trip-risk-card" hidden>
+                <span class="trip-risk-tag">⚠ Trip Risk Scenario · Worst Case</span>
+                <p class="trip-risk-note">หาก OTC ยังเบี่ยงเบนขณะ IGV ค้างที่ 100% ต่อเนื่องในช่วง Baseload Window มีความเสี่ยงเกิด <strong>Loss of Flame Trip</strong> — กำลังผลิตจะตกทันทีเหลือประมาณ Floor ที่กำหนด (1 GT + ST) จนกว่าจะ Restart และผ่าน Resumption Process ครบ ตัวเลขนี้เป็น Worst Case แยกจากค่าปรับปกติ ไม่ได้บวกรวมกัน และไม่ได้คูณด้วยจำนวนครั้ง/ปี เพราะยังไม่มีข้อมูล Probability ที่ยืนยันได้</p>
+                <div class="trip-risk-grid">
+                  <div class="trip-risk-item"><span>กำลังผลิตที่เหลือ (Floor)</span><strong id="tripFloorPower">— MW</strong></div>
+                  <div class="trip-risk-item"><span>กำลังผลิตที่หายไปทันที</span><strong id="tripMwLoss">— MW</strong></div>
+                  <div class="trip-risk-item"><span>ระยะเวลารวมจนคืนความพร้อม</span><strong id="tripDuration">—</strong></div>
+                  <div class="trip-risk-item highlight"><span>ค่าปรับ Post Event หาก Trip (Worst Case)</span><strong id="tripPenalty">฿—</strong></div>
+                </div>
               </div>
             </div>
           </div>
@@ -106,6 +112,7 @@
               <span><i class="dot dot-power"></i>GT Active Power</span>
               <span><i class="dot dot-marker"></i>Startup Complete</span>
               <span><i class="dot dot-restore"></i>Restoration Time</span>
+              <span><i class="dot dot-trip"></i>GT Trip (ถ้าเกิด)</span>
             </div>
           </div>
         </section>
@@ -460,6 +467,12 @@
               </label>
               <label>Trip Restart Duration (min)
                 <input id="tripRestartMinInput" type="number" value="120" min="0" step="1">
+              </label>
+              <label>GT Unit Active Power (MW)
+                <input id="gtUnitPowerInput" type="number" value="240" min="0" step="1">
+              </label>
+              <label>GT Power Decline Rate (MW / min)
+                <input id="gtPowerDeclineRateInput" type="number" value="1" min="0.01" step="0.1">
               </label>
               <p class="hint">Worst-case: Loss of Flame Trip ระหว่าง Baseload Window — กำลังผลิตตกค้างที่ Floor นี้จนกว่าจะ Restart + Resumption เสร็จ ใช้เฉพาะ Startup Condition HOT/WARM ในหน้า Dashboard</p>
             </div>
