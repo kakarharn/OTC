@@ -1074,7 +1074,7 @@ function drawHeroChart(now) {
       ? `${SCENARIOS.find((s) => s.key === execState.scenario).label} · OTC Recovery`
       : "OTC Recovery · เลือก Condition ด้านบนสุด";
 
-    const pad = { left: 46, right: 14, top: 30, bottom: 26 };
+    const pad = { left: 46, right: 50, top: 30, bottom: 26 };
     const plotW = w - pad.left - pad.right;
     const plotH = h - pad.top - pad.bottom;
     const yFor = (val) => pad.top + (1 - (val - curveResetY) / (curveReferenceY - curveResetY)) * plotH;
@@ -1126,6 +1126,28 @@ function drawHeroChart(now) {
     heroCtx.lineTo(w - pad.right, yFor(curveReferenceY));
     heroCtx.stroke();
     heroCtx.setLineDash([]);
+
+    /* ---- Right axis: GT Active Power (MW) — คนละหน่วยกับแกนซ้าย ทำแกนแยกให้ชัด ---- */
+    if (Boolean(execState.scenario)) {
+      const gtFullAxis = appliedConfig.gtUnitPower;
+      const powerAxisYFor = (mw) => pad.top + (1 - mw / gtFullAxis) * plotH;
+
+      heroCtx.strokeStyle = hexToRgba(POWER_LINE_COLOR, 0.5);
+      heroCtx.lineWidth = 1;
+      heroCtx.beginPath();
+      heroCtx.moveTo(w - pad.right, pad.top);
+      heroCtx.lineTo(w - pad.right, h - pad.bottom);
+      heroCtx.stroke();
+
+      heroCtx.fillStyle = POWER_LINE_COLOR;
+      heroCtx.textAlign = "left";
+      heroCtx.font = "500 9px 'IBM Plex Mono', monospace";
+      heroCtx.fillText("0 MW", w - pad.right + 6, powerAxisYFor(0));
+      heroCtx.font = "600 9.5px 'IBM Plex Mono', monospace";
+      heroCtx.fillText(`${gtFullAxis.toFixed(0)} MW`, w - pad.right + 6, powerAxisYFor(gtFullAxis));
+      heroCtx.font = "500 9.5px 'IBM Plex Mono', monospace";
+      heroCtx.textAlign = "center";
+    }
 
     const steps = 48;
 
@@ -1243,7 +1265,7 @@ function drawHeroChart(now) {
         heroCtx.stroke();
         heroCtx.setLineDash([]);
 
-        const restoreLabel = `Restoration ~${recoveryCompleteMin.toFixed(0)}m`;
+        const restoreLabel = `OTC Ready (572°C) +${r.recoveryRemainingMin.toFixed(0)}m`;
         heroCtx.font = "600 9px 'IBM Plex Mono', monospace";
         heroCtx.fillStyle = RESTORATION_LINE_COLOR;
         const restoreWidth = heroCtx.measureText(restoreLabel).width;
