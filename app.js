@@ -27,7 +27,7 @@ let draftThresholdEnabled = false;
 
 let execState = {
   scenario: null,
-  resetY: null,
+  resetY: 0,
   penaltyRate: null,
   annualEvents: null
 };
@@ -132,6 +132,21 @@ function secondsPerUnit(unit) {
 
 function formatBaht(value) {
   return value.toLocaleString("th-TH", { maximumFractionDigits: value >= 100 ? 0 : 2 });
+}
+
+function formatBahtCompact(value) {
+  const abs = Math.abs(value);
+  if (abs >= 1e6) return `${(value / 1e6).toFixed(abs >= 1e7 ? 0 : 1)}M`;
+  if (abs >= 1e3) return `${(value / 1e3).toFixed(abs >= 1e4 ? 0 : 1)}K`;
+  return value.toFixed(0);
+}
+
+function hexToRgba(hex, alpha) {
+  const clean = hex.replace("#", "");
+  const r = Number.parseInt(clean.substring(0, 2), 16);
+  const g = Number.parseInt(clean.substring(2, 4), 16);
+  const b = Number.parseInt(clean.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 function formatHoursMinutes(totalMinutes) {
@@ -681,13 +696,15 @@ const bignumValue = document.querySelector("#bignumValue");
 const bignumScenarioLabel = document.querySelector("#bignumScenarioLabel");
 const bignumBasis = document.querySelector("#bignumBasis");
 const mechGapNote = document.querySelector("#mechGapNote");
-const compareBadTag = document.querySelector("#compareBadTag");
-const compareGoodTag = document.querySelector("#compareGoodTag");
-const compareBadValue = document.querySelector("#compareBadValue");
-const compareGoodValue = document.querySelector("#compareGoodValue");
+const compareRateNote = document.querySelector("#compareRateNote");
+const savingsLabel = document.querySelector("#savingsLabel");
+const compareCells = {
+  hot: { bad: document.querySelector("#compareBadHot"), good: document.querySelector("#compareGoodHot") },
+  warm: { bad: document.querySelector("#compareBadWarm"), good: document.querySelector("#compareGoodWarm") },
+  cold: { bad: document.querySelector("#compareBadCold"), good: document.querySelector("#compareGoodCold") }
+};
 const savingsValue = document.querySelector("#savingsValue");
 
-const quickResetY = document.querySelector("#quickResetY");
 const quickPenaltyRate = document.querySelector("#quickPenaltyRate");
 const quickAnnualEvents = document.querySelector("#quickAnnualEvents");
 const bignumLocked = document.querySelector("#bignumLocked");
@@ -703,6 +720,11 @@ const SCENARIOS = [
   { key: "warm", label: "Warm Start", tag: "WARM", durationKey: "warmMin" },
   { key: "cold", label: "Cold Start", tag: "COLD", durationKey: "coldMin" }
 ];
+
+const SCENARIO_COLORS = { hot: "#fb5d6f", warm: "#f2c94c", cold: "#38bdf8" };
+const NO_PENALTY_COLOR = "#35d68f";
+const AXIS_LABEL_COLOR = "#8298a6";
+const AXIS_LINE_COLOR = "#28414d";
 
 function computeScenario(durationMin, rampRateCPerMin, resetY, penaltyRate) {
   const yAtComplete = Math.min(appliedConfig.referenceY, resetY + rampRateCPerMin * durationMin);
@@ -735,10 +757,7 @@ function animateNumber(el, from, to, duration, formatter) {
 let bignumAnimated = false;
 
 function inputsReady() {
-  return (
-    Number.isFinite(Number.parseFloat(quickResetY.value)) &&
-    Number.isFinite(Number.parseFloat(quickPenaltyRate.value))
-  );
+  return Number.isFinite(Number.parseFloat(quickPenaltyRate.value));
 }
 
 function annualReady() {
@@ -746,12 +765,10 @@ function annualReady() {
 }
 
 function flashMissingInputs() {
-  [quickResetY, quickPenaltyRate].forEach((el) => {
-    if (!Number.isFinite(Number.parseFloat(el.value))) {
-      el.classList.add("field-missing");
-      setTimeout(() => el.classList.remove("field-missing"), 1200);
-    }
-  });
+  if (!Number.isFinite(Number.parseFloat(quickPenaltyRate.value))) {
+    quickPenaltyRate.classList.add("field-missing");
+    setTimeout(() => quickPenaltyRate.classList.remove("field-missing"), 1200);
+  }
 }
 
 function selectCondition(key) {
@@ -769,7 +786,15 @@ conditionSelect.querySelectorAll("[data-scenario]").forEach((btn) => {
 });
 
 function buildNarrative(meta, r) {
-  return `OTC ปัจจุบันถูก Reset เหลือ Y ที่ ${execState.resetY.toFixed(0)}°C หลัง ${appliedConfig[meta.durationKey]} นาทีของ ${meta.label} คาดว่า Y จะอยู่ที่ประมาณ ${r.yAtComplete.toFixed(0)}°C ซึ่งยังห่างจาก Reference ${appliedConfig.referenceY.toFixed(0)}°C อยู่ ${r.yGap.toFixed(0)}°C ภายใต้สมมติฐาน MW Loss Factor ${appliedConfig.mwLossFactor} MW/°C จะเกิด MW Loss ประมาณ ${r.mwLoss.toFixed(0)} MW ทำให้ Predicted Active Power เหลือประมาณ ${r.predictedPower.toFixed(0)} MW จาก Reference ${appliedConfig.refActivePower.toFixed(0)} MW ต้องใช้เวลา Recovery เพิ่มอีกประมาณ ${formatHoursMinutes(r.recoveryRemainingMin)} ก่อนถึง Reference และเมื่อรวม Resumption Process อีก ${appliedConfig.resumptionHr} ชม. Total Penalty Duration จะอยู่ที่ประมาณ ${formatHoursMinutes(r.totalPenaltyDurationHr * 60)} จาก Penalty Rate ที่กำหนด โปรแกรมประเมิน Estimated Financial Penalty เท่ากับ ฿${formatBaht(r.estimatedPenalty)}`;
+  const otcNow = execState.resetY.toFixed(0);
+  const otcAtComplete = r.yAtComplete.toFixed(0);
+  const referenceY = appliedConfig.referenceY.toFixed(0);
+
+  if (r.estimatedPenalty <= 0) {
+    return `OTC ถูก Reset เหลือ ${otcNow}°C แต่ด้วย Ramp Rate ตอนนี้ OTC จะไต่กลับไปถึง ${referenceY}°C ได้ทันเวลา ก่อนที่ Startup แบบ ${meta.label} จะเสร็จ จึงไม่มี MW Loss และไม่ต้องเสียค่าปรับสักบาทเลย`;
+  }
+
+  return `OTC ถูก Reset เหลือ ${otcNow}°C และใช้เวลา Recover แบบ ${meta.label} (${appliedConfig[meta.durationKey]} นาที) พอ Startup เสร็จ OTC จะขึ้นมาอยู่ที่ประมาณ ${otcAtComplete}°C ซึ่งยังไม่ถึงเป้า ${referenceY}°C ทำให้ผลิตไฟได้น้อยลงประมาณ ${r.mwLoss.toFixed(0)} MW จนกว่าจะฟื้นตัวเต็มที่ รวมแล้วคาดว่าจะมีค่าปรับประมาณ ฿${formatBaht(r.estimatedPenalty)}`;
 }
 
 function renderExecutive() {
@@ -783,13 +808,20 @@ function renderExecutive() {
     btn.classList.toggle("active", btn.dataset.scenario === execState.scenario);
   });
 
+  if (!inputsReady()) {
+    compareLocked.hidden = false;
+    compareContent.hidden = true;
+  } else {
+    compareLocked.hidden = true;
+    compareContent.hidden = false;
+    renderCompareTable(rate);
+  }
+
   if (!unlocked) {
     resultLocked.hidden = false;
     resultCard.hidden = true;
     narrativeLocked.hidden = false;
     narrativeText.hidden = true;
-    compareLocked.hidden = false;
-    compareContent.hidden = true;
     if (!annualReady()) {
       bignumLocked.hidden = false;
       bignumContent.hidden = true;
@@ -802,6 +834,7 @@ function renderExecutive() {
 
   resultLocked.hidden = true;
   resultCard.hidden = false;
+  resultCard.dataset.condition = meta.key;
   resultTag.textContent = `${meta.tag} START FORECAST`;
   resYAtComplete.textContent = `${r.yAtComplete.toFixed(0)}°C`;
   resActivePower.textContent = `${r.predictedPower.toFixed(0)} MW`;
@@ -812,23 +845,6 @@ function renderExecutive() {
   narrativeLocked.hidden = true;
   narrativeText.hidden = false;
   narrativeText.textContent = buildNarrative(meta, r);
-
-  compareLocked.hidden = true;
-  compareContent.hidden = false;
-
-  const badRate = rate;
-  const goodRate = appliedConfig.rampRateAfterFix;
-  const badResult = computeScenario(appliedConfig[meta.durationKey], badRate, execState.resetY, execState.penaltyRate);
-  const goodResult = computeScenario(appliedConfig[meta.durationKey], goodRate, execState.resetY, execState.penaltyRate);
-  const annualForCompare = annualReady() ? execState.annualEvents : 1;
-  const badAnnual = badResult.estimatedPenalty * annualForCompare;
-  const goodAnnual = goodResult.estimatedPenalty * annualForCompare;
-
-  compareBadTag.textContent = `Current · ${badRate.toFixed(2)} °C/min`;
-  compareGoodTag.textContent = `Study Case · ${goodRate.toFixed(2)} °C/min`;
-  compareBadValue.textContent = `฿${formatBaht(badAnnual)}`;
-  compareGoodValue.textContent = `฿${formatBaht(goodAnnual)}`;
-  savingsValue.textContent = `฿${formatBaht(Math.max(0, badAnnual - goodAnnual))}${annualReady() ? " / year" : " / event"}`;
 
   if (!annualReady()) {
     bignumLocked.hidden = false;
@@ -856,15 +872,44 @@ function renderExecutive() {
   `;
 }
 
+function renderCompareTable(rate) {
+  const goodRate = appliedConfig.rampRateAfterFix;
+  const penaltyRate = execState.penaltyRate;
+  const annualForCompare = annualReady() ? execState.annualEvents : 1;
+  let badTotal = 0;
+  let goodTotal = 0;
+
+  SCENARIOS.forEach((sc) => {
+    const badResult = computeScenario(appliedConfig[sc.durationKey], rate, 0, penaltyRate);
+    const goodResult = computeScenario(appliedConfig[sc.durationKey], goodRate, 0, penaltyRate);
+    const badAnnual = badResult.estimatedPenalty * annualForCompare;
+    const goodAnnual = goodResult.estimatedPenalty * annualForCompare;
+    badTotal += badAnnual;
+    goodTotal += goodAnnual;
+
+    const cells = compareCells[sc.key];
+    cells.bad.textContent = `฿${formatBaht(badAnnual)}`;
+    if (goodAnnual <= 0) {
+      cells.good.textContent = "฿0 · หมดปัญหา";
+      cells.good.classList.add("zero");
+    } else {
+      cells.good.textContent = `฿${formatBaht(goodAnnual)}`;
+      cells.good.classList.remove("zero");
+    }
+  });
+
+  compareRateNote.textContent = `Current Ramp Rate ${rate.toFixed(2)} °C/min → หลังปรับปรุง ${goodRate.toFixed(2)} °C/min`;
+  savingsLabel.textContent = annualReady()
+    ? "Potential Annual Savings (รวมทั้ง 3 Condition)"
+    : "Potential Savings ต่อครั้ง (รวมทั้ง 3 Condition)";
+  savingsValue.textContent = `฿${formatBaht(Math.max(0, badTotal - goodTotal))}`;
+}
+
 function syncQuickInputsFromExecState() {
   quickPenaltyRate.value = execState.penaltyRate;
   quickAnnualEvents.value = execState.annualEvents;
 }
 
-quickResetY.addEventListener("input", () => {
-  execState.resetY = Number.parseFloat(quickResetY.value);
-  renderExecutive();
-});
 quickPenaltyRate.addEventListener("input", () => {
   execState.penaltyRate = Number.parseFloat(quickPenaltyRate.value);
   renderExecutive();
@@ -911,29 +956,117 @@ function drawHeroChart(now) {
     heroCtx.setTransform(scale, 0, 0, scale, 0, 0);
     heroCtx.clearRect(0, 0, w, h);
 
-    const unlocked = revealed && inputsReady() && execState.scenario;
     const curveReferenceY = appliedConfig.referenceY;
+    const curveResetY = 0;
     const curveRate = Math.max(0.1, currentRampRateCPerMin());
-    let curveResetY = 0;
-    let curveDurationMin = 300;
+    const penaltyRateEffective = inputsReady() ? execState.penaltyRate : appliedConfig.penaltyRate;
+    const maxDurationMin = Math.max(appliedConfig.hotMin, appliedConfig.warmMin, appliedConfig.coldMin);
+    const totalMin = Math.max(maxDurationMin * 1.15, (curveReferenceY - curveResetY) / curveRate * 1.05);
 
-    if (unlocked) {
-      const sc = SCENARIOS.find((s) => s.key === execState.scenario);
-      curveResetY = execState.resetY;
-      curveDurationMin = appliedConfig[sc.durationKey];
-      heroChartTag.textContent = `${sc.label} · Y Recovery`;
-    } else {
-      heroChartTag.textContent = "Y Recovery · illustrative";
-    }
+    const isSelected = Boolean(execState.scenario);
+    const curveColor = isSelected ? SCENARIO_COLORS[execState.scenario] : "#2dd9c2";
 
-    const totalMin = Math.max(curveDurationMin * 1.35, (curveReferenceY - curveResetY) / curveRate * 1.05);
-    const pad = { left: 12, right: 12, top: 16, bottom: 16 };
+    heroChartTag.textContent = isSelected
+      ? `${SCENARIOS.find((s) => s.key === execState.scenario).label} · OTC Recovery`
+      : "OTC Recovery · เลือก Condition ด้านบนสุด";
+
+    const pad = { left: 46, right: 14, top: 30, bottom: 26 };
     const plotW = w - pad.left - pad.right;
     const plotH = h - pad.top - pad.bottom;
     const yFor = (val) => pad.top + (1 - (val - curveResetY) / (curveReferenceY - curveResetY)) * plotH;
     const xFor = (min) => pad.left + (min / totalMin) * plotW;
-    const lineColor = unlocked ? "#f5a524" : "#2dd9c2";
 
+    heroCtx.textBaseline = "middle";
+    heroCtx.font = "500 9.5px 'IBM Plex Mono', monospace";
+
+    /* ---- Y axis: temperature, 572°C highlighted ---- */
+    heroCtx.strokeStyle = AXIS_LINE_COLOR;
+    heroCtx.lineWidth = 1;
+    heroCtx.beginPath();
+    heroCtx.moveTo(pad.left, pad.top);
+    heroCtx.lineTo(pad.left, h - pad.bottom);
+    heroCtx.stroke();
+
+    heroCtx.fillStyle = AXIS_LABEL_COLOR;
+    heroCtx.textAlign = "right";
+    heroCtx.fillText(`${curveResetY.toFixed(0)}°C`, pad.left - 6, yFor(curveResetY));
+
+    heroCtx.fillStyle = "#c9d8de";
+    heroCtx.font = "600 10px 'IBM Plex Mono', monospace";
+    heroCtx.fillText(`${curveReferenceY.toFixed(0)}°C`, pad.left - 6, yFor(curveReferenceY));
+    heroCtx.font = "500 9.5px 'IBM Plex Mono', monospace";
+
+    /* ---- X axis: time in minutes ---- */
+    heroCtx.strokeStyle = AXIS_LINE_COLOR;
+    heroCtx.beginPath();
+    heroCtx.moveTo(pad.left, h - pad.bottom);
+    heroCtx.lineTo(w - pad.right, h - pad.bottom);
+    heroCtx.stroke();
+
+    heroCtx.fillStyle = AXIS_LABEL_COLOR;
+    heroCtx.textAlign = "center";
+    heroCtx.textBaseline = "top";
+    const xTicks = 4;
+    for (let i = 0; i <= xTicks; i += 1) {
+      const min = (totalMin / xTicks) * i;
+      heroCtx.fillText(`${min.toFixed(0)}m`, xFor(min), h - pad.bottom + 6);
+    }
+    heroCtx.textBaseline = "middle";
+
+    /* ---- 572°C reference line ---- */
+    heroCtx.setLineDash([3, 4]);
+    heroCtx.strokeStyle = "#324451";
+    heroCtx.lineWidth = 1;
+    heroCtx.beginPath();
+    heroCtx.moveTo(pad.left, yFor(curveReferenceY));
+    heroCtx.lineTo(w - pad.right, yFor(curveReferenceY));
+    heroCtx.stroke();
+    heroCtx.setLineDash([]);
+
+    /* ---- Loss triangle: เฉพาะ Condition ที่เลือก จากจุดตัดยาวไปจนถึงจุดที่ OTC = 572°C ---- */
+    if (isSelected) {
+      const sc = SCENARIOS.find((s) => s.key === execState.scenario);
+      const duration = appliedConfig[sc.durationKey];
+      const r = computeScenario(duration, curveRate, curveResetY, penaltyRateEffective);
+      const noPenalty = r.estimatedPenalty <= 0;
+
+      if (!noPenalty) {
+        const recoveryCompleteMin = Math.min(totalMin, (curveReferenceY - curveResetY) / curveRate);
+        const p1x = xFor(Math.min(duration, totalMin));
+        const p1y = yFor(r.yAtComplete);
+        const topY = yFor(curveReferenceY);
+        const p3x = xFor(recoveryCompleteMin);
+
+        heroCtx.beginPath();
+        heroCtx.moveTo(p1x, p1y);
+        heroCtx.lineTo(p1x, topY);
+        heroCtx.lineTo(p3x, topY);
+        heroCtx.closePath();
+        heroCtx.fillStyle = hexToRgba(curveColor, 0.22);
+        heroCtx.fill();
+
+        heroCtx.setLineDash([4, 3]);
+        heroCtx.strokeStyle = curveColor;
+        heroCtx.lineWidth = 1.4;
+        heroCtx.beginPath();
+        heroCtx.moveTo(p1x, pad.top);
+        heroCtx.lineTo(p1x, h - pad.bottom);
+        heroCtx.stroke();
+        heroCtx.setLineDash([]);
+      }
+
+      const labelText = noPenalty ? "ไม่เสียค่าปรับ ฿0" : `฿${formatBahtCompact(r.estimatedPenalty)}`;
+      heroCtx.font = "700 10.5px 'IBM Plex Mono', monospace";
+      heroCtx.fillStyle = noPenalty ? NO_PENALTY_COLOR : curveColor;
+      const labelWidth = heroCtx.measureText(labelText).width;
+      const labelX = clamp(xFor(Math.min(duration, totalMin)), pad.left + labelWidth / 2 + 2, w - pad.right - labelWidth / 2 - 2);
+      heroCtx.textAlign = "center";
+      heroCtx.textBaseline = "alphabetic";
+      heroCtx.fillText(labelText, labelX, pad.top - 8);
+      heroCtx.textBaseline = "middle";
+    }
+
+    /* ---- Recovery curve (0°C -> 572°C ตาม Ramp Rate ปัจจุบัน) ---- */
     heroCtx.beginPath();
     const steps = 48;
     for (let i = 0; i <= steps; i += 1) {
@@ -944,35 +1077,19 @@ function drawHeroChart(now) {
       if (i === 0) heroCtx.moveTo(px, py);
       else heroCtx.lineTo(px, py);
     }
-    heroCtx.strokeStyle = lineColor;
+    heroCtx.strokeStyle = curveColor;
     heroCtx.lineWidth = 2.2;
     heroCtx.stroke();
 
-    heroCtx.setLineDash([3, 4]);
-    heroCtx.strokeStyle = "#324451";
-    heroCtx.lineWidth = 1;
-    heroCtx.beginPath();
-    heroCtx.moveTo(pad.left, yFor(curveReferenceY));
-    heroCtx.lineTo(w - pad.right, yFor(curveReferenceY));
-    heroCtx.stroke();
-    heroCtx.setLineDash([]);
-
-    const markerX = xFor(Math.min(curveDurationMin, totalMin));
-    heroCtx.strokeStyle = "#58202b";
-    heroCtx.lineWidth = 1;
-    heroCtx.beginPath();
-    heroCtx.moveTo(markerX, pad.top);
-    heroCtx.lineTo(markerX, h - pad.bottom);
-    heroCtx.stroke();
-
+    /* ---- animated leading dot ---- */
     const loopMs = 3200;
     const t = (now % loopMs) / loopMs;
     const dotMin = t * totalMin;
     const dotY = Math.min(curveReferenceY, curveResetY + curveRate * dotMin);
     heroCtx.beginPath();
     heroCtx.arc(xFor(dotMin), yFor(dotY), 4, 0, Math.PI * 2);
-    heroCtx.fillStyle = lineColor;
-    heroCtx.shadowColor = lineColor;
+    heroCtx.fillStyle = curveColor;
+    heroCtx.shadowColor = curveColor;
     heroCtx.shadowBlur = 10;
     heroCtx.fill();
     heroCtx.shadowBlur = 0;

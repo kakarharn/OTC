@@ -38,21 +38,18 @@
               <button type="button" data-scenario="cold"><span class="cond-tag">COLD</span><span class="cond-min" id="condColdMin">450 min</span></button>
             </div>
 
-            <div class="hero-inputs">
-              <label>Current OTC Y after reset (°C)
-                <input id="quickResetY" type="number" placeholder="เช่น 0" step="1">
-              </label>
+            <div class="hero-inputs hero-inputs-single">
               <label>Penalty Rate (THB / hr)
                 <input id="quickPenaltyRate" type="number" placeholder="เช่น 100000" step="1000">
               </label>
             </div>
 
-            <div id="resultLocked" class="locked-prompt">เลือก <strong>Condition</strong> ด้านบน หลังจากกรอก Current Y และ Penalty Rate เพื่อดู Forecast</div>
+            <div id="resultLocked" class="locked-prompt">เลือก <strong>Condition</strong> ด้านบน หลังจากกรอก Penalty Rate เพื่อดู Forecast</div>
 
             <div id="resultCard" class="result-card" hidden>
               <span class="result-tag" id="resultTag">COLD START FORECAST</span>
               <div class="result-grid">
-                <div class="result-item"><span>Y at Startup Complete</span><strong id="resYAtComplete">—°C</strong></div>
+                <div class="result-item"><span>OTC at Startup Complete</span><strong id="resYAtComplete">—°C</strong></div>
                 <div class="result-item"><span>Predicted Active Power</span><strong id="resActivePower">— MW</strong></div>
                 <div class="result-item"><span>MW Loss</span><strong id="resMwLoss">— MW</strong></div>
                 <div class="result-item"><span>Penalty Duration</span><strong id="resPenaltyDuration">—</strong></div>
@@ -68,11 +65,11 @@
 
         <section class="pitch-section" id="pitchChart">
           <div class="pitch-inner">
-            <span class="pitch-eyebrow tone-teal">Y Recovery · Active Power</span>
-            <h2 class="section-title">เส้นทาง Recovery ของ Y</h2>
-            <p class="section-lede">จุดไล่ตามเส้นแสดง Y ไต่จาก Current Y ไปยัง Reference — เส้นประแดงคือจุด Startup Complete</p>
+            <span class="pitch-eyebrow tone-teal">OTC Recovery · Active Power</span>
+            <h2 class="section-title">เส้นทาง Recovery ของ OTC</h2>
+            <p class="section-lede">OTC หลัง Reset จะเริ่มจาก 0°C แล้วไต่กลับไปหา Reference 572°C ตาม Ramp Rate — พื้นที่แรเงาคือช่วงที่ OTC ยังไปไม่ถึงเป้าตอน Startup แต่ละ Condition เสร็จ พร้อมค่าปรับโดยประมาณของแต่ละ Condition</p>
             <div class="hero-chart-frame">
-              <span class="hero-chart-tag" id="heroChartTag">Y Recovery · illustrative</span>
+              <span class="hero-chart-tag" id="heroChartTag">OTC Recovery · illustrative</span>
               <canvas id="heroChart" aria-hidden="true"></canvas>
             </div>
           </div>
@@ -82,37 +79,37 @@
           <div class="pitch-inner">
             <span class="pitch-eyebrow tone-teal">The Mechanism</span>
             <h2 class="section-title">ทำไมตัวเลขด้านบนถึงออกมาแบบนี้</h2>
-            <p class="section-lede">Y ต้องไต่จาก Current Y กลับไป Reference ตาม Ramp Rate — แต่ Startup มักเสร็จก่อนที่ Y จะไปถึง ช่องว่างตรงนี้คือ MW ที่หายไป</p>
+            <p class="section-lede">OTC ต้องไต่จาก Current OTC กลับไป Reference ตาม Ramp Rate — แต่ Startup มักเสร็จก่อนที่ OTC จะไปถึง ช่องว่างตรงนี้คือ MW ที่หายไป</p>
             <div class="mech-track">
               <div class="mech-step">
                 <div class="mech-dot"></div>
                 <div class="mech-label">OTC Reset</div>
-                <div class="mech-note">Y: 572°C → 0°C</div>
+                <div class="mech-note">OTC: 572°C → 0°C</div>
               </div>
               <div class="mech-step">
                 <div class="mech-dot"></div>
                 <div class="mech-label">Startup Begins</div>
-                <div class="mech-note">Y ค่อยๆ Recover</div>
+                <div class="mech-note">OTC ค่อยๆ Recover</div>
               </div>
               <div class="mech-step hot">
                 <div class="mech-dot"></div>
                 <div class="mech-label">Startup Complete</div>
-                <div class="mech-note" id="mechGapNote">Y ยังไม่ถึงเป้า</div>
+                <div class="mech-note" id="mechGapNote">OTC ยังไม่ถึงค่า Default</div>
               </div>
               <div class="mech-step hot">
                 <div class="mech-dot"></div>
-                <div class="mech-label">MW Loss เกิดขึ้น</div>
-                <div class="mech-note">Active Power ต่ำกว่าเป้า</div>
+                <div class="mech-label">MW Loss Deviation</div>
+                <div class="mech-note">GT Base Load Active Power Drop &amp; Post Event จาก NCC</div>
               </div>
               <div class="mech-step">
                 <div class="mech-dot"></div>
-                <div class="mech-label">Y ถึง 572°C</div>
-                <div class="mech-note">OTC พร้อมทำ Load</div>
+                <div class="mech-label">OTC กลับมาเป็นค่าปกติ</div>
+                <div class="mech-note">GT พร้อมทำ Maximum Base Load</div>
               </div>
               <div class="mech-step ok">
                 <div class="mech-dot"></div>
-                <div class="mech-label">Resumption 4h</div>
-                <div class="mech-note">NCC รับ / ค่าความพร้อมคืน</div>
+                <div class="mech-label">Resumption to NCC</div>
+                <div class="mech-note">คืนค่าความพร้อมจ่ายให้ศูนย์ควบคุม</div>
               </div>
             </div>
           </div>
@@ -121,7 +118,7 @@
         <section class="pitch-section" id="pitchNarrative">
           <div class="pitch-inner">
             <span class="pitch-eyebrow">Auto Explanation</span>
-            <h2 class="section-title">สรุปเป็นภาษาคน</h2>
+            <h2 class="section-title">สรุปให้เข้าใจง่าย</h2>
             <div id="narrativeLocked" class="locked-prompt">คำอธิบายจะขึ้นหลังจากเลือก Condition ด้านบนสุด</div>
             <p class="narrative-text" id="narrativeText" hidden></p>
           </div>
@@ -149,27 +146,35 @@
         <section class="pitch-section" id="pitchCompare">
           <div class="pitch-inner">
             <span class="pitch-eyebrow tone-mw">What-if Analysis</span>
-            <h2 class="section-title">ถ้าปรับ Ramp Rate ให้เร็วขึ้น จะเกิดอะไรขึ้น</h2>
-            <p class="section-lede">เทียบ Annual Exposure ระหว่างสถานะปัจจุบัน กับสถานะหลังปรับปรุง Ramp Rate — เป็น Study Case เบื้องต้น ยังไม่ใช่ข้อเสนอที่ผ่านการอนุมัติทาง Engineering</p>
-            <div id="compareLocked" class="locked-prompt">ตัวเลขจะขึ้นหลังจากเลือก Condition ด้านบนสุด</div>
+            <h2 class="section-title">ถ้าปรับ Ramp Rate ให้เร็วขึ้น ความเสียหายจะหายไปแค่ไหน</h2>
+            <p class="section-lede">เทียบ Annual Exposure ของทั้ง 3 Condition ระหว่างสถานะปัจจุบัน กับสถานะหลังปรับปรุง Ramp Rate — เป็น Study Case เบื้องต้น ยังไม่ใช่ข้อเสนอที่ผ่านการอนุมัติทาง Engineering</p>
+            <div id="compareLocked" class="locked-prompt">กรอก <strong>Penalty Rate</strong> ด้านบนสุด เพื่อดูตัวเลขเปรียบเทียบ</div>
             <div id="compareContent" hidden>
-              <div class="compare-grid">
-                <div class="compare-card bad">
-                  <span class="tag" id="compareBadTag">Current · TU 1.0 °C/min</span>
-                  <h3>ไม่เปลี่ยนแปลง</h3>
-                  <div class="value" id="compareBadValue">฿0</div>
-                  <div class="value-note">Estimated Annual Exposure</div>
+              <div class="compare-table">
+                <div class="compare-row compare-row-head">
+                  <span>Condition</span>
+                  <span>ตอนนี้</span>
+                  <span>หลังปรับปรุง Ramp Rate</span>
                 </div>
-                <div class="compare-vs">VS</div>
-                <div class="compare-card good">
-                  <span class="tag" id="compareGoodTag">Study Case · TU 2.0 °C/min</span>
-                  <h3>สมมติปรับปรุง</h3>
-                  <div class="value" id="compareGoodValue">฿0</div>
-                  <div class="value-note">Estimated Annual Exposure</div>
+                <div class="compare-row" data-scenario="hot">
+                  <span class="compare-row-tag">HOT</span>
+                  <strong class="compare-row-bad" id="compareBadHot">฿0</strong>
+                  <strong class="compare-row-good" id="compareGoodHot">฿0</strong>
+                </div>
+                <div class="compare-row" data-scenario="warm">
+                  <span class="compare-row-tag">WARM</span>
+                  <strong class="compare-row-bad" id="compareBadWarm">฿0</strong>
+                  <strong class="compare-row-good" id="compareGoodWarm">฿0</strong>
+                </div>
+                <div class="compare-row" data-scenario="cold">
+                  <span class="compare-row-tag">COLD</span>
+                  <strong class="compare-row-bad" id="compareBadCold">฿0</strong>
+                  <strong class="compare-row-good" id="compareGoodCold">฿0</strong>
                 </div>
               </div>
+              <p class="compare-footnote" id="compareRateNote">Current Ramp Rate — หลังปรับปรุง Ramp Rate</p>
               <div class="savings-banner">
-                <span>Potential Annual Savings (Study Case)</span>
+                <span id="savingsLabel">Potential Annual Savings (รวมทั้ง 3 Condition)</span>
                 <strong id="savingsValue">฿0</strong>
               </div>
             </div>
