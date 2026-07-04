@@ -1536,11 +1536,8 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
               </button>
               <div id="tripRiskCard" class="trip-risk-card" hidden>
                 <span class="trip-risk-tag">⚠ Trip Risk Scenario · Worst Case</span>
-                <p class="trip-risk-note">หาก OTC ยังเบี่ยงเบนขณะ IGV ค้างที่ 100% ต่อเนื่องในช่วง Baseload Window มีความเสี่ยงเกิด <strong>Loss of Flame Trip</strong> — กำลังผลิตจะตกทันทีเหลือประมาณ Floor ที่กำหนด (1 GT + ST) จนกว่าจะ Restart และผ่าน Resumption Process ครบ ตัวเลขนี้เป็น Worst Case แยกจากค่าปรับปกติ ไม่ได้บวกรวมกัน และไม่ได้คูณด้วยจำนวนครั้ง/ปี เพราะยังไม่มีข้อมูล Probability ที่ยืนยันได้</p>
+                <p class="trip-risk-note">หาก Outlet Temp Burner ต่ำลงต่อเนื่อง อาจส่งผลต่อ GT และทำให้ Trip ได้จากหลายสาเหตุ เช่น Loss of Flame หรือ Protection/Monitoring Trip อื่นๆ — ตัวเลขนี้เป็น Worst Case แยกจากค่าปรับปกติ ไม่ได้บวกรวมกัน</p>
                 <div class="trip-risk-grid">
-                  <div class="trip-risk-item"><span>กำลังผลิตที่เหลือ (Floor)</span><strong id="tripFloorPower">— MW</strong></div>
-                  <div class="trip-risk-item"><span>กำลังผลิตที่หายไปทันที</span><strong id="tripMwLoss">— MW</strong></div>
-                  <div class="trip-risk-item"><span>ระยะเวลารวมจนคืนความพร้อม</span><strong id="tripDuration">—</strong></div>
                   <div class="trip-risk-item highlight"><span>ค่าปรับ Post Event หาก Trip (Worst Case)</span><strong id="tripPenalty">฿—</strong></div>
                 </div>
               </div>
@@ -2677,9 +2674,6 @@ const ptTotalTime = document.querySelector("#ptTotalTime");
 const tripRiskWrap = document.querySelector("#tripRiskWrap");
 const tripRiskToggle = document.querySelector("#tripRiskToggle");
 const tripRiskCard = document.querySelector("#tripRiskCard");
-const tripFloorPower = document.querySelector("#tripFloorPower");
-const tripMwLoss = document.querySelector("#tripMwLoss");
-const tripDuration = document.querySelector("#tripDuration");
 const tripPenalty = document.querySelector("#tripPenalty");
 const narrativeLocked = document.querySelector("#narrativeLocked");
 const narrativeText = document.querySelector("#narrativeText");
@@ -2723,8 +2717,10 @@ const RESTORATION_LINE_COLOR = "#7dd3fc";
 function computeScenario(durationMin, rampRateCPerMin, resetY, penaltyRate) {
   const yAtComplete = Math.min(appliedConfig.referenceY, resetY + rampRateCPerMin * durationMin);
   const yGap = Math.max(0, appliedConfig.referenceY - yAtComplete);
-  const mwLoss = Math.max(0, yGap * appliedConfig.mwLossFactor);
-  const predictedPower = Math.max(0, appliedConfig.refActivePower - mwLoss);
+  const rawMwLoss = Math.max(0, yGap * appliedConfig.mwLossFactor);
+  const maxRealisticLoss = Math.max(0, appliedConfig.refActivePower - appliedConfig.tripFloorMw);
+  const mwLoss = Math.min(rawMwLoss, maxRealisticLoss);
+  const predictedPower = appliedConfig.refActivePower - mwLoss;
   const recoveryRemainingMin = rampRateCPerMin > 0 ? yGap / rampRateCPerMin : 0;
   const totalPenaltyDurationHr = recoveryRemainingMin / 60 + appliedConfig.resumptionHr;
   const estimatedPenalty = totalPenaltyDurationHr * penaltyRate;
@@ -2817,8 +2813,6 @@ tripRiskToggle.addEventListener("click", () => {
 
   if (!isOpen) {
     const tripR = computeTripScenario(execState.penaltyRate);
-    animateDetailNumber(tripFloorPower, tripR.floorMw, (v) => `${v.toFixed(0)} MW`);
-    animateDetailNumber(tripMwLoss, tripR.mwLoss, (v) => `${v.toFixed(0)} MW`);
     animateDetailNumber(tripPenalty, tripR.estimatedPenalty, (v) => `฿${formatBaht(v)}`);
   }
 });
@@ -2906,9 +2900,6 @@ function renderExecutive() {
   if (meta.key === "hot" || meta.key === "warm") {
     const tripR = computeTripScenario(execState.penaltyRate);
     tripRiskWrap.hidden = false;
-    tripFloorPower.textContent = `${tripR.floorMw.toFixed(0)} MW`;
-    tripMwLoss.textContent = `${tripR.mwLoss.toFixed(0)} MW`;
-    tripDuration.textContent = formatHoursMinutes(tripR.totalPenaltyDurationHr * 60);
     tripPenalty.textContent = `฿${formatBaht(tripR.estimatedPenalty)}`;
   } else {
     tripRiskWrap.hidden = true;

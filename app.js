@@ -717,9 +717,6 @@ const ptTotalTime = document.querySelector("#ptTotalTime");
 const tripRiskWrap = document.querySelector("#tripRiskWrap");
 const tripRiskToggle = document.querySelector("#tripRiskToggle");
 const tripRiskCard = document.querySelector("#tripRiskCard");
-const tripFloorPower = document.querySelector("#tripFloorPower");
-const tripMwLoss = document.querySelector("#tripMwLoss");
-const tripDuration = document.querySelector("#tripDuration");
 const tripPenalty = document.querySelector("#tripPenalty");
 const narrativeLocked = document.querySelector("#narrativeLocked");
 const narrativeText = document.querySelector("#narrativeText");
@@ -763,8 +760,10 @@ const RESTORATION_LINE_COLOR = "#7dd3fc";
 function computeScenario(durationMin, rampRateCPerMin, resetY, penaltyRate) {
   const yAtComplete = Math.min(appliedConfig.referenceY, resetY + rampRateCPerMin * durationMin);
   const yGap = Math.max(0, appliedConfig.referenceY - yAtComplete);
-  const mwLoss = Math.max(0, yGap * appliedConfig.mwLossFactor);
-  const predictedPower = Math.max(0, appliedConfig.refActivePower - mwLoss);
+  const rawMwLoss = Math.max(0, yGap * appliedConfig.mwLossFactor);
+  const maxRealisticLoss = Math.max(0, appliedConfig.refActivePower - appliedConfig.tripFloorMw);
+  const mwLoss = Math.min(rawMwLoss, maxRealisticLoss);
+  const predictedPower = appliedConfig.refActivePower - mwLoss;
   const recoveryRemainingMin = rampRateCPerMin > 0 ? yGap / rampRateCPerMin : 0;
   const totalPenaltyDurationHr = recoveryRemainingMin / 60 + appliedConfig.resumptionHr;
   const estimatedPenalty = totalPenaltyDurationHr * penaltyRate;
@@ -857,8 +856,6 @@ tripRiskToggle.addEventListener("click", () => {
 
   if (!isOpen) {
     const tripR = computeTripScenario(execState.penaltyRate);
-    animateDetailNumber(tripFloorPower, tripR.floorMw, (v) => `${v.toFixed(0)} MW`);
-    animateDetailNumber(tripMwLoss, tripR.mwLoss, (v) => `${v.toFixed(0)} MW`);
     animateDetailNumber(tripPenalty, tripR.estimatedPenalty, (v) => `฿${formatBaht(v)}`);
   }
 });
@@ -946,9 +943,6 @@ function renderExecutive() {
   if (meta.key === "hot" || meta.key === "warm") {
     const tripR = computeTripScenario(execState.penaltyRate);
     tripRiskWrap.hidden = false;
-    tripFloorPower.textContent = `${tripR.floorMw.toFixed(0)} MW`;
-    tripMwLoss.textContent = `${tripR.mwLoss.toFixed(0)} MW`;
-    tripDuration.textContent = formatHoursMinutes(tripR.totalPenaltyDurationHr * 60);
     tripPenalty.textContent = `฿${formatBaht(tripR.estimatedPenalty)}`;
   } else {
     tripRiskWrap.hidden = true;

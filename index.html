@@ -82,11 +82,8 @@
               </button>
               <div id="tripRiskCard" class="trip-risk-card" hidden>
                 <span class="trip-risk-tag">⚠ Trip Risk Scenario · Worst Case</span>
-                <p class="trip-risk-note">หาก OTC ยังเบี่ยงเบนขณะ IGV ค้างที่ 100% ต่อเนื่องในช่วง Baseload Window มีความเสี่ยงเกิด <strong>Loss of Flame Trip</strong> — กำลังผลิตจะตกทันทีเหลือประมาณ Floor ที่กำหนด (1 GT + ST) จนกว่าจะ Restart และผ่าน Resumption Process ครบ ตัวเลขนี้เป็น Worst Case แยกจากค่าปรับปกติ ไม่ได้บวกรวมกัน และไม่ได้คูณด้วยจำนวนครั้ง/ปี เพราะยังไม่มีข้อมูล Probability ที่ยืนยันได้</p>
+                <p class="trip-risk-note">หาก Outlet Temp Burner ต่ำลงต่อเนื่อง อาจส่งผลต่อ GT และทำให้ Trip ได้จากหลายสาเหตุ เช่น Loss of Flame หรือ Protection/Monitoring Trip อื่นๆ — ตัวเลขนี้เป็น Worst Case แยกจากค่าปรับปกติ ไม่ได้บวกรวมกัน</p>
                 <div class="trip-risk-grid">
-                  <div class="trip-risk-item"><span>กำลังผลิตที่เหลือ (Floor)</span><strong id="tripFloorPower">— MW</strong></div>
-                  <div class="trip-risk-item"><span>กำลังผลิตที่หายไปทันที</span><strong id="tripMwLoss">— MW</strong></div>
-                  <div class="trip-risk-item"><span>ระยะเวลารวมจนคืนความพร้อม</span><strong id="tripDuration">—</strong></div>
                   <div class="trip-risk-item highlight"><span>ค่าปรับ Post Event หาก Trip (Worst Case)</span><strong id="tripPenalty">฿—</strong></div>
                 </div>
               </div>
