@@ -790,11 +790,6 @@ body.view-technical #view-technical { display: block; }
   font-weight: 600;
   color: var(--ink);
   letter-spacing: 0.01em;
-  opacity: 0;
-  max-height: 0;
-  transform: translateY(-6px);
-  transition: opacity 0.28s ease, transform 0.28s ease, max-height 0.28s ease;
-  overflow: hidden;
 }
 
 .mech-note {
@@ -808,9 +803,7 @@ body.view-technical #view-technical { display: block; }
   overflow: hidden;
 }
 
-.mech-step:hover .mech-label,
 .mech-step:hover .mech-note,
-.mech-step.active .mech-label,
 .mech-step.active .mech-note {
   opacity: 1;
   max-height: 160px;
@@ -1000,6 +993,31 @@ body.view-technical #view-technical { display: block; }
   color: var(--rose);
   font-variant-numeric: tabular-nums;
   text-shadow: 0 0 60px var(--rose-glow);
+}
+
+.bignum.counting {
+  animation: bignumTick 0.12s ease-in-out infinite;
+}
+
+.bignum.landed {
+  animation: bignumLand 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes bignumTick {
+  0%, 100% {
+    text-shadow: 0 0 60px var(--rose-glow);
+    filter: brightness(1);
+  }
+  50% {
+    text-shadow: 0 0 90px var(--rose-glow), 0 0 40px var(--rose);
+    filter: brightness(1.15);
+  }
+}
+
+@keyframes bignumLand {
+  0% { transform: scale(1.2); text-shadow: 0 0 100px var(--rose-glow), 0 0 60px var(--rose); }
+  55% { transform: scale(0.94); }
+  100% { transform: scale(1); text-shadow: 0 0 60px var(--rose-glow); }
 }
 
 .bignum-sub {
@@ -1635,7 +1653,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
               </div>
             </div>
             <span class="pitch-eyebrow">Gas Turbine OTC Controller Reset Impact</span>
-            <h1 class="hook-title">เมื่อ OTC Controller ถูก Reset<br>จะส่งผลต่อกำลังผลิตและค่าปรับ <em>Post Event</em> เท่าไร?</h1>
+            <h1 class="hook-title">OTC Controller ส่งผลต่อกำลังผลิตและบทปรับมากแค่ไหน?</h1>
             <p class="hook-sub">ประเมินผลกระทบจาก Gas Turbine OTC Controller Reset ต่อกำลังผลิต ระยะเวลาคืนความพร้อม และค่าปรับ Post Event จาก NCC ตาม Startup Condition ที่เลือก</p>
 
             <h2 class="hero-subhead">ประเมินผลกระทบตาม Startup Condition</h2>
@@ -2917,7 +2935,18 @@ function animateMinutesNumber(el, targetMinutes) {
   animateNumber(el, 0, Math.max(0, targetMinutes), 900, (v) => formatHoursMinutes(v));
 }
 
-let bignumAnimated = false;
+function animateBignumValue(target) {
+  bignumValue.classList.remove("landed");
+  bignumValue.classList.add("counting");
+  animateNumber(bignumValue, 0, target, 1200, (v) => `฿${formatBaht(v)}`);
+  setTimeout(() => {
+    bignumValue.classList.remove("counting");
+    bignumValue.classList.add("landed");
+    setTimeout(() => bignumValue.classList.remove("landed"), 600);
+  }, 1200);
+}
+
+let lastAnnualExposure = null;
 
 function inputsReady() {
   return Number.isFinite(Number.parseFloat(quickPenaltyRate.value));
@@ -3089,9 +3118,9 @@ function renderExecutive() {
 
   const annualExposure = r.estimatedPenalty * execState.annualEvents;
   const targetText = `฿${formatBaht(annualExposure)}`;
-  if (!bignumAnimated) {
-    bignumAnimated = true;
-    animateNumber(bignumValue, 0, annualExposure, 1200, (v) => `฿${formatBaht(v)}`);
+  if (lastAnnualExposure !== annualExposure) {
+    lastAnnualExposure = annualExposure;
+    animateBignumValue(annualExposure);
   } else {
     bignumValue.textContent = targetText;
   }

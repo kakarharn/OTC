@@ -807,7 +807,18 @@ function animateMinutesNumber(el, targetMinutes) {
   animateNumber(el, 0, Math.max(0, targetMinutes), 900, (v) => formatHoursMinutes(v));
 }
 
-let bignumAnimated = false;
+function animateBignumValue(target) {
+  bignumValue.classList.remove("landed");
+  bignumValue.classList.add("counting");
+  animateNumber(bignumValue, 0, target, 1200, (v) => `฿${formatBaht(v)}`);
+  setTimeout(() => {
+    bignumValue.classList.remove("counting");
+    bignumValue.classList.add("landed");
+    setTimeout(() => bignumValue.classList.remove("landed"), 600);
+  }, 1200);
+}
+
+let lastAnnualExposure = null;
 
 function inputsReady() {
   return Number.isFinite(Number.parseFloat(quickPenaltyRate.value));
@@ -979,9 +990,9 @@ function renderExecutive() {
 
   const annualExposure = r.estimatedPenalty * execState.annualEvents;
   const targetText = `฿${formatBaht(annualExposure)}`;
-  if (!bignumAnimated) {
-    bignumAnimated = true;
-    animateNumber(bignumValue, 0, annualExposure, 1200, (v) => `฿${formatBaht(v)}`);
+  if (lastAnnualExposure !== annualExposure) {
+    lastAnnualExposure = annualExposure;
+    animateBignumValue(annualExposure);
   } else {
     bignumValue.textContent = targetText;
   }
