@@ -583,6 +583,35 @@ body.view-technical #view-technical { display: block; }
   color: var(--mw);
 }
 
+.pitch-eyebrow-hero {
+  position: relative;
+  padding-left: 30px;
+  animation: eyebrowGlow 2.4s ease-in-out infinite;
+}
+
+.pitch-eyebrow-hero::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--rose);
+  transform: translateY(-50%);
+  animation: eyebrowDot 2.4s ease-in-out infinite;
+}
+
+@keyframes eyebrowGlow {
+  0%, 100% { box-shadow: 0 0 0 0 var(--rose-glow), 0 0 0 1px var(--rose-line) inset; }
+  50% { box-shadow: 0 0 20px 5px var(--rose-glow), 0 0 0 1px var(--rose-line) inset; }
+}
+
+@keyframes eyebrowDot {
+  0%, 100% { opacity: 0.5; box-shadow: 0 0 0 0 var(--rose-glow); }
+  50% { opacity: 1; box-shadow: 0 0 8px 3px var(--rose-glow); }
+}
+
 /* --- Hook --- */
 
 .hook-title {
