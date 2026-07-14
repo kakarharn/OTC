@@ -20,7 +20,7 @@ let appliedConfig = {
   penaltyRate: 100000,
   annualEvents: 6,
   thresholdEnabled: false,
-  rampRateAfterFix: 2,
+  rampRateAfterFix: 6000,
   tripFloorMw: 340,
   tripRestartMin: 120,
   gtUnitPower: 240,
@@ -249,9 +249,14 @@ function applyAllChanges() {
   });
   appliedConfig.thresholdEnabled = draftThresholdEnabled;
 
-  execState.penaltyRate = appliedConfig.penaltyRate;
-  execState.annualEvents = appliedConfig.annualEvents;
-  syncQuickInputsFromExecState();
+  if (!Number.isFinite(Number.parseFloat(quickPenaltyRate.value))) {
+    execState.penaltyRate = appliedConfig.penaltyRate;
+    quickPenaltyRate.value = appliedConfig.penaltyRate;
+  }
+  if (!Number.isFinite(Number.parseFloat(quickAnnualEvents.value))) {
+    execState.annualEvents = appliedConfig.annualEvents;
+    quickAnnualEvents.value = appliedConfig.annualEvents;
+  }
 
   refreshPending();
   renderExecutive();
@@ -317,6 +322,7 @@ function getSettings() {
     referenceY: appliedConfig.referenceY,
     refActivePower: appliedConfig.refActivePower,
     mwLossFactor: appliedConfig.mwLossFactor,
+    tripFloorMw: appliedConfig.tripFloorMw,
     penaltyRate: appliedConfig.penaltyRate,
     windowSeconds: Math.max(30, numberValue(inputs.window, 180))
   };
@@ -324,7 +330,10 @@ function getSettings() {
 
 function mwFromY(y, settings) {
   const gap = Math.max(0, settings.referenceY - y);
-  return Math.max(0, settings.refActivePower - gap * settings.mwLossFactor);
+  const rawLoss = gap * settings.mwLossFactor;
+  const maxLoss = Math.max(0, settings.refActivePower - settings.tripFloorMw);
+  const loss = Math.min(rawLoss, maxLoss);
+  return settings.refActivePower - loss;
 }
 
 function stepRge(settings) {
@@ -1000,16 +1009,11 @@ function renderCompareTable(rate) {
     }
   });
 
-  compareRateNote.textContent = `Current Ramp Rate ${rate.toFixed(2)} °C/min → หลังปรับปรุง ${goodRate.toFixed(2)} °C/min`;
+  compareRateNote.textContent = `Current Ramp Rate ${rate.toFixed(2)} °C/min → Force TU Override (เทียบเท่า TU=10ms · OTC กลับ Reference ภายในไม่กี่วินาที)`;
   savingsLabel.textContent = annualReady()
     ? "Potential Annual Savings (รวมทั้ง 3 Condition)"
     : "Potential Savings ต่อครั้ง (รวมทั้ง 3 Condition)";
   savingsValue.textContent = `฿${formatBaht(Math.max(0, badTotal - goodTotal))}`;
-}
-
-function syncQuickInputsFromExecState() {
-  quickPenaltyRate.value = execState.penaltyRate;
-  quickAnnualEvents.value = execState.annualEvents;
 }
 
 quickPenaltyRate.addEventListener("input", () => {

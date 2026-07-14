@@ -28,6 +28,13 @@
 
         <section class="pitch-section" id="pitchHero">
           <div class="pitch-inner">
+            <div class="brand-bar">
+              <img src="egat-logo.png" alt="EGAT — Power for Thai Happiness" class="brand-logo">
+              <div class="brand-meta">
+                <span>SIEMENS SGT5-4000F · Combined Cycle 2 GT + 1 ST</span>
+                <span>Bangpakong Combined Cycle Block 5</span>
+              </div>
+            </div>
             <span class="pitch-eyebrow">Gas Turbine OTC Controller Reset Impact</span>
             <h1 class="hook-title">เมื่อ OTC Controller ถูก Reset<br>จะส่งผลต่อกำลังผลิตและค่าปรับ <em>Post Event</em> เท่าไร?</h1>
             <p class="hook-sub">ประเมินผลกระทบจาก Gas Turbine OTC Controller Reset ต่อกำลังผลิต ระยะเวลาคืนความพร้อม และค่าปรับ Post Event จาก NCC ตาม Startup Condition ที่เลือก</p>
@@ -226,17 +233,17 @@
 
         <section class="pitch-section" id="pitchCompare">
           <div class="pitch-inner">
-            <span class="pitch-eyebrow tone-mw">Improvement Scenario Analysis</span>
-            <h2 class="section-title">การวิเคราะห์ Scenario การปรับปรุง</h2>
-            <p class="section-subhead">หากระยะเวลา Recovery ลดลง จะช่วยลดผลกระทบได้เท่าไร?</p>
-            <p class="section-lede">เปรียบเทียบผลการประเมินระหว่าง Current Configuration และ Improvement Scenario เพื่อศึกษาผลต่อ Recovery Time และค่าปรับ Post Event โดยประมาณ — เป็น Scenario สำหรับการศึกษาเปรียบเทียบ ยังไม่ใช่ข้อเสนอที่ผ่านการอนุมัติทาง Engineering</p>
+            <span class="pitch-eyebrow tone-mw">Emergency Response Impact</span>
+            <h2 class="section-title">ถ้าตอบสนองด้วย Force TU ทันทีที่พบปัญหา</h2>
+            <p class="section-subhead">Force TU Override ลดผลกระทบได้มากแค่ไหน เทียบกับปล่อยให้ Recovery ตามปกติ</p>
+            <p class="section-lede">เปรียบเทียบผลการประเมินระหว่าง Current Configuration (ไม่ตอบสนอง) และ Force TU Override (มาตรการฉุกเฉินชั่วคราวเมื่อพบว่า OTC ถูก Reset) — เป็น Scenario สำหรับการศึกษาเปรียบเทียบ ควรผ่านการตรวจสอบและอนุมัติเป็น SOP ก่อนนำไปปฏิบัติจริง</p>
             <div id="compareLocked" class="locked-prompt">กรอก <strong>อัตราค่าปรับ Post Event</strong> ด้านบนสุด เพื่อดูตัวเลขเปรียบเทียบ</div>
             <div id="compareContent" hidden>
               <div class="compare-table">
                 <div class="compare-row compare-row-head">
                   <span>Condition</span>
                   <span>Current Configuration</span>
-                  <span>Improvement Scenario</span>
+                  <span>Force TU Override</span>
                 </div>
                 <div class="compare-row" data-scenario="hot">
                   <span class="compare-row-tag">HOT</span>
@@ -254,12 +261,12 @@
                   <strong class="compare-row-good" id="compareGoodCold">฿0</strong>
                 </div>
               </div>
-              <p class="compare-footnote" id="compareRateNote">Current Ramp Rate — Improvement Scenario Ramp Rate</p>
+              <p class="compare-footnote" id="compareRateNote">Current Ramp Rate — Force TU Override</p>
               <div class="savings-banner">
                 <span id="savingsLabel">ค่าปรับ Post Event ที่อาจลดลงได้ (รวมทั้ง 3 Condition)</span>
                 <strong id="savingsValue">฿0</strong>
               </div>
-              <p class="trip-risk-disclaimer">⚠ หมายเหตุ: Trip Risk Scenario (Worst Case สำหรับ HOT/WARM) ไม่ได้ลดลงจากการปรับ Ramp Rate ในตารางนี้ เพราะเป็นความเสี่ยงจาก Loss of Flame ที่เกิดจาก IGV ค้างที่ 100% ระหว่าง Baseload Window ไม่ใช่จากความเร็วของ OTC Recovery</p>
+              <p class="trip-risk-disclaimer">⚠ หมายเหตุ: Trip Risk Scenario (Worst Case สำหรับ HOT/WARM) ไม่ได้ลดลงจาก Force TU Override ในตารางนี้ เพราะเป็นความเสี่ยงจาก Loss of Flame ที่เกิดจาก IGV ค้างที่ 100% ระหว่าง Baseload Window ไม่ใช่จากความเร็วของ OTC Recovery</p>
             </div>
           </div>
         </section>
@@ -273,6 +280,7 @@
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
             </button>
             <p class="disclaimer">ผลลัพธ์จากโปรแกรมเป็นค่าประมาณจาก Engineering Model และสมมติฐานที่กำหนดในระบบ ใช้สำหรับการศึกษาและประเมินผลกระทบจาก Gas Turbine OTC Controller Reset เท่านั้น ผลลัพธ์อาจแตกต่างจากการคำนวณค่าปรับ Post Event อย่างเป็นทางการตามหลักเกณฑ์และเงื่อนไขที่เกี่ยวข้อง</p>
+            <p class="prepared-by">Prepared by Thitiwat Tapaophong (Shift A)</p>
           </div>
         </section>
 
@@ -447,12 +455,12 @@
           </details>
 
           <details class="control-section" open>
-            <summary><h2>Fix Scenario (Compare)</h2></summary>
+            <summary><h2>Force TU (Emergency Override)</h2></summary>
             <div class="control-body">
-              <label>TU after fix (C / min)
-                <input id="tuAfterFixInput" type="number" value="2" min="0.01" step="0.1">
+              <label>Effective Rate หลัง Force TU (°C / min)
+                <input id="tuAfterFixInput" type="number" value="6000" min="0.01" step="1">
               </label>
-              <p class="hint">ใช้เปรียบเทียบใน Executive Dashboard หัวข้อ "Improvement Scenario Analysis"</p>
+              <p class="hint">เทียบเท่า Force TU=10ms ที่ RGE(R1) (สไลด์ 13B) — มาตรการฉุกเฉินชั่วคราวตอนพบว่า OTC ถูก Reset ไม่ใช่การปรับ RGE ถาวร ใช้เปรียบเทียบใน Executive Dashboard หัวข้อ "Emergency Response Impact"</p>
             </div>
           </details>
 
