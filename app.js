@@ -1039,6 +1039,14 @@ const revealObserver = new IntersectionObserver((entries) => {
 
 document.querySelectorAll(".pitch-section, .mech-step, .pt-step, .pt-arrow, .pt-total").forEach((section) => revealObserver.observe(section));
 
+document.querySelectorAll(".mech-step").forEach((step) => {
+  step.addEventListener("click", () => {
+    const wasActive = step.classList.contains("active");
+    document.querySelectorAll(".mech-step.active").forEach((s) => s.classList.remove("active"));
+    if (!wasActive) step.classList.add("active");
+  });
+});
+
 /* ============================================================
    View switching
    ============================================================ */

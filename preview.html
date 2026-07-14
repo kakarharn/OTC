@@ -733,6 +733,7 @@ body.view-technical #view-technical { display: block; }
   opacity: 0;
   transform: translateY(14px);
   transition: opacity 0.6s ease, transform 0.6s ease;
+  cursor: pointer;
 }
 
 .mech-step.in-view { opacity: 1; transform: translateY(0); }
@@ -752,6 +753,13 @@ body.view-technical #view-technical { display: block; }
   background: var(--muted-dim);
   border: 3px solid var(--bg-950);
   box-shadow: 0 0 0 1px var(--line);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.mech-step:hover .mech-dot,
+.mech-step.active .mech-dot {
+  transform: scale(1.35);
+  box-shadow: 0 0 0 1px var(--teal), 0 0 14px var(--teal);
 }
 
 .mech-step.hot .mech-dot {
@@ -759,7 +767,18 @@ body.view-technical #view-technical { display: block; }
   box-shadow: 0 0 0 1px var(--rose), 0 0 16px var(--rose-glow);
   animation: hotPulse 1.8s ease-in-out infinite;
 }
+.mech-step.hot:hover .mech-dot,
+.mech-step.hot.active .mech-dot {
+  transform: scale(1.35);
+  box-shadow: 0 0 0 1px var(--rose), 0 0 22px 4px var(--rose-glow);
+  animation: none;
+}
 .mech-step.ok .mech-dot { background: var(--mw); box-shadow: 0 0 0 1px var(--mw); }
+.mech-step.ok:hover .mech-dot,
+.mech-step.ok.active .mech-dot {
+  transform: scale(1.35);
+  box-shadow: 0 0 0 1px var(--mw), 0 0 14px var(--mw);
+}
 
 @keyframes hotPulse {
   0%, 100% { box-shadow: 0 0 0 1px var(--rose), 0 0 10px var(--rose-glow); transform: scale(1); }
@@ -771,12 +790,31 @@ body.view-technical #view-technical { display: block; }
   font-weight: 600;
   color: var(--ink);
   letter-spacing: 0.01em;
+  opacity: 0;
+  max-height: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.28s ease, transform 0.28s ease, max-height 0.28s ease;
+  overflow: hidden;
 }
 
 .mech-note {
   font-size: 0.74rem;
   color: var(--muted-dim);
   line-height: 1.4;
+  opacity: 0;
+  max-height: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.28s ease 0.04s, transform 0.28s ease 0.04s, max-height 0.28s ease 0.04s;
+  overflow: hidden;
+}
+
+.mech-step:hover .mech-label,
+.mech-step:hover .mech-note,
+.mech-step.active .mech-label,
+.mech-step.active .mech-note {
+  opacity: 1;
+  max-height: 160px;
+  transform: translateY(0);
 }
 
 .mech-step.hot .mech-label { color: var(--rose); }
@@ -3110,6 +3148,14 @@ const revealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0.3, rootMargin: "0px 0px -8% 0px" });
 
 document.querySelectorAll(".pitch-section, .mech-step, .pt-step, .pt-arrow, .pt-total").forEach((section) => revealObserver.observe(section));
+
+document.querySelectorAll(".mech-step").forEach((step) => {
+  step.addEventListener("click", () => {
+    const wasActive = step.classList.contains("active");
+    document.querySelectorAll(".mech-step.active").forEach((s) => s.classList.remove("active"));
+    if (!wasActive) step.classList.add("active");
+  });
+});
 
 /* ============================================================
    View switching
