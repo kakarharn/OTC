@@ -803,6 +803,10 @@ function animateNumber(el, from, to, duration, formatter) {
   requestAnimationFrame(frame);
 }
 
+function animateMinutesNumber(el, targetMinutes) {
+  animateNumber(el, 0, Math.max(0, targetMinutes), 900, (v) => formatHoursMinutes(v));
+}
+
 let bignumAnimated = false;
 
 function inputsReady() {
@@ -945,9 +949,9 @@ function renderExecutive() {
 
   penaltyTimelineLocked.hidden = true;
   penaltyTimelineContent.hidden = false;
-  ptRecoveryTime.textContent = formatHoursMinutes(r.recoveryRemainingMin);
-  ptResumptionTime.textContent = formatHoursMinutes(appliedConfig.resumptionHr * 60);
-  ptTotalTime.textContent = formatHoursMinutes(r.totalPenaltyDurationHr * 60);
+  animateMinutesNumber(ptRecoveryTime, r.recoveryRemainingMin);
+  animateMinutesNumber(ptResumptionTime, appliedConfig.resumptionHr * 60);
+  animateMinutesNumber(ptTotalTime, r.totalPenaltyDurationHr * 60);
 
   if (meta.key === "hot" || meta.key === "warm") {
     const tripR = computeTripScenario(execState.penaltyRate);
@@ -1033,7 +1037,7 @@ const revealObserver = new IntersectionObserver((entries) => {
   });
 }, { threshold: 0.3, rootMargin: "0px 0px -8% 0px" });
 
-document.querySelectorAll(".pitch-section").forEach((section) => revealObserver.observe(section));
+document.querySelectorAll(".pitch-section, .mech-step, .pt-step, .pt-arrow, .pt-total").forEach((section) => revealObserver.observe(section));
 
 /* ============================================================
    View switching

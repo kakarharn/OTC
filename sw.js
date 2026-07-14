@@ -1,4 +1,4 @@
-const CACHE_NAME = "gt-otc-impact-v10";
+const CACHE_NAME = "gt-otc-impact-v11";
 const ASSETS = [
   "./",
   "./index.html",
