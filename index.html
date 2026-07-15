@@ -16,7 +16,7 @@
   </head>
   <body class="view-executive">
     <nav class="view-switch">
-      <button type="button" data-view="executive" class="active">Executive</button>
+      <button type="button" data-view="executive" class="active">Dashboard</button>
       <button type="button" data-view="technical">Technical</button>
     </nav>
 
@@ -35,8 +35,7 @@
                 <span>Bangpakong Combined Cycle Block 5</span>
               </div>
             </div>
-            <span class="pitch-eyebrow">Gas Turbine OTC Controller Reset Impact</span>
-            <h1 class="hook-title"><span class="headline-glow">OTC Controller</span> ส่งผลต่อกำลังผลิตและบทปรับมากแค่ไหน?</h1>
+            <h1 class="hook-title"><span class="headline-glow">OTC Controller</span><br>ส่งผลต่อกำลังการผลิต<br>และบทปรับมากแค่ไหน?</h1>
             <p class="hook-sub">ประเมินผลกระทบจาก Gas Turbine OTC Controller Reset ต่อกำลังผลิต ระยะเวลาคืนความพร้อม และค่าปรับ Post Event จาก NCC ตาม Startup Condition ที่เลือก</p>
 
             <h2 class="hero-subhead">ประเมินผลกระทบตาม Startup Condition</h2>
@@ -274,13 +273,13 @@
         <section class="pitch-section" id="pitchCta">
           <div class="pitch-inner cta-section">
             <h2 class="cta-title">รายละเอียดแบบจำลองทางวิศวกรรม</h2>
-            <p class="cta-sub">ตรวจสอบค่าที่ใช้ในการคำนวณ Controller Model, Startup Duration, Active Power Model, Recovery Time และ Post Event Penalty Model</p>
+            <p class="cta-sub">ตรวจสอบค่าที่ใช้ในการคำนวณ Controller Model, Startup Duration, Active Power Model และ Recovery Time</p>
             <button type="button" class="cta-button" id="ctaToTechnical">
               เปิด Engineering Console
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
             </button>
             <p class="disclaimer">ผลลัพธ์จากโปรแกรมเป็นค่าประมาณจาก Engineering Model และสมมติฐานที่กำหนดในระบบ ใช้สำหรับการศึกษาและประเมินผลกระทบจาก Gas Turbine OTC Controller Reset เท่านั้น ผลลัพธ์อาจแตกต่างจากการคำนวณค่าปรับ Post Event อย่างเป็นทางการตามหลักเกณฑ์และเงื่อนไขที่เกี่ยวข้อง</p>
-            <p class="prepared-by">Prepared by Thitiwat Tapaophong (Shift A)</p>
+            <p class="prepared-by">Prepared by Thitiwat Tapaophong</p>
           </div>
         </section>
 
@@ -296,7 +295,7 @@
           <header class="panel tech-topbar">
             <div>
               <p class="eyebrow">RGE Engineering Console</p>
-              <h1>OTC Ramp &amp; Financial Model</h1>
+              <h1>OTC Ramp Engineering Model</h1>
             </div>
             <div class="status-pill">TA fixed 8 ms</div>
           </header>
@@ -314,8 +313,6 @@
             <div class="readout readout-y"><span>Y Output</span><strong id="yReadout">572.00 C</strong></div>
             <div class="readout readout-mw"><span>Predicted MW</span><strong id="mwReadout">710.00 MW</strong></div>
             <div class="readout"><span>MW Loss</span><strong id="mwLossReadout">0.00 MW</strong></div>
-            <div class="readout readout-money"><span>Fine Rate</span><strong id="fineRateReadout">0 THB/hr</strong></div>
-            <div class="readout readout-money"><span>Accumulated Fine</span><strong id="fineTotalReadout">0 THB</strong></div>
             <div class="readout"><span>Ramp Rate</span><strong id="rateReadout">0.000 C/min</strong></div>
           </div>
 
@@ -426,7 +423,7 @@
           </details>
 
           <details class="control-section" open>
-            <summary><h2>Financial Model</h2></summary>
+            <summary><h2>Active Power &amp; Recovery Model</h2></summary>
             <div class="control-body">
               <label>Reference Y / OTC Ready (C)
                 <input id="referenceYInput" type="number" value="572" step="0.1">
@@ -440,17 +437,6 @@
               <label>Resumption Time (hr)
                 <input id="resumptionHrInput" type="number" value="4" min="0" step="0.5">
               </label>
-              <label>Penalty Rate (THB / hr)
-                <input id="penaltyRateInput" type="number" value="100000" min="0" step="1000">
-              </label>
-              <label>OTC Reset events / year
-                <input id="annualEventsInput" type="number" value="6" min="0" step="1">
-              </label>
-              <div class="toggle-row">
-                <span>Additional Threshold Penalty (&gt;20 MW)</span>
-                <div class="switch" id="thresholdToggle" role="switch" aria-checked="false"></div>
-              </div>
-              <p class="hint">ยังไม่เปิดใช้เป็น default — เตรียมโครงสร้างไว้รอสูตรที่ยืนยันแล้ว</p>
             </div>
           </details>
 

@@ -19,15 +19,12 @@ let appliedConfig = {
   resumptionHr: 4,
   penaltyRate: 100000,
   annualEvents: 6,
-  thresholdEnabled: false,
   rampRateAfterFix: 6000,
   tripFloorMw: 340,
   tripRestartMin: 120,
   gtUnitPower: 240,
   gtPowerDeclineRate: 1
 };
-
-let draftThresholdEnabled = false;
 
 let execState = {
   scenario: null,
@@ -60,8 +57,6 @@ const inputs = {
   refActivePower: document.querySelector("#refActivePowerInput"),
   mwLossFactor: document.querySelector("#mwLossFactorInput"),
   resumptionHr: document.querySelector("#resumptionHrInput"),
-  penaltyRate: document.querySelector("#penaltyRateInput"),
-  annualEvents: document.querySelector("#annualEventsInput"),
   tuAfterFix: document.querySelector("#tuAfterFixInput"),
   tripFloorMw: document.querySelector("#tripFloorMwInput"),
   tripRestartMin: document.querySelector("#tripRestartMinInput"),
@@ -70,8 +65,6 @@ const inputs = {
   window: document.querySelector("#windowInput")
 };
 
-const thresholdToggle = document.querySelector("#thresholdToggle");
-
 const chartFrame = document.querySelector(".chart-frame");
 const chart = document.querySelector("#chart");
 const ctx = chart.getContext("2d");
@@ -79,8 +72,6 @@ const xReadout = document.querySelector("#xReadout");
 const yReadout = document.querySelector("#yReadout");
 const mwReadout = document.querySelector("#mwReadout");
 const mwLossReadout = document.querySelector("#mwLossReadout");
-const fineRateReadout = document.querySelector("#fineRateReadout");
-const fineTotalReadout = document.querySelector("#fineTotalReadout");
 const rateReadout = document.querySelector("#rateReadout");
 const runToggle = document.querySelector("#runToggle");
 const resetButton = document.querySelector("#resetButton");
@@ -116,7 +107,6 @@ let state = {
   xTarget: 572,
   y: 572,
   lastYa: 0,
-  accumulatedFine: 0,
   lastFrame: performance.now(),
   accumulator: 0
 };
@@ -183,8 +173,6 @@ const PENDING_FIELDS = [
   { key: "refActivePower", input: inputs.refActivePower, min: 0 },
   { key: "mwLossFactor", input: inputs.mwLossFactor, min: 0 },
   { key: "resumptionHr", input: inputs.resumptionHr, min: 0 },
-  { key: "penaltyRate", input: inputs.penaltyRate, min: 0 },
-  { key: "annualEvents", input: inputs.annualEvents, min: 0 },
   { key: "rampRateAfterFix", input: inputs.tuAfterFix, min: 0.01 },
   { key: "tripFloorMw", input: inputs.tripFloorMw, min: 0 },
   { key: "tripRestartMin", input: inputs.tripRestartMin, min: 0 },
@@ -220,9 +208,6 @@ function refreshPending() {
     if (isPending) pendingCount += 1;
   });
 
-  const thresholdPending = draftThresholdEnabled !== appliedConfig.thresholdEnabled;
-  if (thresholdPending) pendingCount += 1;
-
   if (pendingCount > 0) {
     applyBar.classList.add("visible");
     applyBarText.textContent = `${pendingCount} ค่ายังไม่ยืนยัน — คลิก Apply เพื่อนำไปใช้`;
@@ -247,7 +232,6 @@ function applyAllChanges() {
   PENDING_FIELDS.forEach((field) => {
     appliedConfig[field.key] = Math.max(field.min, numberValue(field.input, appliedConfig[field.key]));
   });
-  appliedConfig.thresholdEnabled = draftThresholdEnabled;
 
   if (!Number.isFinite(Number.parseFloat(quickPenaltyRate.value))) {
     execState.penaltyRate = appliedConfig.penaltyRate;
@@ -270,24 +254,14 @@ function discardAllChanges() {
   PENDING_FIELDS.forEach((field) => {
     field.input.value = appliedConfig[field.key];
   });
-  draftThresholdEnabled = appliedConfig.thresholdEnabled;
-  thresholdToggle.classList.toggle("on", draftThresholdEnabled);
-  thresholdToggle.setAttribute("aria-checked", String(draftThresholdEnabled));
   refreshPending();
 }
 
 applyButton.addEventListener("click", applyAllChanges);
 discardButton.addEventListener("click", discardAllChanges);
 
-thresholdToggle.addEventListener("click", () => {
-  draftThresholdEnabled = !draftThresholdEnabled;
-  thresholdToggle.classList.toggle("on", draftThresholdEnabled);
-  thresholdToggle.setAttribute("aria-checked", String(draftThresholdEnabled));
-  refreshPending();
-});
-
 [inputs.nrm, inputs.hotMin, inputs.warmMin, inputs.coldMin, inputs.referenceY, inputs.refActivePower,
-  inputs.mwLossFactor, inputs.resumptionHr, inputs.penaltyRate, inputs.annualEvents, inputs.tuAfterFix,
+  inputs.mwLossFactor, inputs.resumptionHr, inputs.tuAfterFix,
   inputs.tu, inputs.td].forEach((el) => el.addEventListener("input", refreshPending));
 
 inputs.timeUnit.addEventListener("change", () => {
@@ -323,7 +297,6 @@ function getSettings() {
     refActivePower: appliedConfig.refActivePower,
     mwLossFactor: appliedConfig.mwLossFactor,
     tripFloorMw: appliedConfig.tripFloorMw,
-    penaltyRate: appliedConfig.penaltyRate,
     windowSeconds: Math.max(30, numberValue(inputs.window, 180))
   };
 }
@@ -349,21 +322,13 @@ function stepRge(settings) {
   state.lastYa = ya;
 }
 
-function addPenalty(settings) {
-  const mwLoss = Math.max(0, settings.referenceY - state.y) > 0 ? Math.max(0, settings.referenceY - state.y) : 0;
-  if (mwLoss > 0) {
-    state.accumulatedFine += settings.penaltyRate * (TA_SECONDS / 3600);
-  }
-}
-
 function sample(settings) {
   const mw = mwFromY(state.y, settings);
   return {
     time: state.elapsed,
     x: settings.x,
     y: state.y,
-    mw,
-    accumulatedFine: state.accumulatedFine
+    mw
   };
 }
 
@@ -373,7 +338,6 @@ function resetAll() {
   state.xTarget = settings.x;
   state.y = settings.initialY;
   state.lastYa = 0;
-  state.accumulatedFine = 0;
   state.accumulator = 0;
   state.lastFrame = performance.now();
   history = [sample(settings)];
@@ -400,7 +364,6 @@ function tick(now) {
     const cycles = Math.min(2000, Math.floor(state.accumulator / TA_SECONDS));
     for (let i = 0; i < cycles; i += 1) {
       stepRge(settings);
-      addPenalty(settings);
       state.elapsed += TA_SECONDS;
       history.push(sample(settings));
     }
@@ -422,14 +385,11 @@ function render(settings) {
   const last = history[history.length - 1];
   const liveMw = mwFromY(state.y, settings);
   const liveLoss = Math.max(0, settings.refActivePower - liveMw);
-  const liveFineRate = liveLoss > 0 ? settings.penaltyRate : 0;
   const liveRate = currentRampRate(settings);
   xReadout.textContent = `${settings.x.toFixed(2)} C`;
   yReadout.textContent = `${last.y.toFixed(3)} C`;
   mwReadout.textContent = `${liveMw.toFixed(2)} MW`;
   mwLossReadout.textContent = `${liveLoss.toFixed(2)} MW`;
-  fineRateReadout.textContent = `${formatBaht(liveFineRate)}/hr`;
-  fineTotalReadout.textContent = `${formatBaht(state.accumulatedFine)}`;
   rateReadout.textContent = `${liveRate.toFixed(3)} C/min`;
   renderRgeBlock(settings);
   renderChart(settings);

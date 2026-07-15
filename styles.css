@@ -1274,7 +1274,7 @@ body.view-technical #view-technical { display: block; }
 
 .readout-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
   padding: 14px;
 }
@@ -1289,14 +1289,12 @@ body.view-technical #view-technical { display: block; }
 .readout-target { border-left-color: var(--teal); }
 .readout-y { border-left-color: var(--amber); }
 .readout-mw { border-left-color: var(--mw); }
-.readout-money { border-left-color: var(--rose); }
 
 .readout span { display: block; color: var(--muted); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; }
 .readout strong { display: block; margin-top: 6px; font-family: var(--font-mono); font-size: 1.18rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); }
 .readout-target strong { color: var(--teal); }
 .readout-y strong { color: var(--amber); }
 .readout-mw strong { color: var(--mw); }
-.readout-money strong { color: var(--rose); }
 
 /* --- RGE schematic w/ inline edit --- */
 
