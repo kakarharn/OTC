@@ -76,8 +76,6 @@ const rateReadout = document.querySelector("#rateReadout");
 const runToggle = document.querySelector("#runToggle");
 const resetButton = document.querySelector("#resetButton");
 const clearButton = document.querySelector("#clearButton");
-const nudgeButtons = document.querySelectorAll("[data-x-nudge]");
-const setButtons = document.querySelectorAll("[data-x-set]");
 const blockX = document.querySelector("#blockX");
 const blockNrm = document.querySelector("#blockNrm");
 const blockTu = document.querySelector("#blockTu");
@@ -557,12 +555,6 @@ inputs.x.addEventListener("keydown", (event) => {
 inputs.initialY.addEventListener("change", resetAll);
 inputs.initialY.addEventListener("keydown", (event) => {
   if (event.key === "Enter") resetAll();
-});
-nudgeButtons.forEach((button) => {
-  button.addEventListener("click", () => setX(numberValue(inputs.x, 572) + Number.parseFloat(button.dataset.xNudge)));
-});
-setButtons.forEach((button) => {
-  button.addEventListener("click", () => setX(Number.parseFloat(button.dataset.xSet)));
 });
 
 function setRunning(running) {
