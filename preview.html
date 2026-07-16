@@ -570,7 +570,6 @@ body.view-technical #view-technical { display: block; }
   font-size: clamp(2.2rem, 6vw, 4.4rem);
   line-height: 1.12;
   letter-spacing: -0.02em;
-  max-width: 16ch;
 }
 
 .hook-title em {
@@ -1686,7 +1685,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
               </button>
               <div id="tripRiskCard" class="trip-risk-card" hidden>
                 <span class="trip-risk-tag">⚠ Trip Risk Scenario · Worst Case</span>
-                <p class="trip-risk-note">หาก Outlet Temp Burner ต่ำลงต่อเนื่อง อาจส่งผลต่อ GT และทำให้ Trip ได้จากหลายสาเหตุ เช่น Loss of Flame หรือ Protection/Monitoring Trip อื่นๆ — ตัวเลขนี้เป็น Worst Case แยกจากค่าปรับปกติ ไม่ได้บวกรวมกัน</p>
+                <p class="trip-risk-note">หาก Firing Temperature ถูกลดต่ำลงต่อเนื่องขณะ IGV ค้างที่ 100% อาจทำให้ GT เกิด Trip ได้จากหลายสาเหตุ เช่น Loss of Flame หรือระบบ Protection/Monitoring อื่นสั่งตัดเครื่อง — ตัวเลขนี้เป็น Worst Case แยกจากค่าปรับปกติ ไม่ได้บวกรวมกัน</p>
                 <div class="trip-risk-grid">
                   <div class="trip-risk-item highlight"><span>ค่าปรับ Post Event หาก Trip (Worst Case)</span><strong id="tripPenalty">฿—</strong></div>
                 </div>
@@ -1713,7 +1712,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
               <span><i class="dot dot-power"></i>GT Active Power (MW)</span>
               <span><i class="dot dot-marker"></i>Startup Complete</span>
               <span><i class="dot dot-restore"></i>OTC Ready (572°C)</span>
-              <span><i class="dot dot-trip"></i>GT Trip (ถ้าเกิด)</span>
+              <span><i class="dot dot-trip"></i>GT Trip (กรณีเกิดขึ้น)</span>
             </div>
           </div>
         </section>
@@ -1747,7 +1746,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
               <div class="mech-step">
                 <div class="mech-dot"></div>
                 <div class="mech-label">OTC Controller Ready</div>
-                <div class="mech-note">Controller กลับสู่ระดับพร้อมสำหรับการรับ Load</div>
+                <div class="mech-note">Controller กลับสู่ระดับพร้อมรับ Load</div>
               </div>
               <div class="mech-step ok">
                 <div class="mech-dot"></div>
@@ -1757,13 +1756,13 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
               <div class="mech-step ok">
                 <div class="mech-dot"></div>
                 <div class="mech-label">NCC Accepted / Availability Restored</div>
-                <div class="mech-note">NCC รับคืนเครื่องและค่าความพร้อมกลับคืน</div>
+                <div class="mech-note">NCC รับคืนเครื่อง และคืนค่าความพร้อมให้</div>
               </div>
             </div>
 
             <div class="penalty-timeline-wrap">
               <h3 class="subsection-title">Penalty Timeline: จาก Startup Complete ถึง NCC รับคืนเครื่อง</h3>
-              <p class="subsection-note">การที่ OTC Controller Recovery ถึงระดับพร้อมรับ Load ไม่ได้หมายความว่า Post Event Process สิ้นสุดทันที เพราะยังมี Resumption Process ก่อน NCC รับคืนเครื่องและค่าความพร้อมกลับคืน</p>
+              <p class="subsection-note">การที่ OTC Controller Recovery ถึงระดับพร้อมรับ Load ไม่ได้หมายความว่า Post Event Process สิ้นสุดทันที เพราะยังมี Resumption Process ก่อนที่ NCC จะรับคืนเครื่องและคืนค่าความพร้อมให้</p>
               <div id="penaltyTimelineLocked" class="locked-prompt">เลือก <strong>Startup Condition</strong> ด้านบนสุด เพื่อดู Penalty Timeline</div>
               <div id="penaltyTimelineContent" hidden>
                 <div class="penalty-timeline">
@@ -1831,7 +1830,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
         <section class="pitch-section" id="pitchCompare">
           <div class="pitch-inner">
             <span class="pitch-eyebrow tone-mw">Emergency Response Impact</span>
-            <h2 class="section-title">ถ้าตอบสนองด้วย Force TU ทันทีที่พบปัญหา</h2>
+            <h2 class="section-title">ผลของการตอบสนองด้วย Force TU ทันทีที่พบปัญหา</h2>
             <p class="section-subhead">Force TU Override ลดผลกระทบได้มากแค่ไหน เทียบกับปล่อยให้ Recovery ตามปกติ</p>
             <p class="section-lede">เปรียบเทียบผลการประเมินระหว่าง Current Configuration (ไม่ตอบสนอง) และ Force TU Override (มาตรการฉุกเฉินชั่วคราวเมื่อพบว่า OTC ถูก Reset) — เป็น Scenario สำหรับการศึกษาเปรียบเทียบ ควรผ่านการตรวจสอบและอนุมัติเป็น SOP ก่อนนำไปปฏิบัติจริง</p>
             <div id="compareLocked" class="locked-prompt">กรอก <strong>อัตราค่าปรับ Post Event</strong> ด้านบนสุด เพื่อดูตัวเลขเปรียบเทียบ</div>
@@ -1936,7 +1935,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
                 <div class="pin"><span class="pin-label">Rate</span><strong class="pin-value" id="blockRate">0.000 C/min</strong></div>
               </div>
             </div>
-            <p class="rge-hint">X และ Y มีผลทันที (Y = บังคับกระโดดค่าปัจจุบัน) · TU / TD / NRM เข้าคิว Apply ด้านบน</p>
+            <p class="rge-hint">X และ Y มีผลทันที (Y = ค่าที่บังคับให้กระโดดไปตรงๆ โดยไม่ผ่าน Ramp) · TU / TD / NRM ต้องกด Apply ด้านบนก่อนถึงจะมีผล</p>
           </section>
 
           <section class="panel chart-panel">
@@ -1995,7 +1994,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
               <label>NRM normalization (C)
                 <input id="nrmInput" type="number" value="1" min="0.01" step="0.01">
               </label>
-              <p class="hint">Example: NRM 1 และ TU 1 min หมายถึง Y เปลี่ยนประมาณ 1 C ต่อนาที</p>
+              <p class="hint">ตัวอย่าง: NRM 1 และ TU 1 min หมายถึง Y เปลี่ยนประมาณ 1 C ต่อนาที</p>
             </div>
           </details>
 
@@ -2926,8 +2925,12 @@ tripRiskToggle.addEventListener("click", () => {
 });
 
 function buildNarrative(meta, r) {
+  const tripNote = meta.key === "hot" || meta.key === "warm"
+    ? `\n\nนอกจากนี้ ${meta.label} ยังมีความเสี่ยงเพิ่มขึ้นที่เครื่องจะเกิด Trip จาก Loss of Flame หาก OTC Controller ยังไม่ Recovery ทันขณะเข้าสู่ช่วง Baseload Window ซึ่งจะทำให้กำลังผลิตลดฮวบและค่าปรับ Post Event สูงกว่าที่ประเมินไว้มาก (ดูรายละเอียดที่ Trip Risk Scenario ด้านบน)`
+    : "";
+
   if (r.estimatedPenalty <= 0) {
-    return `สำหรับ ${meta.label} ภายใต้ค่าที่กำหนดใน Engineering Model ระบบประเมินว่า OTC Controller จะ Recovery กลับสู่ระดับพร้อมรับ Load ได้ทันเวลา ก่อนที่ Startup Process จะเสร็จสิ้น จึงไม่เกิด MW Loss และไม่มีค่าปรับ Post Event สำหรับเหตุการณ์นี้`;
+    return `สำหรับ ${meta.label} ภายใต้ค่าที่กำหนดใน Engineering Model ระบบประเมินว่า OTC Controller จะ Recovery กลับสู่ระดับพร้อมรับ Load ได้ทันเวลา ก่อนที่ Startup Process จะเสร็จสิ้น จึงไม่เกิด MW Loss และไม่มีค่าปรับ Post Event สำหรับเหตุการณ์นี้${tripNote}`;
   }
 
   const recoveryText = formatHoursMinutes(r.recoveryRemainingMin);
@@ -2937,7 +2940,7 @@ function buildNarrative(meta, r) {
 
 ระบบประเมินว่าต้องใช้เวลา Recovery เพิ่มเติมประมาณ ${recoveryText} และเมื่อรวม Resumption Process อีก ${appliedConfig.resumptionHr} ชั่วโมง ระยะเวลา Post Event โดยประมาณอยู่ที่ ${postEventText}
 
-จากอัตราค่าปรับ Post Event ที่กำหนด ค่าปรับ Post Event โดยประมาณสำหรับเหตุการณ์นี้อยู่ที่ ฿${formatBaht(r.estimatedPenalty)}`;
+จากอัตราค่าปรับ Post Event ที่กำหนด ค่าปรับ Post Event โดยประมาณสำหรับเหตุการณ์นี้อยู่ที่ ฿${formatBaht(r.estimatedPenalty)}${tripNote}`;
 }
 
 function renderExecutive() {
@@ -3127,7 +3130,7 @@ function drawHeroChart(now) {
     heroCtx.setTransform(scale, 0, 0, scale, 0, 0);
     heroCtx.clearRect(0, 0, w, h);
 
-    const curveReferenceY = appliedConfig.referenceY;
+    const curveReferenceY = appliedConfig.referenceY !== 0 ? appliedConfig.referenceY : 0.01;
     const curveResetY = 0;
     const curveRate = Math.max(0.1, currentRampRateCPerMin());
     const penaltyRateEffective = inputsReady() ? execState.penaltyRate : appliedConfig.penaltyRate;
@@ -3197,7 +3200,7 @@ function drawHeroChart(now) {
 
     /* ---- Right axis: GT Active Power (MW) — คนละหน่วยกับแกนซ้าย ทำแกนแยกให้ชัด ---- */
     if (Boolean(execState.scenario)) {
-      const gtFullAxis = appliedConfig.gtUnitPower;
+      const gtFullAxis = Math.max(1, appliedConfig.gtUnitPower);
       const powerAxisYFor = (mw) => pad.top + (1 - mw / gtFullAxis) * plotH;
 
       heroCtx.strokeStyle = hexToRgba(POWER_LINE_COLOR, 0.5);
@@ -3254,7 +3257,7 @@ function drawHeroChart(now) {
       /* ---- GT Active Power (หน่วยเดียว): เต็ม 240 MW จนถึง Startup Complete แล้วลด 1 MW/min
              จนกว่าจะ "ชน" เส้น OTC ที่ไต่ขึ้น (สัดส่วนเดียวกันบนกราฟ) แล้วไหลตามขึ้นไปจบที่ 240 พร้อม OTC ที่ 572°C
              ถ้าลงถึง 0 ก่อนจะชนกัน ให้ค้างที่ 0 = GT Trip ---- */
-      const gtFull = appliedConfig.gtUnitPower;
+      const gtFull = Math.max(1, appliedConfig.gtUnitPower);
       const declineRate = appliedConfig.gtPowerDeclineRate;
       const powerYFor = (mw) => pad.top + (1 - mw / gtFull) * plotH;
 

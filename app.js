@@ -837,8 +837,12 @@ tripRiskToggle.addEventListener("click", () => {
 });
 
 function buildNarrative(meta, r) {
+  const tripNote = meta.key === "hot" || meta.key === "warm"
+    ? `\n\nนอกจากนี้ ${meta.label} ยังมีความเสี่ยงเพิ่มขึ้นที่เครื่องจะเกิด Trip จาก Loss of Flame หาก OTC Controller ยังไม่ Recovery ทันขณะเข้าสู่ช่วง Baseload Window ซึ่งจะทำให้กำลังผลิตลดฮวบและค่าปรับ Post Event สูงกว่าที่ประเมินไว้มาก (ดูรายละเอียดที่ Trip Risk Scenario ด้านบน)`
+    : "";
+
   if (r.estimatedPenalty <= 0) {
-    return `สำหรับ ${meta.label} ภายใต้ค่าที่กำหนดใน Engineering Model ระบบประเมินว่า OTC Controller จะ Recovery กลับสู่ระดับพร้อมรับ Load ได้ทันเวลา ก่อนที่ Startup Process จะเสร็จสิ้น จึงไม่เกิด MW Loss และไม่มีค่าปรับ Post Event สำหรับเหตุการณ์นี้`;
+    return `สำหรับ ${meta.label} ภายใต้ค่าที่กำหนดใน Engineering Model ระบบประเมินว่า OTC Controller จะ Recovery กลับสู่ระดับพร้อมรับ Load ได้ทันเวลา ก่อนที่ Startup Process จะเสร็จสิ้น จึงไม่เกิด MW Loss และไม่มีค่าปรับ Post Event สำหรับเหตุการณ์นี้${tripNote}`;
   }
 
   const recoveryText = formatHoursMinutes(r.recoveryRemainingMin);
@@ -848,7 +852,7 @@ function buildNarrative(meta, r) {
 
 ระบบประเมินว่าต้องใช้เวลา Recovery เพิ่มเติมประมาณ ${recoveryText} และเมื่อรวม Resumption Process อีก ${appliedConfig.resumptionHr} ชั่วโมง ระยะเวลา Post Event โดยประมาณอยู่ที่ ${postEventText}
 
-จากอัตราค่าปรับ Post Event ที่กำหนด ค่าปรับ Post Event โดยประมาณสำหรับเหตุการณ์นี้อยู่ที่ ฿${formatBaht(r.estimatedPenalty)}`;
+จากอัตราค่าปรับ Post Event ที่กำหนด ค่าปรับ Post Event โดยประมาณสำหรับเหตุการณ์นี้อยู่ที่ ฿${formatBaht(r.estimatedPenalty)}${tripNote}`;
 }
 
 function renderExecutive() {
@@ -1038,7 +1042,7 @@ function drawHeroChart(now) {
     heroCtx.setTransform(scale, 0, 0, scale, 0, 0);
     heroCtx.clearRect(0, 0, w, h);
 
-    const curveReferenceY = appliedConfig.referenceY;
+    const curveReferenceY = appliedConfig.referenceY !== 0 ? appliedConfig.referenceY : 0.01;
     const curveResetY = 0;
     const curveRate = Math.max(0.1, currentRampRateCPerMin());
     const penaltyRateEffective = inputsReady() ? execState.penaltyRate : appliedConfig.penaltyRate;
@@ -1108,7 +1112,7 @@ function drawHeroChart(now) {
 
     /* ---- Right axis: GT Active Power (MW) — คนละหน่วยกับแกนซ้าย ทำแกนแยกให้ชัด ---- */
     if (Boolean(execState.scenario)) {
-      const gtFullAxis = appliedConfig.gtUnitPower;
+      const gtFullAxis = Math.max(1, appliedConfig.gtUnitPower);
       const powerAxisYFor = (mw) => pad.top + (1 - mw / gtFullAxis) * plotH;
 
       heroCtx.strokeStyle = hexToRgba(POWER_LINE_COLOR, 0.5);
@@ -1165,7 +1169,7 @@ function drawHeroChart(now) {
       /* ---- GT Active Power (หน่วยเดียว): เต็ม 240 MW จนถึง Startup Complete แล้วลด 1 MW/min
              จนกว่าจะ "ชน" เส้น OTC ที่ไต่ขึ้น (สัดส่วนเดียวกันบนกราฟ) แล้วไหลตามขึ้นไปจบที่ 240 พร้อม OTC ที่ 572°C
              ถ้าลงถึง 0 ก่อนจะชนกัน ให้ค้างที่ 0 = GT Trip ---- */
-      const gtFull = appliedConfig.gtUnitPower;
+      const gtFull = Math.max(1, appliedConfig.gtUnitPower);
       const declineRate = appliedConfig.gtPowerDeclineRate;
       const powerYFor = (mw) => pad.top + (1 - mw / gtFull) * plotH;
 
