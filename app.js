@@ -699,6 +699,11 @@ const comparePctCells = {
   cold: document.querySelector("#comparePctCold")
 };
 const savingsValue = document.querySelector("#savingsValue");
+const savingsVizTitle = document.querySelector("#savingsVizTitle");
+const savingsBarBad = document.querySelector("#savingsBarBad");
+const savingsBarGood = document.querySelector("#savingsBarGood");
+const savingsBarBadValue = document.querySelector("#savingsBarBadValue");
+const savingsBarGoodValue = document.querySelector("#savingsBarGoodValue");
 
 const quickPenaltyRate = document.querySelector("#quickPenaltyRate");
 const quickAnnualEvents = document.querySelector("#quickAnnualEvents");
@@ -777,7 +782,23 @@ function animateBignumValue(target) {
   }, 1200);
 }
 
+function animateSavingsValue(target, finalText) {
+  const banner = savingsValue.closest(".savings-banner");
+  if (banner) {
+    banner.classList.remove("sweep");
+    void banner.offsetWidth;
+    banner.classList.add("sweep");
+    setTimeout(() => banner.classList.remove("sweep"), 1000);
+  }
+  if (target > 0) {
+    animateNumber(savingsValue, 0, target, 850, (v) => `฿${formatBaht(v)}`);
+  } else {
+    savingsValue.textContent = finalText;
+  }
+}
+
 let lastAnnualExposure = null;
+let lastSavingsValue = null;
 
 function inputsReady() {
   return Number.isFinite(Number.parseFloat(quickPenaltyRate.value));
@@ -967,13 +988,30 @@ function renderCompareTable(rate) {
   const penaltyRate = execState.penaltyRate;
   const annualForCompare = annualReady() ? execState.annualEvents : 1;
   let maxPenaltyCut = 0;
+  let selectedCut = null;
+  let maxCutScenario = SCENARIOS[0];
+  let maxCutBad = 0;
+  let maxCutGood = 0;
+  let selectedBad = null;
+  let selectedGood = null;
 
   SCENARIOS.forEach((sc) => {
     const badResult = computeScenario(appliedConfig[sc.durationKey], rate, 0, penaltyRate);
     const goodResult = computeScenario(appliedConfig[sc.durationKey], goodRate, 0, penaltyRate);
     const badAnnual = badResult.estimatedPenalty * annualForCompare;
     const goodAnnual = goodResult.estimatedPenalty * annualForCompare;
-    maxPenaltyCut = Math.max(maxPenaltyCut, badAnnual - goodAnnual);
+    const cut = Math.max(0, badAnnual - goodAnnual);
+    if (cut > maxPenaltyCut) {
+      maxPenaltyCut = cut;
+      maxCutScenario = sc;
+      maxCutBad = badAnnual;
+      maxCutGood = goodAnnual;
+    }
+    if (execState.scenario === sc.key) {
+      selectedCut = cut;
+      selectedBad = badAnnual;
+      selectedGood = goodAnnual;
+    }
 
     const cells = compareCells[sc.key];
     cells.bad.textContent = `฿${formatBaht(badAnnual)}`;
@@ -991,10 +1029,37 @@ function renderCompareTable(rate) {
   });
 
   compareRateNote.textContent = `Current Ramp Rate ${rate.toFixed(2)} °C/min → Force TU Override (เทียบเท่า TU=10ms · OTC กลับ Reference ภายในไม่กี่วินาที)`;
+
+  const displayCut = selectedCut !== null ? selectedCut : maxPenaltyCut;
+  const displayScenario = execState.scenario ? SCENARIOS.find((s) => s.key === execState.scenario) : maxCutScenario;
+  const displayBad = selectedBad !== null ? selectedBad : maxCutBad;
+  const displayGood = selectedGood !== null ? selectedGood : maxCutGood;
+
+  const scopeLabel = execState.scenario
+    ? `สำหรับ ${displayScenario.label} ที่เลือกไว้`
+    : "(สูงสุด · แต่ละ Startup Condition ไม่ได้รวมกัน)";
   savingsLabel.textContent = annualReady()
-    ? "ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อปี (สูงสุด · แต่ละ Startup Condition ไม่ได้รวมกัน)"
-    : "ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อครั้ง (สูงสุด · แต่ละ Startup Condition ไม่ได้รวมกัน)";
-  savingsValue.textContent = maxPenaltyCut > 0 ? `฿${formatBaht(maxPenaltyCut)}` : "ไม่มีค่าปรับให้ตัด";
+    ? `ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อปี ${scopeLabel}`
+    : `ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อครั้ง ${scopeLabel}`;
+
+  savingsVizTitle.textContent = `เปรียบเทียบสำหรับ ${displayScenario.tag} START`;
+  savingsBarBad.style.width = "100%";
+  savingsBarBadValue.textContent = `฿${formatBaht(displayBad)}`;
+  const goodPct = displayBad > 0 ? clamp((displayGood / displayBad) * 100, 0, 100) : 0;
+  savingsBarGood.style.width = `${goodPct}%`;
+  if (displayGood <= 0) {
+    savingsBarGoodValue.textContent = "฿0 · ไม่มีค่าปรับ";
+    savingsBarGoodValue.classList.add("zero");
+  } else {
+    savingsBarGoodValue.textContent = `฿${formatBaht(displayGood)}`;
+    savingsBarGoodValue.classList.remove("zero");
+  }
+
+  const savingsText = displayCut > 0 ? `฿${formatBaht(displayCut)}` : "ไม่มีค่าปรับให้ตัด";
+  if (lastSavingsValue !== displayCut) {
+    lastSavingsValue = displayCut;
+    animateSavingsValue(displayCut, savingsText);
+  }
 }
 
 quickPenaltyRate.addEventListener("input", () => {
