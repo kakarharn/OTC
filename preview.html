@@ -970,6 +970,7 @@ body.view-technical #view-technical { display: block; }
 }
 
 .bignum {
+  position: relative;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: clamp(3rem, 10vw, 7rem);
@@ -978,6 +979,30 @@ body.view-technical #view-technical { display: block; }
   color: var(--rose);
   font-variant-numeric: tabular-nums;
   text-shadow: 0 0 60px var(--rose-glow);
+}
+
+.bignum::before,
+.bignum::after {
+  content: "";
+  position: absolute;
+  inset: -6% -4%;
+  border: 2px solid var(--rose);
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.bignum.shockwave::before {
+  animation: bignumShockwave 0.8s ease-out;
+}
+
+.bignum.shockwave::after {
+  animation: bignumShockwave 0.8s ease-out 0.12s;
+}
+
+@keyframes bignumShockwave {
+  0% { opacity: 0.9; transform: scale(0.75); }
+  100% { opacity: 0; transform: scale(1.5); }
 }
 
 .bignum.counting {
@@ -1024,7 +1049,7 @@ body.view-technical #view-technical { display: block; }
 
 .compare-row {
   display: grid;
-  grid-template-columns: 84px 1fr 1fr;
+  grid-template-columns: 74px 1fr 1fr 64px;
   align-items: center;
   gap: 14px;
   padding: 14px 18px;
@@ -1069,6 +1094,14 @@ body.view-technical #view-technical { display: block; }
 .compare-row-bad { color: var(--muted); }
 .compare-row-good { color: var(--ink); }
 .compare-row-good.zero { color: var(--mw); font-weight: 600; }
+
+.compare-row-pct {
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--mw);
+  text-align: right;
+}
 
 .compare-footnote {
   margin-top: 14px;
@@ -1840,26 +1873,30 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
                   <span>Condition</span>
                   <span>Current Configuration</span>
                   <span>Force TU Override</span>
+                  <span>ลดลง</span>
                 </div>
                 <div class="compare-row" data-scenario="hot">
                   <span class="compare-row-tag">HOT</span>
                   <strong class="compare-row-bad" id="compareBadHot">฿0</strong>
                   <strong class="compare-row-good" id="compareGoodHot">฿0</strong>
+                  <strong class="compare-row-pct" id="comparePctHot">—</strong>
                 </div>
                 <div class="compare-row" data-scenario="warm">
                   <span class="compare-row-tag">WARM</span>
                   <strong class="compare-row-bad" id="compareBadWarm">฿0</strong>
                   <strong class="compare-row-good" id="compareGoodWarm">฿0</strong>
+                  <strong class="compare-row-pct" id="comparePctWarm">—</strong>
                 </div>
                 <div class="compare-row" data-scenario="cold">
                   <span class="compare-row-tag">COLD</span>
                   <strong class="compare-row-bad" id="compareBadCold">฿0</strong>
                   <strong class="compare-row-good" id="compareGoodCold">฿0</strong>
+                  <strong class="compare-row-pct" id="comparePctCold">—</strong>
                 </div>
               </div>
               <p class="compare-footnote" id="compareRateNote">Current Ramp Rate — Force TU Override</p>
               <div class="savings-banner">
-                <span id="savingsLabel">ค่าปรับ Post Event ที่อาจลดลงได้ (รวมทั้ง 3 Condition)</span>
+                <span id="savingsLabel">ค่าปรับ Post Event ที่อาจลดลงได้</span>
                 <strong id="savingsValue">฿0</strong>
               </div>
               <p class="trip-risk-disclaimer">⚠ หมายเหตุ: Trip Risk Scenario (Worst Case สำหรับ HOT/WARM) ไม่ได้ลดลงจาก Force TU Override ในตารางนี้ เพราะเป็นความเสี่ยงจาก Loss of Flame ที่เกิดจาก IGV ค้างที่ 100% ระหว่าง Baseload Window ไม่ใช่จากความเร็วของ OTC Recovery</p>
@@ -2781,6 +2818,11 @@ const compareCells = {
   warm: { bad: document.querySelector("#compareBadWarm"), good: document.querySelector("#compareGoodWarm") },
   cold: { bad: document.querySelector("#compareBadCold"), good: document.querySelector("#compareGoodCold") }
 };
+const comparePctCells = {
+  hot: document.querySelector("#comparePctHot"),
+  warm: document.querySelector("#comparePctWarm"),
+  cold: document.querySelector("#comparePctCold")
+};
 const savingsValue = document.querySelector("#savingsValue");
 
 const quickPenaltyRate = document.querySelector("#quickPenaltyRate");
@@ -2848,13 +2890,13 @@ function animateMinutesNumber(el, targetMinutes) {
 }
 
 function animateBignumValue(target) {
-  bignumValue.classList.remove("landed");
+  bignumValue.classList.remove("landed", "shockwave");
   bignumValue.classList.add("counting");
   animateNumber(bignumValue, 0, target, 1200, (v) => `฿${formatBaht(v)}`);
   setTimeout(() => {
     bignumValue.classList.remove("counting");
-    bignumValue.classList.add("landed");
-    setTimeout(() => bignumValue.classList.remove("landed"), 600);
+    bignumValue.classList.add("landed", "shockwave");
+    setTimeout(() => bignumValue.classList.remove("landed", "shockwave"), 800);
   }, 1200);
 }
 
@@ -3046,16 +3088,14 @@ function renderCompareTable(rate) {
   const goodRate = appliedConfig.rampRateAfterFix;
   const penaltyRate = execState.penaltyRate;
   const annualForCompare = annualReady() ? execState.annualEvents : 1;
-  let badTotal = 0;
-  let goodTotal = 0;
+  let minPct = null;
+  let maxPct = null;
 
   SCENARIOS.forEach((sc) => {
     const badResult = computeScenario(appliedConfig[sc.durationKey], rate, 0, penaltyRate);
     const goodResult = computeScenario(appliedConfig[sc.durationKey], goodRate, 0, penaltyRate);
     const badAnnual = badResult.estimatedPenalty * annualForCompare;
     const goodAnnual = goodResult.estimatedPenalty * annualForCompare;
-    badTotal += badAnnual;
-    goodTotal += goodAnnual;
 
     const cells = compareCells[sc.key];
     cells.bad.textContent = `฿${formatBaht(badAnnual)}`;
@@ -3066,13 +3106,28 @@ function renderCompareTable(rate) {
       cells.good.textContent = `฿${formatBaht(goodAnnual)}`;
       cells.good.classList.remove("zero");
     }
+
+    const pctEl = comparePctCells[sc.key];
+    if (badAnnual > 0) {
+      const pct = Math.max(0, ((badAnnual - goodAnnual) / badAnnual) * 100);
+      pctEl.textContent = `-${pct.toFixed(0)}%`;
+      minPct = minPct === null ? pct : Math.min(minPct, pct);
+      maxPct = maxPct === null ? pct : Math.max(maxPct, pct);
+    } else {
+      pctEl.textContent = "—";
+    }
   });
 
   compareRateNote.textContent = `Current Ramp Rate ${rate.toFixed(2)} °C/min → Force TU Override (เทียบเท่า TU=10ms · OTC กลับ Reference ภายในไม่กี่วินาที)`;
-  savingsLabel.textContent = annualReady()
-    ? "Potential Annual Savings (รวมทั้ง 3 Condition)"
-    : "Potential Savings ต่อครั้ง (รวมทั้ง 3 Condition)";
-  savingsValue.textContent = `฿${formatBaht(Math.max(0, badTotal - goodTotal))}`;
+
+  savingsLabel.textContent = "ค่าปรับ Post Event ที่อาจลดลงได้ (แต่ละ Startup Condition ไม่ได้รวมกัน)";
+
+  if (minPct !== null) {
+    const pctRangeText = Math.abs(maxPct - minPct) < 0.5 ? `${minPct.toFixed(0)}%` : `${minPct.toFixed(0)}–${maxPct.toFixed(0)}%`;
+    savingsValue.textContent = `ลดลง ${pctRangeText}`;
+  } else {
+    savingsValue.textContent = "ไม่มีค่าปรับให้ลด";
+  }
 }
 
 quickPenaltyRate.addEventListener("input", () => {

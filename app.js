@@ -693,6 +693,11 @@ const compareCells = {
   warm: { bad: document.querySelector("#compareBadWarm"), good: document.querySelector("#compareGoodWarm") },
   cold: { bad: document.querySelector("#compareBadCold"), good: document.querySelector("#compareGoodCold") }
 };
+const comparePctCells = {
+  hot: document.querySelector("#comparePctHot"),
+  warm: document.querySelector("#comparePctWarm"),
+  cold: document.querySelector("#comparePctCold")
+};
 const savingsValue = document.querySelector("#savingsValue");
 
 const quickPenaltyRate = document.querySelector("#quickPenaltyRate");
@@ -760,13 +765,13 @@ function animateMinutesNumber(el, targetMinutes) {
 }
 
 function animateBignumValue(target) {
-  bignumValue.classList.remove("landed");
+  bignumValue.classList.remove("landed", "shockwave");
   bignumValue.classList.add("counting");
   animateNumber(bignumValue, 0, target, 1200, (v) => `฿${formatBaht(v)}`);
   setTimeout(() => {
     bignumValue.classList.remove("counting");
-    bignumValue.classList.add("landed");
-    setTimeout(() => bignumValue.classList.remove("landed"), 600);
+    bignumValue.classList.add("landed", "shockwave");
+    setTimeout(() => bignumValue.classList.remove("landed", "shockwave"), 800);
   }, 1200);
 }
 
@@ -958,16 +963,14 @@ function renderCompareTable(rate) {
   const goodRate = appliedConfig.rampRateAfterFix;
   const penaltyRate = execState.penaltyRate;
   const annualForCompare = annualReady() ? execState.annualEvents : 1;
-  let badTotal = 0;
-  let goodTotal = 0;
+  let minPct = null;
+  let maxPct = null;
 
   SCENARIOS.forEach((sc) => {
     const badResult = computeScenario(appliedConfig[sc.durationKey], rate, 0, penaltyRate);
     const goodResult = computeScenario(appliedConfig[sc.durationKey], goodRate, 0, penaltyRate);
     const badAnnual = badResult.estimatedPenalty * annualForCompare;
     const goodAnnual = goodResult.estimatedPenalty * annualForCompare;
-    badTotal += badAnnual;
-    goodTotal += goodAnnual;
 
     const cells = compareCells[sc.key];
     cells.bad.textContent = `฿${formatBaht(badAnnual)}`;
@@ -978,13 +981,28 @@ function renderCompareTable(rate) {
       cells.good.textContent = `฿${formatBaht(goodAnnual)}`;
       cells.good.classList.remove("zero");
     }
+
+    const pctEl = comparePctCells[sc.key];
+    if (badAnnual > 0) {
+      const pct = Math.max(0, ((badAnnual - goodAnnual) / badAnnual) * 100);
+      pctEl.textContent = `-${pct.toFixed(0)}%`;
+      minPct = minPct === null ? pct : Math.min(minPct, pct);
+      maxPct = maxPct === null ? pct : Math.max(maxPct, pct);
+    } else {
+      pctEl.textContent = "—";
+    }
   });
 
   compareRateNote.textContent = `Current Ramp Rate ${rate.toFixed(2)} °C/min → Force TU Override (เทียบเท่า TU=10ms · OTC กลับ Reference ภายในไม่กี่วินาที)`;
-  savingsLabel.textContent = annualReady()
-    ? "Potential Annual Savings (รวมทั้ง 3 Condition)"
-    : "Potential Savings ต่อครั้ง (รวมทั้ง 3 Condition)";
-  savingsValue.textContent = `฿${formatBaht(Math.max(0, badTotal - goodTotal))}`;
+
+  savingsLabel.textContent = "ค่าปรับ Post Event ที่อาจลดลงได้ (แต่ละ Startup Condition ไม่ได้รวมกัน)";
+
+  if (minPct !== null) {
+    const pctRangeText = Math.abs(maxPct - minPct) < 0.5 ? `${minPct.toFixed(0)}%` : `${minPct.toFixed(0)}–${maxPct.toFixed(0)}%`;
+    savingsValue.textContent = `ลดลง ${pctRangeText}`;
+  } else {
+    savingsValue.textContent = "ไม่มีค่าปรับให้ลด";
+  }
 }
 
 quickPenaltyRate.addEventListener("input", () => {
