@@ -787,6 +787,7 @@ function animateSavingsValue(target, finalText) {
   savingsOldValue.classList.add("struck");
   savingsStampMark.classList.add("stamping");
   savingsValue.textContent = finalText;
+  setTimeout(() => savingsStampMark.classList.remove("stamping"), 950);
 }
 
 let lastAnnualExposure = null;
