@@ -700,10 +700,8 @@ const comparePctCells = {
 };
 const savingsValue = document.querySelector("#savingsValue");
 const savingsVizTitle = document.querySelector("#savingsVizTitle");
-const savingsBarBad = document.querySelector("#savingsBarBad");
-const savingsBarGood = document.querySelector("#savingsBarGood");
-const savingsBarBadValue = document.querySelector("#savingsBarBadValue");
-const savingsBarGoodValue = document.querySelector("#savingsBarGoodValue");
+const savingsOldValue = document.querySelector("#savingsOldValue");
+const savingsStampMark = document.querySelector("#savingsStampMark");
 
 const quickPenaltyRate = document.querySelector("#quickPenaltyRate");
 const quickAnnualEvents = document.querySelector("#quickAnnualEvents");
@@ -783,18 +781,12 @@ function animateBignumValue(target) {
 }
 
 function animateSavingsValue(target, finalText) {
-  const banner = savingsValue.closest(".savings-banner");
-  if (banner) {
-    banner.classList.remove("sweep");
-    void banner.offsetWidth;
-    banner.classList.add("sweep");
-    setTimeout(() => banner.classList.remove("sweep"), 1000);
-  }
-  if (target > 0) {
-    animateNumber(savingsValue, 0, target, 850, (v) => `฿${formatBaht(v)}`);
-  } else {
-    savingsValue.textContent = finalText;
-  }
+  savingsOldValue.classList.remove("struck");
+  savingsStampMark.classList.remove("stamping");
+  void savingsStampMark.offsetWidth;
+  savingsOldValue.classList.add("struck");
+  savingsStampMark.classList.add("stamping");
+  savingsValue.textContent = finalText;
 }
 
 let lastAnnualExposure = null;
@@ -1042,20 +1034,10 @@ function renderCompareTable(rate) {
     ? `ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อปี ${scopeLabel}`
     : `ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อครั้ง ${scopeLabel}`;
 
-  savingsVizTitle.textContent = `เปรียบเทียบสำหรับ ${displayScenario.tag} START`;
-  savingsBarBad.style.width = "100%";
-  savingsBarBadValue.textContent = `฿${formatBaht(displayBad)}`;
-  const goodPct = displayBad > 0 ? clamp((displayGood / displayBad) * 100, 0, 100) : 0;
-  savingsBarGood.style.width = `${goodPct}%`;
-  if (displayGood <= 0) {
-    savingsBarGoodValue.textContent = "฿0 · ไม่มีค่าปรับ";
-    savingsBarGoodValue.classList.add("zero");
-  } else {
-    savingsBarGoodValue.textContent = `฿${formatBaht(displayGood)}`;
-    savingsBarGoodValue.classList.remove("zero");
-  }
+  savingsVizTitle.textContent = `สำหรับ ${displayScenario.tag} START`;
+  savingsOldValue.textContent = `฿${formatBaht(displayBad)}`;
 
-  const savingsText = displayCut > 0 ? `฿${formatBaht(displayCut)}` : "ไม่มีค่าปรับให้ตัด";
+  const savingsText = displayGood > 0 ? `฿${formatBaht(displayGood)}` : "฿0 · ไม่มีค่าปรับ";
   if (lastSavingsValue !== displayCut) {
     lastSavingsValue = displayCut;
     animateSavingsValue(displayCut, savingsText);

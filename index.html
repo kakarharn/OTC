@@ -267,23 +267,16 @@
               </div>
               <p class="compare-footnote" id="compareRateNote">Current Ramp Rate — Force TU Override</p>
 
-              <div class="savings-viz">
-                <span class="savings-viz-title" id="savingsVizTitle">เปรียบเทียบสำหรับ HOT START</span>
-                <div class="savings-viz-row">
-                  <span class="savings-viz-label">Current Configuration</span>
-                  <div class="savings-viz-track"><div class="savings-viz-bar bad" id="savingsBarBad"></div></div>
-                  <span class="savings-viz-value" id="savingsBarBadValue">฿0</span>
+              <div class="savings-stamp-card">
+                <span class="savings-stamp-title" id="savingsVizTitle">สำหรับ HOT START</span>
+                <div class="savings-stamp-row">
+                  <strong class="savings-stamp-old" id="savingsOldValue">฿0</strong>
+                  <span class="savings-stamp-arrow">→</span>
+                  <span class="savings-stamp-mark" id="savingsStampMark">
+                    <strong id="savingsValue">฿0</strong>
+                  </span>
                 </div>
-                <div class="savings-viz-row">
-                  <span class="savings-viz-label">Force TU Override</span>
-                  <div class="savings-viz-track"><div class="savings-viz-bar good" id="savingsBarGood"></div></div>
-                  <span class="savings-viz-value" id="savingsBarGoodValue">฿0</span>
-                </div>
-              </div>
-
-              <div class="savings-banner">
-                <span id="savingsLabel">MW Recovery Penalty ที่ Force TU ตัดออกได้</span>
-                <strong id="savingsValue">฿0</strong>
+                <span class="savings-stamp-caption" id="savingsLabel">MW Recovery Penalty ที่ Force TU ตัดออกได้</span>
               </div>
               <p class="trip-risk-disclaimer">⚠ หมายเหตุ: Trip Risk Scenario (Worst Case สำหรับ HOT/WARM) ไม่ได้ลดลงจาก Force TU Override ในตารางนี้ เพราะเป็นความเสี่ยงจาก Loss of Flame ที่เกิดจาก IGV ค้างที่ 100% ระหว่าง Baseload Window ไม่ใช่จากความเร็วของ OTC Recovery</p>
             </div>
