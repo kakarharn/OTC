@@ -1020,19 +1020,17 @@ function renderCompareTable(rate) {
     pctEl.textContent = minutesCut > 0 ? `-${formatHoursMinutes(minutesCut)}` : "—";
   });
 
-  compareRateNote.textContent = `Current Ramp Rate ${rate.toFixed(2)} °C/min → Force TU Override (เทียบเท่า TU=10ms · OTC กลับ Reference ภายในไม่กี่วินาที)`;
+  compareRateNote.textContent = `Current Ramp Rate ${rate.toFixed(2)} °C/min → Force TU Override (เทียบเท่า TU=10ms)`;
 
   const displayCut = selectedCut !== null ? selectedCut : maxPenaltyCut;
   const displayScenario = execState.scenario ? SCENARIOS.find((s) => s.key === execState.scenario) : maxCutScenario;
   const displayBad = selectedBad !== null ? selectedBad : maxCutBad;
   const displayGood = selectedGood !== null ? selectedGood : maxCutGood;
 
-  const scopeLabel = execState.scenario
-    ? `สำหรับ ${displayScenario.label} ที่เลือกไว้`
-    : "(สูงสุด · แต่ละ Startup Condition ไม่ได้รวมกัน)";
+  const scopeLabel = execState.scenario ? "" : " (สูงสุด · แต่ละ Startup Condition ไม่ได้รวมกัน)";
   savingsLabel.textContent = annualReady()
-    ? `ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อปี ${scopeLabel}`
-    : `ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อครั้ง ${scopeLabel}`;
+    ? `ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อปี${scopeLabel}`
+    : `ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อครั้ง${scopeLabel}`;
 
   savingsVizTitle.textContent = `สำหรับ ${displayScenario.tag} START`;
   savingsOldValue.textContent = `฿${formatBaht(displayBad)}`;

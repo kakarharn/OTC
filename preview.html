@@ -1213,6 +1213,24 @@ body.view-technical #view-technical { display: block; }
   opacity: 1;
 }
 
+.savings-stamp-mark::after {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border-radius: 17px;
+  padding: 2px;
+  background: conic-gradient(from 0deg, transparent 0deg, var(--mw) 55deg, rgba(53, 214, 143, 0.6) 90deg, transparent 130deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: borderOrbit 3.2s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes borderOrbit {
+  to { transform: rotate(360deg); }
+}
+
 .savings-stamp-mark::before {
   content: "";
   position: absolute;
@@ -2005,7 +2023,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
             <h2 class="section-title">ผลของการตอบสนองด้วย Force TU ทันทีที่พบปัญหา</h2>
             <p class="section-subhead">Force TU Override ลดผลกระทบได้มากแค่ไหน เทียบกับปล่อยให้ Recovery ตามปกติ</p>
             <p class="section-lede">เปรียบเทียบผลการประเมินระหว่าง Current Configuration (ไม่ตอบสนอง) และ Force TU Override (มาตรการฉุกเฉินชั่วคราวเมื่อพบว่า OTC ถูก Reset) — เป็น Scenario สำหรับการศึกษาเปรียบเทียบ ควรผ่านการตรวจสอบและอนุมัติเป็น SOP ก่อนนำไปปฏิบัติจริง</p>
-            <p class="force-tu-explainer">Force TU ทำให้ OTC กลับสู่ Reference ภายในไม่กี่วินาที — เร็วกว่า Startup Duration ของทุก Condition มาก จึงไม่มี MW ต่ำกว่าที่ NCC สั่งให้เห็นเลย เมื่อไม่มี Post Event เกิดขึ้นจริง <strong>ก็ไม่มี Resumption Process และไม่มีค่าปรับ Post Event เลยแม้แต่บาทเดียว</strong> ต่างจาก Current Configuration ที่ปล่อยให้ OTC Recovery ตามปกติ ซึ่งจะมี MW ต่ำกว่าสั่งจริงและถูกบทปรับตามระยะเวลาที่เกิดขึ้น</p>
+            <p class="force-tu-explainer">Force TU ทำให้ OTC กลับสู่ Reference ภายในไม่กี่วินาที — เร็วกว่า Startup Duration ของทุก Condition มาก จึงไม่มีช่วงเวลาที่ MW ต่ำกว่าที่ NCC สั่งให้เห็นเลย เมื่อไม่มี Post Event เกิดขึ้นจริง <strong>ก็ไม่มี Resumption Process และไม่มีค่าปรับ Post Event เลยแม้แต่บาทเดียว</strong> ต่างจาก Current Configuration ที่ปล่อยให้ OTC Recovery ตามปกติ ซึ่งจะมีช่วงเวลาที่ MW ต่ำกว่าที่สั่งจริง และถูกบทปรับตามระยะเวลาที่เกิดขึ้น</p>
             <div id="compareLocked" class="locked-prompt">กรอก <strong>อัตราค่าปรับ Post Event</strong> ด้านบนสุด เพื่อดูตัวเลขเปรียบเทียบ</div>
             <div id="compareContent" hidden>
               <div class="compare-table">
@@ -3293,19 +3311,17 @@ function renderCompareTable(rate) {
     pctEl.textContent = minutesCut > 0 ? `-${formatHoursMinutes(minutesCut)}` : "—";
   });
 
-  compareRateNote.textContent = `Current Ramp Rate ${rate.toFixed(2)} °C/min → Force TU Override (เทียบเท่า TU=10ms · OTC กลับ Reference ภายในไม่กี่วินาที)`;
+  compareRateNote.textContent = `Current Ramp Rate ${rate.toFixed(2)} °C/min → Force TU Override (เทียบเท่า TU=10ms)`;
 
   const displayCut = selectedCut !== null ? selectedCut : maxPenaltyCut;
   const displayScenario = execState.scenario ? SCENARIOS.find((s) => s.key === execState.scenario) : maxCutScenario;
   const displayBad = selectedBad !== null ? selectedBad : maxCutBad;
   const displayGood = selectedGood !== null ? selectedGood : maxCutGood;
 
-  const scopeLabel = execState.scenario
-    ? `สำหรับ ${displayScenario.label} ที่เลือกไว้`
-    : "(สูงสุด · แต่ละ Startup Condition ไม่ได้รวมกัน)";
+  const scopeLabel = execState.scenario ? "" : " (สูงสุด · แต่ละ Startup Condition ไม่ได้รวมกัน)";
   savingsLabel.textContent = annualReady()
-    ? `ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อปี ${scopeLabel}`
-    : `ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อครั้ง ${scopeLabel}`;
+    ? `ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อปี${scopeLabel}`
+    : `ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อครั้ง${scopeLabel}`;
 
   savingsVizTitle.textContent = `สำหรับ ${displayScenario.tag} START`;
   savingsOldValue.textContent = `฿${formatBaht(displayBad)}`;
