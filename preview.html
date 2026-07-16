@@ -671,6 +671,21 @@ body.view-technical #view-technical { display: block; }
   font-size: 1rem;
 }
 
+.force-tu-explainer {
+  color: var(--ink);
+  max-width: 66ch;
+  line-height: 1.7;
+  margin-top: -24px;
+  margin-bottom: 32px;
+  padding: 16px 20px;
+  border-radius: 10px;
+  border: 1px solid var(--mw-dim);
+  background: var(--mw-dim);
+  font-size: 0.92rem;
+}
+
+.force-tu-explainer strong { color: var(--mw); }
+
 .mech-track {
   position: relative;
   display: grid;
@@ -979,6 +994,12 @@ body.view-technical #view-technical { display: block; }
   color: var(--rose);
   font-variant-numeric: tabular-nums;
   text-shadow: 0 0 60px var(--rose-glow);
+  animation: bignumBreathe 2.6s ease-in-out infinite;
+}
+
+@keyframes bignumBreathe {
+  0%, 100% { text-shadow: 0 0 50px var(--rose-glow); }
+  50% { text-shadow: 0 0 85px var(--rose-glow), 0 0 30px var(--rose); }
 }
 
 .bignum::before,
@@ -1866,6 +1887,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
             <h2 class="section-title">ผลของการตอบสนองด้วย Force TU ทันทีที่พบปัญหา</h2>
             <p class="section-subhead">Force TU Override ลดผลกระทบได้มากแค่ไหน เทียบกับปล่อยให้ Recovery ตามปกติ</p>
             <p class="section-lede">เปรียบเทียบผลการประเมินระหว่าง Current Configuration (ไม่ตอบสนอง) และ Force TU Override (มาตรการฉุกเฉินชั่วคราวเมื่อพบว่า OTC ถูก Reset) — เป็น Scenario สำหรับการศึกษาเปรียบเทียบ ควรผ่านการตรวจสอบและอนุมัติเป็น SOP ก่อนนำไปปฏิบัติจริง</p>
+            <p class="force-tu-explainer">Force TU ทำให้ OTC กลับสู่ Reference ภายในไม่กี่วินาที — เร็วกว่า Startup Duration ของทุก Condition มาก จึงไม่มี MW ต่ำกว่าที่ NCC สั่งให้เห็นเลย เมื่อไม่มี Post Event เกิดขึ้นจริง <strong>ก็ไม่มี Resumption Process และไม่มีค่าปรับ Post Event เลยแม้แต่บาทเดียว</strong> ต่างจาก Current Configuration ที่ปล่อยให้ OTC Recovery ตามปกติ ซึ่งจะมี MW ต่ำกว่าสั่งจริงและถูกบทปรับตามระยะเวลาที่เกิดขึ้น</p>
             <div id="compareLocked" class="locked-prompt">กรอก <strong>อัตราค่าปรับ Post Event</strong> ด้านบนสุด เพื่อดูตัวเลขเปรียบเทียบ</div>
             <div id="compareContent" hidden>
               <div class="compare-table">
@@ -1873,7 +1895,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
                   <span>Condition</span>
                   <span>Current Configuration</span>
                   <span>Force TU Override</span>
-                  <span>ลดลง</span>
+                  <span>เวลาที่ตัดออกได้</span>
                 </div>
                 <div class="compare-row" data-scenario="hot">
                   <span class="compare-row-tag">HOT</span>
@@ -1896,7 +1918,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
               </div>
               <p class="compare-footnote" id="compareRateNote">Current Ramp Rate — Force TU Override</p>
               <div class="savings-banner">
-                <span id="savingsLabel">ค่าปรับ Post Event ที่อาจลดลงได้</span>
+                <span id="savingsLabel">MW Recovery Penalty ที่ Force TU ตัดออกได้</span>
                 <strong id="savingsValue">฿0</strong>
               </div>
               <p class="trip-risk-disclaimer">⚠ หมายเหตุ: Trip Risk Scenario (Worst Case สำหรับ HOT/WARM) ไม่ได้ลดลงจาก Force TU Override ในตารางนี้ เพราะเป็นความเสี่ยงจาก Loss of Flame ที่เกิดจาก IGV ค้างที่ 100% ระหว่าง Baseload Window ไม่ใช่จากความเร็วของ OTC Recovery</p>
@@ -2856,7 +2878,9 @@ function computeScenario(durationMin, rampRateCPerMin, resetY, penaltyRate) {
   const mwLoss = Math.min(rawMwLoss, maxRealisticLoss);
   const predictedPower = appliedConfig.refActivePower - mwLoss;
   const recoveryRemainingMin = rampRateCPerMin > 0 ? yGap / rampRateCPerMin : 0;
-  const totalPenaltyDurationHr = recoveryRemainingMin / 60 + appliedConfig.resumptionHr;
+  // Resumption Process (NCC re-acceptance) เกิดขึ้นเฉพาะเมื่อมี Post Event จริง (Gap > 0)
+  // ถ้า OTC กลับถึง Reference ทันเวลาพอดี (Gap = 0) แปลว่าไม่มี MW หายให้ NCC เห็น จึงไม่มี Resumption และไม่มีค่าปรับเลย
+  const totalPenaltyDurationHr = yGap > 0 ? (recoveryRemainingMin / 60 + appliedConfig.resumptionHr) : 0;
   const estimatedPenalty = totalPenaltyDurationHr * penaltyRate;
   return { yAtComplete, yGap, mwLoss, predictedPower, recoveryRemainingMin, totalPenaltyDurationHr, estimatedPenalty };
 }
@@ -3046,8 +3070,9 @@ function renderExecutive() {
 
   penaltyTimelineLocked.hidden = true;
   penaltyTimelineContent.hidden = false;
+  const resumptionMinForDisplay = r.estimatedPenalty > 0 ? appliedConfig.resumptionHr * 60 : 0;
   animateMinutesNumber(ptRecoveryTime, r.recoveryRemainingMin);
-  animateMinutesNumber(ptResumptionTime, appliedConfig.resumptionHr * 60);
+  animateMinutesNumber(ptResumptionTime, resumptionMinForDisplay);
   animateMinutesNumber(ptTotalTime, r.totalPenaltyDurationHr * 60);
 
   if (meta.key === "hot" || meta.key === "warm") {
@@ -3088,14 +3113,14 @@ function renderCompareTable(rate) {
   const goodRate = appliedConfig.rampRateAfterFix;
   const penaltyRate = execState.penaltyRate;
   const annualForCompare = annualReady() ? execState.annualEvents : 1;
-  let minPct = null;
-  let maxPct = null;
+  let maxPenaltyCut = 0;
 
   SCENARIOS.forEach((sc) => {
     const badResult = computeScenario(appliedConfig[sc.durationKey], rate, 0, penaltyRate);
     const goodResult = computeScenario(appliedConfig[sc.durationKey], goodRate, 0, penaltyRate);
     const badAnnual = badResult.estimatedPenalty * annualForCompare;
     const goodAnnual = goodResult.estimatedPenalty * annualForCompare;
+    maxPenaltyCut = Math.max(maxPenaltyCut, badAnnual - goodAnnual);
 
     const cells = compareCells[sc.key];
     cells.bad.textContent = `฿${formatBaht(badAnnual)}`;
@@ -3108,26 +3133,15 @@ function renderCompareTable(rate) {
     }
 
     const pctEl = comparePctCells[sc.key];
-    if (badAnnual > 0) {
-      const pct = Math.max(0, ((badAnnual - goodAnnual) / badAnnual) * 100);
-      pctEl.textContent = `-${pct.toFixed(0)}%`;
-      minPct = minPct === null ? pct : Math.min(minPct, pct);
-      maxPct = maxPct === null ? pct : Math.max(maxPct, pct);
-    } else {
-      pctEl.textContent = "—";
-    }
+    const minutesCut = Math.max(0, badResult.recoveryRemainingMin - goodResult.recoveryRemainingMin);
+    pctEl.textContent = minutesCut > 0 ? `-${formatHoursMinutes(minutesCut)}` : "—";
   });
 
   compareRateNote.textContent = `Current Ramp Rate ${rate.toFixed(2)} °C/min → Force TU Override (เทียบเท่า TU=10ms · OTC กลับ Reference ภายในไม่กี่วินาที)`;
-
-  savingsLabel.textContent = "ค่าปรับ Post Event ที่อาจลดลงได้ (แต่ละ Startup Condition ไม่ได้รวมกัน)";
-
-  if (minPct !== null) {
-    const pctRangeText = Math.abs(maxPct - minPct) < 0.5 ? `${minPct.toFixed(0)}%` : `${minPct.toFixed(0)}–${maxPct.toFixed(0)}%`;
-    savingsValue.textContent = `ลดลง ${pctRangeText}`;
-  } else {
-    savingsValue.textContent = "ไม่มีค่าปรับให้ลด";
-  }
+  savingsLabel.textContent = annualReady()
+    ? "ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อปี (สูงสุด · แต่ละ Startup Condition ไม่ได้รวมกัน)"
+    : "ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อครั้ง (สูงสุด · แต่ละ Startup Condition ไม่ได้รวมกัน)";
+  savingsValue.textContent = maxPenaltyCut > 0 ? `฿${formatBaht(maxPenaltyCut)}` : "ไม่มีค่าปรับให้ตัด";
 }
 
 quickPenaltyRate.addEventListener("input", () => {

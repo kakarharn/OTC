@@ -659,6 +659,21 @@ body.view-technical #view-technical { display: block; }
   font-size: 1rem;
 }
 
+.force-tu-explainer {
+  color: var(--ink);
+  max-width: 66ch;
+  line-height: 1.7;
+  margin-top: -24px;
+  margin-bottom: 32px;
+  padding: 16px 20px;
+  border-radius: 10px;
+  border: 1px solid var(--mw-dim);
+  background: var(--mw-dim);
+  font-size: 0.92rem;
+}
+
+.force-tu-explainer strong { color: var(--mw); }
+
 .mech-track {
   position: relative;
   display: grid;
@@ -967,6 +982,12 @@ body.view-technical #view-technical { display: block; }
   color: var(--rose);
   font-variant-numeric: tabular-nums;
   text-shadow: 0 0 60px var(--rose-glow);
+  animation: bignumBreathe 2.6s ease-in-out infinite;
+}
+
+@keyframes bignumBreathe {
+  0%, 100% { text-shadow: 0 0 50px var(--rose-glow); }
+  50% { text-shadow: 0 0 85px var(--rose-glow), 0 0 30px var(--rose); }
 }
 
 .bignum::before,

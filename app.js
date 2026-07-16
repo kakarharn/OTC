@@ -731,7 +731,9 @@ function computeScenario(durationMin, rampRateCPerMin, resetY, penaltyRate) {
   const mwLoss = Math.min(rawMwLoss, maxRealisticLoss);
   const predictedPower = appliedConfig.refActivePower - mwLoss;
   const recoveryRemainingMin = rampRateCPerMin > 0 ? yGap / rampRateCPerMin : 0;
-  const totalPenaltyDurationHr = recoveryRemainingMin / 60 + appliedConfig.resumptionHr;
+  // Resumption Process (NCC re-acceptance) เกิดขึ้นเฉพาะเมื่อมี Post Event จริง (Gap > 0)
+  // ถ้า OTC กลับถึง Reference ทันเวลาพอดี (Gap = 0) แปลว่าไม่มี MW หายให้ NCC เห็น จึงไม่มี Resumption และไม่มีค่าปรับเลย
+  const totalPenaltyDurationHr = yGap > 0 ? (recoveryRemainingMin / 60 + appliedConfig.resumptionHr) : 0;
   const estimatedPenalty = totalPenaltyDurationHr * penaltyRate;
   return { yAtComplete, yGap, mwLoss, predictedPower, recoveryRemainingMin, totalPenaltyDurationHr, estimatedPenalty };
 }
@@ -921,8 +923,9 @@ function renderExecutive() {
 
   penaltyTimelineLocked.hidden = true;
   penaltyTimelineContent.hidden = false;
+  const resumptionMinForDisplay = r.estimatedPenalty > 0 ? appliedConfig.resumptionHr * 60 : 0;
   animateMinutesNumber(ptRecoveryTime, r.recoveryRemainingMin);
-  animateMinutesNumber(ptResumptionTime, appliedConfig.resumptionHr * 60);
+  animateMinutesNumber(ptResumptionTime, resumptionMinForDisplay);
   animateMinutesNumber(ptTotalTime, r.totalPenaltyDurationHr * 60);
 
   if (meta.key === "hot" || meta.key === "warm") {
@@ -963,14 +966,14 @@ function renderCompareTable(rate) {
   const goodRate = appliedConfig.rampRateAfterFix;
   const penaltyRate = execState.penaltyRate;
   const annualForCompare = annualReady() ? execState.annualEvents : 1;
-  let minPct = null;
-  let maxPct = null;
+  let maxPenaltyCut = 0;
 
   SCENARIOS.forEach((sc) => {
     const badResult = computeScenario(appliedConfig[sc.durationKey], rate, 0, penaltyRate);
     const goodResult = computeScenario(appliedConfig[sc.durationKey], goodRate, 0, penaltyRate);
     const badAnnual = badResult.estimatedPenalty * annualForCompare;
     const goodAnnual = goodResult.estimatedPenalty * annualForCompare;
+    maxPenaltyCut = Math.max(maxPenaltyCut, badAnnual - goodAnnual);
 
     const cells = compareCells[sc.key];
     cells.bad.textContent = `฿${formatBaht(badAnnual)}`;
@@ -983,26 +986,15 @@ function renderCompareTable(rate) {
     }
 
     const pctEl = comparePctCells[sc.key];
-    if (badAnnual > 0) {
-      const pct = Math.max(0, ((badAnnual - goodAnnual) / badAnnual) * 100);
-      pctEl.textContent = `-${pct.toFixed(0)}%`;
-      minPct = minPct === null ? pct : Math.min(minPct, pct);
-      maxPct = maxPct === null ? pct : Math.max(maxPct, pct);
-    } else {
-      pctEl.textContent = "—";
-    }
+    const minutesCut = Math.max(0, badResult.recoveryRemainingMin - goodResult.recoveryRemainingMin);
+    pctEl.textContent = minutesCut > 0 ? `-${formatHoursMinutes(minutesCut)}` : "—";
   });
 
   compareRateNote.textContent = `Current Ramp Rate ${rate.toFixed(2)} °C/min → Force TU Override (เทียบเท่า TU=10ms · OTC กลับ Reference ภายในไม่กี่วินาที)`;
-
-  savingsLabel.textContent = "ค่าปรับ Post Event ที่อาจลดลงได้ (แต่ละ Startup Condition ไม่ได้รวมกัน)";
-
-  if (minPct !== null) {
-    const pctRangeText = Math.abs(maxPct - minPct) < 0.5 ? `${minPct.toFixed(0)}%` : `${minPct.toFixed(0)}–${maxPct.toFixed(0)}%`;
-    savingsValue.textContent = `ลดลง ${pctRangeText}`;
-  } else {
-    savingsValue.textContent = "ไม่มีค่าปรับให้ลด";
-  }
+  savingsLabel.textContent = annualReady()
+    ? "ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อปี (สูงสุด · แต่ละ Startup Condition ไม่ได้รวมกัน)"
+    : "ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อครั้ง (สูงสุด · แต่ละ Startup Condition ไม่ได้รวมกัน)";
+  savingsValue.textContent = maxPenaltyCut > 0 ? `฿${formatBaht(maxPenaltyCut)}` : "ไม่มีค่าปรับให้ตัด";
 }
 
 quickPenaltyRate.addEventListener("input", () => {

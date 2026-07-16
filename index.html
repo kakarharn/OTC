@@ -236,6 +236,7 @@
             <h2 class="section-title">ผลของการตอบสนองด้วย Force TU ทันทีที่พบปัญหา</h2>
             <p class="section-subhead">Force TU Override ลดผลกระทบได้มากแค่ไหน เทียบกับปล่อยให้ Recovery ตามปกติ</p>
             <p class="section-lede">เปรียบเทียบผลการประเมินระหว่าง Current Configuration (ไม่ตอบสนอง) และ Force TU Override (มาตรการฉุกเฉินชั่วคราวเมื่อพบว่า OTC ถูก Reset) — เป็น Scenario สำหรับการศึกษาเปรียบเทียบ ควรผ่านการตรวจสอบและอนุมัติเป็น SOP ก่อนนำไปปฏิบัติจริง</p>
+            <p class="force-tu-explainer">Force TU ทำให้ OTC กลับสู่ Reference ภายในไม่กี่วินาที — เร็วกว่า Startup Duration ของทุก Condition มาก จึงไม่มี MW ต่ำกว่าที่ NCC สั่งให้เห็นเลย เมื่อไม่มี Post Event เกิดขึ้นจริง <strong>ก็ไม่มี Resumption Process และไม่มีค่าปรับ Post Event เลยแม้แต่บาทเดียว</strong> ต่างจาก Current Configuration ที่ปล่อยให้ OTC Recovery ตามปกติ ซึ่งจะมี MW ต่ำกว่าสั่งจริงและถูกบทปรับตามระยะเวลาที่เกิดขึ้น</p>
             <div id="compareLocked" class="locked-prompt">กรอก <strong>อัตราค่าปรับ Post Event</strong> ด้านบนสุด เพื่อดูตัวเลขเปรียบเทียบ</div>
             <div id="compareContent" hidden>
               <div class="compare-table">
@@ -243,7 +244,7 @@
                   <span>Condition</span>
                   <span>Current Configuration</span>
                   <span>Force TU Override</span>
-                  <span>ลดลง</span>
+                  <span>เวลาที่ตัดออกได้</span>
                 </div>
                 <div class="compare-row" data-scenario="hot">
                   <span class="compare-row-tag">HOT</span>
@@ -266,7 +267,7 @@
               </div>
               <p class="compare-footnote" id="compareRateNote">Current Ramp Rate — Force TU Override</p>
               <div class="savings-banner">
-                <span id="savingsLabel">ค่าปรับ Post Event ที่อาจลดลงได้</span>
+                <span id="savingsLabel">MW Recovery Penalty ที่ Force TU ตัดออกได้</span>
                 <strong id="savingsValue">฿0</strong>
               </div>
               <p class="trip-risk-disclaimer">⚠ หมายเหตุ: Trip Risk Scenario (Worst Case สำหรับ HOT/WARM) ไม่ได้ลดลงจาก Force TU Override ในตารางนี้ เพราะเป็นความเสี่ยงจาก Loss of Flame ที่เกิดจาก IGV ค้างที่ 100% ระหว่าง Baseload Window ไม่ใช่จากความเร็วของ OTC Recovery</p>
