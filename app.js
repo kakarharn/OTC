@@ -1391,6 +1391,11 @@ renderExecutive();
 resetAll();
 requestAnimationFrame(tick);
 
+requestAnimationFrame(() => {
+  viewScan.classList.add("sweeping");
+  setTimeout(() => viewScan.classList.remove("sweeping"), 600);
+});
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
