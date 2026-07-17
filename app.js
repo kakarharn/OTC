@@ -1074,11 +1074,36 @@ document.querySelectorAll(".mech-step").forEach((step) => {
    View switching
    ============================================================ */
 
+const viewScan = document.querySelector("#viewScan");
+let viewTransitioning = false;
+
 function setView(view) {
-  bodyEl.classList.toggle("view-executive", view === "executive");
-  bodyEl.classList.toggle("view-technical", view === "technical");
+  const currentView = bodyEl.classList.contains("view-technical") ? "technical" : "executive";
+  if (view === currentView || viewTransitioning) return;
+  viewTransitioning = true;
+
+  const outgoingEl = document.querySelector(currentView === "technical" ? "#view-technical" : "#view-executive");
+  const incomingEl = document.querySelector(view === "technical" ? "#view-technical" : "#view-executive");
+
   viewSwitchButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.view === view));
-  if (view === "technical") render(getSettings());
+
+  viewScan.classList.remove("sweeping");
+  void viewScan.offsetWidth;
+  viewScan.classList.add("sweeping");
+
+  outgoingEl.classList.add("view-out");
+  setTimeout(() => {
+    outgoingEl.classList.remove("view-out");
+    bodyEl.classList.toggle("view-executive", view === "executive");
+    bodyEl.classList.toggle("view-technical", view === "technical");
+    if (view === "technical") render(getSettings());
+    incomingEl.classList.add("view-in");
+    setTimeout(() => {
+      incomingEl.classList.remove("view-in");
+      viewScan.classList.remove("sweeping");
+      viewTransitioning = false;
+    }, 500);
+  }, 260);
 }
 
 viewSwitchButtons.forEach((btn) => btn.addEventListener("click", () => setView(btn.dataset.view)));
