@@ -147,8 +147,12 @@ function hexToRgba(hex, alpha) {
 
 function formatHoursMinutes(totalMinutes) {
   const safe = Math.max(0, totalMinutes);
-  const h = Math.floor(safe / 60);
-  const m = Math.round(safe - h * 60);
+  let h = Math.floor(safe / 60);
+  let m = Math.round(safe - h * 60);
+  if (m === 60) {
+    m = 0;
+    h += 1;
+  }
   return `${h}h ${String(m).padStart(2, "0")}m`;
 }
 
@@ -260,6 +264,7 @@ discardButton.addEventListener("click", discardAllChanges);
 
 [inputs.nrm, inputs.hotMin, inputs.warmMin, inputs.coldMin, inputs.referenceY, inputs.refActivePower,
   inputs.mwLossFactor, inputs.resumptionHr, inputs.tuAfterFix,
+  inputs.tripFloorMw, inputs.tripRestartMin, inputs.gtUnitPower, inputs.gtPowerDeclineRate,
   inputs.tu, inputs.td].forEach((el) => el.addEventListener("input", refreshPending));
 
 inputs.timeUnit.addEventListener("change", () => {
@@ -352,6 +357,11 @@ function clearTrace() {
 }
 
 function tick(now) {
+  if (!bodyEl.classList.contains("view-technical")) {
+    state.lastFrame = now;
+    requestAnimationFrame(tick);
+    return;
+  }
   const settings = getSettings();
   syncSliderToX(settings.x);
   const frameDt = Math.min(0.25, Math.max(0, (now - state.lastFrame) / 1000));
@@ -1113,6 +1123,10 @@ if (ctaToTechnicalButton) ctaToTechnicalButton.addEventListener("click", () => s
 /* ---------- Hero mini chart (always animating, decorative -> real) ---------- */
 
 function drawHeroChart(now) {
+  if (!bodyEl.classList.contains("view-executive")) {
+    requestAnimationFrame(drawHeroChart);
+    return;
+  }
   if (heroCtx && heroChart.parentElement) {
     const rect = heroChart.parentElement.getBoundingClientRect();
     const scale = Math.min(window.devicePixelRatio || 1, 2);

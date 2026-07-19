@@ -88,7 +88,6 @@
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
               </button>
               <div id="tripRiskCard" class="trip-risk-card" hidden>
-                <span class="trip-risk-tag">⚠ Trip Risk Scenario · Worst Case</span>
                 <p class="trip-risk-note">หาก Firing Temperature ถูกลดต่ำลงต่อเนื่องขณะ IGV ค้างที่ 100% อาจทำให้ GT เกิด Trip ได้จากหลายสาเหตุ เช่น Loss of Flame หรือระบบ Protection/Monitoring อื่นสั่งตัดเครื่อง — ตัวเลขนี้เป็น Worst Case แยกจากค่าปรับปกติ ไม่ได้บวกรวมกัน</p>
                 <div class="trip-risk-grid">
                   <div class="trip-risk-item highlight"><span>ค่าปรับ Post Event หาก Trip (Worst Case)</span><strong id="tripPenalty">฿—</strong></div>
@@ -277,7 +276,7 @@
                     <strong id="savingsValue">฿0</strong>
                   </span>
                 </div>
-                <span class="savings-stamp-caption" id="savingsLabel">MW Recovery Penalty ที่ Force TU ตัดออกได้</span>
+                <span class="savings-stamp-caption" id="savingsLabel">ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อปี</span>
               </div>
               <p class="trip-risk-disclaimer">⚠ หมายเหตุ: Trip Risk Scenario (Worst Case สำหรับ HOT/WARM) ไม่ได้ลดลงจาก Force TU Override ในตารางนี้ เพราะเป็นความเสี่ยงจาก Loss of Flame ที่เกิดจาก IGV ค้างที่ 100% ระหว่าง Baseload Window ไม่ใช่จากความเร็วของ OTC Recovery</p>
             </div>
