@@ -480,7 +480,10 @@ function renderChart(settings) {
   drawGrid(mwPane, windowStart, windowEnd, mwAxis, "Predicted MW");
   drawReferenceLine(tempPane, tempY, settings.referenceY, `${settings.referenceY.toFixed(1)} C`, "#3f5560");
   drawReferenceLine(mwPane, mwY, settings.refActivePower, `${settings.refActivePower.toFixed(0)} MW`, "#3f5560");
-  drawReferenceLine(mwPane, mwY, settings.tripFloorMw, `Trip Floor ${settings.tripFloorMw.toFixed(0)} MW · ค้างที่นี่ปกติ`, "#fb5d6f", "left");
+  const latestMw = history.length > 0 ? history[history.length - 1].mw : mwFromY(state.y, settings);
+  if (Math.abs(latestMw - settings.tripFloorMw) < 0.5) {
+    drawReferenceLine(mwPane, mwY, settings.tripFloorMw, "Trip Floor", "#fb5d6f", "left");
+  }
   drawSeries(history, xFor, tempY, "x", "#2dd9c2", [8, 6], 2);
   drawSeries(history, xFor, tempY, "y", "#f5a524", [], 2.6);
   drawSeries(history, xFor, mwY, "mw", "#35d68f", [], 2.6);
