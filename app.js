@@ -746,9 +746,13 @@ function computeScenario(durationMin, rampRateCPerMin, resetY, penaltyRate) {
   const recoveryRemainingMin = rampRateCPerMin > 0 ? yGap / rampRateCPerMin : 0;
   // Resumption Process (NCC re-acceptance) เกิดขึ้นเฉพาะเมื่อมี Post Event จริง (Gap > 0)
   // ถ้า OTC กลับถึง Reference ทันเวลาพอดี (Gap = 0) แปลว่าไม่มี MW หายให้ NCC เห็น จึงไม่มี Resumption และไม่มีค่าปรับเลย
-  const totalPenaltyDurationHr = yGap > 0 ? (recoveryRemainingMin / 60 + appliedConfig.resumptionHr) : 0;
+  // postEventOccurred คือความจริงทางฟิสิกส์ (Gap > 0) แยกจาก estimatedPenalty ที่เป็นตัวเงิน
+  // เพราะถ้า Penalty Rate ถูกตั้งเป็น 0 (ทดสอบ/ยังไม่ทราบอัตรา) estimatedPenalty จะเป็น 0 เสมอ
+  // แม้ Post Event จะเกิดขึ้นจริงก็ตาม ต้องแยกเช็คคนละตัวเพื่อไม่ให้ UI แสดงผลผิดพลาด
+  const postEventOccurred = yGap > 0;
+  const totalPenaltyDurationHr = postEventOccurred ? (recoveryRemainingMin / 60 + appliedConfig.resumptionHr) : 0;
   const estimatedPenalty = totalPenaltyDurationHr * penaltyRate;
-  return { yAtComplete, yGap, mwLoss, predictedPower, recoveryRemainingMin, totalPenaltyDurationHr, estimatedPenalty };
+  return { yAtComplete, yGap, mwLoss, predictedPower, recoveryRemainingMin, totalPenaltyDurationHr, estimatedPenalty, postEventOccurred };
 }
 
 function computeTripScenario(penaltyRate) {
@@ -872,7 +876,7 @@ function buildNarrative(meta, r) {
     ? `\n\nนอกจากนี้ ${meta.label} ยังมีความเสี่ยงเพิ่มขึ้นที่เครื่องจะเกิด Trip จาก Loss of Flame หาก OTC Controller ยังไม่ Recovery ทันขณะเข้าสู่ช่วง Baseload Window ซึ่งจะทำให้กำลังผลิตลดฮวบและค่าปรับ Post Event สูงกว่าที่ประเมินไว้มาก (ดูรายละเอียดที่ Trip Risk Scenario ด้านบน)`
     : "";
 
-  if (r.estimatedPenalty <= 0) {
+  if (!r.postEventOccurred) {
     return `สำหรับ ${meta.label} ภายใต้ค่าที่กำหนดใน Engineering Model ระบบประเมินว่า OTC Controller จะ Recovery กลับสู่ระดับพร้อมรับ Load ได้ทันเวลา ก่อนที่ Startup Process จะเสร็จสิ้น จึงไม่เกิด MW Loss และไม่มีค่าปรับ Post Event สำหรับเหตุการณ์นี้${tripNote}`;
   }
 
@@ -947,7 +951,7 @@ function renderExecutive() {
 
   penaltyTimelineLocked.hidden = true;
   penaltyTimelineContent.hidden = false;
-  const resumptionMinForDisplay = r.estimatedPenalty > 0 ? appliedConfig.resumptionHr * 60 : 0;
+  const resumptionMinForDisplay = r.postEventOccurred ? appliedConfig.resumptionHr * 60 : 0;
   animateMinutesNumber(ptRecoveryTime, r.recoveryRemainingMin);
   animateMinutesNumber(ptResumptionTime, resumptionMinForDisplay);
   animateMinutesNumber(ptTotalTime, r.totalPenaltyDurationHr * 60);
@@ -1054,11 +1058,13 @@ function renderCompareTable(rate) {
 }
 
 quickPenaltyRate.addEventListener("input", () => {
-  execState.penaltyRate = Number.parseFloat(quickPenaltyRate.value);
+  const parsed = Number.parseFloat(quickPenaltyRate.value);
+  execState.penaltyRate = Number.isFinite(parsed) ? Math.max(0, parsed) : parsed;
   renderExecutive();
 });
 quickAnnualEvents.addEventListener("input", () => {
-  execState.annualEvents = Number.parseFloat(quickAnnualEvents.value);
+  const parsed = Number.parseFloat(quickAnnualEvents.value);
+  execState.annualEvents = Number.isFinite(parsed) ? Math.max(0, parsed) : parsed;
   renderExecutive();
 });
 
@@ -1073,10 +1079,23 @@ const revealObserver = new IntersectionObserver((entries) => {
 document.querySelectorAll(".pitch-section, .mech-step, .pt-step, .pt-arrow, .pt-total").forEach((section) => revealObserver.observe(section));
 
 document.querySelectorAll(".mech-step").forEach((step) => {
-  step.addEventListener("click", () => {
+  const toggle = () => {
     const wasActive = step.classList.contains("active");
-    document.querySelectorAll(".mech-step.active").forEach((s) => s.classList.remove("active"));
-    if (!wasActive) step.classList.add("active");
+    document.querySelectorAll(".mech-step.active").forEach((s) => {
+      s.classList.remove("active");
+      s.setAttribute("aria-expanded", "false");
+    });
+    if (!wasActive) {
+      step.classList.add("active");
+      step.setAttribute("aria-expanded", "true");
+    }
+  };
+  step.addEventListener("click", toggle);
+  step.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      toggle();
+    }
   });
 });
 
@@ -1234,7 +1253,7 @@ function drawHeroChart(now) {
       const sc = SCENARIOS.find((s) => s.key === execState.scenario);
       const duration = appliedConfig[sc.durationKey];
       const r = computeScenario(duration, curveRate, curveResetY, penaltyRateEffective);
-      const noPenalty = r.estimatedPenalty <= 0;
+      const noPenalty = !r.postEventOccurred;
       const recoveryCompleteMin = Math.min(totalMin, (curveReferenceY - curveResetY) / curveRate);
 
       if (!noPenalty) {

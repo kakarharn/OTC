@@ -1,12 +1,12 @@
 {
-  "name": "GT OTC Simulation",
+  "name": "GT OTC Impact",
   "short_name": "GT OTC",
-  "description": "Realtime GT OTC ramp simulation with RGE Y response, MW impact, and penalty tracking.",
+  "description": "Gas Turbine OTC Controller Reset Impact — ประเมินผลกระทบต่อกำลังผลิตและค่าปรับ Post Event พร้อม Engineering Console สำหรับตรวจสอบแบบจำลอง RGE Ramp Logic",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0a1116",
-  "theme_color": "#0f171f",
+  "background_color": "#070b0f",
+  "theme_color": "#070b0f",
   "icons": [
     {
       "src": "icon.svg",

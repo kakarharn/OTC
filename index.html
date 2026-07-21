@@ -50,7 +50,7 @@
 
             <div class="hero-inputs hero-inputs-double">
               <label>อัตราค่าปรับ Post Event (บาท / ชั่วโมง)
-                <input id="quickPenaltyRate" type="number" placeholder="เช่น 100000" step="1000">
+                <input id="quickPenaltyRate" type="number" placeholder="เช่น 100000" min="0" step="1000">
               </label>
               <label>จำนวน OTC Controller Reset ต่อปี (ครั้ง / ปี)
                 <input id="quickAnnualEvents" type="number" placeholder="เช่น 6" min="0" step="1">
@@ -72,7 +72,7 @@
 
               <button type="button" class="detail-toggle" id="detailToggle" aria-expanded="false">
                 <span>ดูรายละเอียดการคำนวณ</span>
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
               </button>
               <div class="detail-panel" id="detailPanel" hidden>
                 <div class="detail-item"><span>OTC ที่ Startup Complete</span><strong id="detailYAtComplete">—°C</strong></div>
@@ -85,7 +85,7 @@
             <div id="tripRiskWrap" class="trip-risk-wrap" hidden>
               <button type="button" class="trip-risk-toggle" id="tripRiskToggle" aria-expanded="false">
                 <span>⚠ ดู Trip Risk Scenario (Worst Case)</span>
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
               </button>
               <div id="tripRiskCard" class="trip-risk-card" hidden>
                 <p class="trip-risk-note">หาก Firing Temperature ถูกลดต่ำลงต่อเนื่องขณะ IGV ค้างที่ 100% อาจทำให้ GT เกิด Trip ได้จากหลายสาเหตุ เช่น Loss of Flame หรือระบบ Protection/Monitoring อื่นสั่งตัดเครื่อง — ตัวเลขนี้เป็น Worst Case แยกจากค่าปรับปกติ ไม่ได้บวกรวมกัน</p>
@@ -97,7 +97,7 @@
           </div>
           <div class="scroll-hint">
             <span>Scroll</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
           </div>
         </section>
 
@@ -126,37 +126,37 @@
             <h2 class="section-title">Gas Turbine OTC Controller Reset ส่งผลอย่างไร?</h2>
             <p class="section-lede">เมื่อ OTC Controller ถูก Reset ระบบต้องใช้เวลาในการ Recovery กลับสู่ระดับพร้อมรับ Load หาก Startup เสร็จก่อนการ Recovery สมบูรณ์ ความสามารถในการรับ Load อาจต่ำกว่าระดับอ้างอิง ส่งผลให้เกิด MW Loss และต้องใช้เวลาเพิ่มเติมก่อนเข้าสู่กระบวนการ Resumption และการคืนค่าความพร้อม</p>
             <div class="mech-track">
-              <div class="mech-step">
+              <div class="mech-step" tabindex="0" role="button" aria-expanded="false">
                 <div class="mech-dot"></div>
                 <div class="mech-label">OTC Controller Reset</div>
                 <div class="mech-note">Controller เริ่มกระบวนการ Recovery ใหม่</div>
               </div>
-              <div class="mech-step">
+              <div class="mech-step" tabindex="0" role="button" aria-expanded="false">
                 <div class="mech-dot"></div>
                 <div class="mech-label">Startup in Progress</div>
                 <div class="mech-note">เครื่องดำเนินการ Startup ขณะที่ OTC Controller กำลัง Recovery</div>
               </div>
-              <div class="mech-step hot">
+              <div class="mech-step hot" tabindex="0" role="button" aria-expanded="false">
                 <div class="mech-dot"></div>
                 <div class="mech-label">Startup Complete</div>
                 <div class="mech-note" id="mechGapNote">Startup Process เสร็จสิ้น แต่ OTC Controller อาจยังไม่พร้อมรับ Load เต็มที่</div>
               </div>
-              <div class="mech-step hot">
+              <div class="mech-step hot" tabindex="0" role="button" aria-expanded="false">
                 <div class="mech-dot"></div>
                 <div class="mech-label">Reduced Load Capability</div>
                 <div class="mech-note">กำลังผลิตที่สามารถทำได้อาจต่ำกว่าระดับอ้างอิง</div>
               </div>
-              <div class="mech-step">
+              <div class="mech-step" tabindex="0" role="button" aria-expanded="false">
                 <div class="mech-dot"></div>
                 <div class="mech-label">OTC Controller Ready</div>
                 <div class="mech-note">Controller กลับสู่ระดับพร้อมรับ Load</div>
               </div>
-              <div class="mech-step ok">
+              <div class="mech-step ok" tabindex="0" role="button" aria-expanded="false">
                 <div class="mech-dot"></div>
                 <div class="mech-label">Resumption Process</div>
                 <div class="mech-note">ดำเนินกระบวนการคืนความพร้อมตามขั้นตอน</div>
               </div>
-              <div class="mech-step ok">
+              <div class="mech-step ok" tabindex="0" role="button" aria-expanded="false">
                 <div class="mech-dot"></div>
                 <div class="mech-label">NCC Accepted / Availability Restored</div>
                 <div class="mech-note">NCC รับคืนเครื่อง และคืนค่าความพร้อมให้</div>
@@ -289,7 +289,7 @@
             <p class="cta-sub">ตรวจสอบค่าที่ใช้ในการคำนวณ Controller Model, Startup Duration, Active Power Model และ Recovery Time</p>
             <button type="button" class="cta-button" id="ctaToTechnical">
               เปิด Engineering Console
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
             </button>
             <p class="disclaimer">ผลลัพธ์จากโปรแกรมเป็นค่าประมาณจาก Engineering Model และสมมติฐานที่กำหนดในระบบ ใช้สำหรับการศึกษาและประเมินผลกระทบจาก Gas Turbine OTC Controller Reset เท่านั้น ผลลัพธ์อาจแตกต่างจากการคำนวณค่าปรับ Post Event อย่างเป็นทางการตามหลักเกณฑ์และเงื่อนไขที่เกี่ยวข้อง</p>
             <p class="prepared-by">Prepared by Thitiwat Tapaophong</p>
@@ -436,7 +436,7 @@
                 <input id="referenceYInput" type="number" value="572" step="0.1">
               </label>
               <label>Reference Active Power (MW)
-                <input id="refActivePowerInput" type="number" value="710" step="1">
+                <input id="refActivePowerInput" type="number" value="710" min="0" step="1">
               </label>
               <label>MW Loss Factor (MW / C)
                 <input id="mwLossFactorInput" type="number" value="1.5" min="0" step="0.1">
