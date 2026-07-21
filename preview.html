@@ -2864,7 +2864,7 @@ function renderChart(settings) {
   const windowEnd = windowStart + settings.windowSeconds;
 
   const tempAxis = axisFor(history.flatMap((row) => [row.x, row.y, 0, settings.referenceY]), 2);
-  const mwAxis = axisFor(history.map((row) => row.mw).concat([settings.refActivePower]), 2, { floor: 0 });
+  const mwAxis = axisFor(history.map((row) => row.mw).concat([settings.refActivePower, settings.tripFloorMw]), 2, { floor: 0 });
   const xFor = (time) => tempPane.x + ((time - windowStart) / settings.windowSeconds) * tempPane.w;
   const tempY = (value) => tempPane.y + (1 - (value - tempAxis.min) / (tempAxis.max - tempAxis.min)) * tempPane.h;
   const mwY = (value) => mwPane.y + (1 - (value - mwAxis.min) / (mwAxis.max - mwAxis.min)) * mwPane.h;
@@ -2876,6 +2876,7 @@ function renderChart(settings) {
   drawGrid(mwPane, windowStart, windowEnd, mwAxis, "Predicted MW");
   drawReferenceLine(tempPane, tempY, settings.referenceY, `${settings.referenceY.toFixed(1)} C`, "#3f5560");
   drawReferenceLine(mwPane, mwY, settings.refActivePower, `${settings.refActivePower.toFixed(0)} MW`, "#3f5560");
+  drawReferenceLine(mwPane, mwY, settings.tripFloorMw, `Trip Floor ${settings.tripFloorMw.toFixed(0)} MW · ค้างที่นี่ปกติ`, "#fb5d6f", "left");
   drawSeries(history, xFor, tempY, "x", "#2dd9c2", [8, 6], 2);
   drawSeries(history, xFor, tempY, "y", "#f5a524", [], 2.6);
   drawSeries(history, xFor, mwY, "mw", "#35d68f", [], 2.6);
@@ -2930,7 +2931,7 @@ function drawGrid(pane, windowStart, windowEnd, axis, label) {
   ctx.restore();
 }
 
-function drawReferenceLine(pane, yFor, value, label, color) {
+function drawReferenceLine(pane, yFor, value, label, color, align = "right") {
   const y = yFor(value);
   if (y < pane.y || y > pane.y + pane.h) return;
   ctx.save();
@@ -2943,7 +2944,8 @@ function drawReferenceLine(pane, yFor, value, label, color) {
   ctx.stroke();
   ctx.fillStyle = color;
   ctx.font = "10px IBM Plex Mono, monospace";
-  ctx.fillText(label, pane.x + pane.w - 58, y - 5);
+  const labelX = align === "left" ? pane.x + 8 : pane.x + pane.w - 58;
+  ctx.fillText(label, labelX, y - 5);
   ctx.restore();
 }
 
