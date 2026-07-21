@@ -1598,6 +1598,37 @@ body.view-technical #view-technical { display: block; }
 .line-y { background: var(--amber); }
 .line-mw { background: var(--mw); }
 
+.countdown-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--amber-line);
+  background: var(--amber-dim);
+}
+
+.countdown-bar span {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.countdown-bar strong {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--amber);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.countdown-bar strong.reached {
+  color: var(--mw);
+}
+
 .chart-frame {
   position: relative;
   width: 100%;

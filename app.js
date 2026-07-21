@@ -73,6 +73,7 @@ const yReadout = document.querySelector("#yReadout");
 const mwReadout = document.querySelector("#mwReadout");
 const mwLossReadout = document.querySelector("#mwLossReadout");
 const rateReadout = document.querySelector("#rateReadout");
+const countdownReadout = document.querySelector("#countdownReadout");
 const runToggle = document.querySelector("#runToggle");
 const resetButton = document.querySelector("#resetButton");
 const clearButton = document.querySelector("#clearButton");
@@ -153,6 +154,21 @@ function formatHoursMinutes(totalMinutes) {
     m = 0;
     h += 1;
   }
+  return `${h}h ${String(m).padStart(2, "0")}m`;
+}
+
+function formatCountdown(totalSeconds) {
+  const safe = Math.max(0, totalSeconds);
+  if (safe < 60) return `${safe.toFixed(1)}s`;
+  if (safe < 3600) {
+    const m = Math.floor(safe / 60);
+    const s = Math.round(safe - m * 60);
+    if (s === 60) return `${m + 1}m 00s`;
+    return `${m}m ${String(s).padStart(2, "0")}s`;
+  }
+  const h = Math.floor(safe / 3600);
+  let m = Math.round((safe - h * 3600) / 60);
+  if (m === 60) return `${h + 1}h 00m`;
   return `${h}h ${String(m).padStart(2, "0")}m`;
 }
 
@@ -399,6 +415,19 @@ function render(settings) {
   mwReadout.textContent = `${liveMw.toFixed(2)} MW`;
   mwLossReadout.textContent = `${liveLoss.toFixed(2)} MW`;
   rateReadout.textContent = `${liveRate.toFixed(3)} C/min`;
+
+  const errorNow = settings.x - state.y;
+  const absErrorNow = Math.abs(errorNow);
+  if (absErrorNow < 0.0005) {
+    countdownReadout.textContent = "ถึง X Target แล้ว";
+    countdownReadout.classList.add("reached");
+  } else {
+    const timeConstantNow = errorNow > 0 ? settings.tuSeconds : settings.tdSeconds;
+    const secondsRemaining = (absErrorNow * timeConstantNow) / settings.nrm;
+    countdownReadout.textContent = `~${formatCountdown(secondsRemaining)}`;
+    countdownReadout.classList.remove("reached");
+  }
+
   renderRgeBlock(settings);
   renderChart(settings);
 }

@@ -1610,6 +1610,37 @@ body.view-technical #view-technical { display: block; }
 .line-y { background: var(--amber); }
 .line-mw { background: var(--mw); }
 
+.countdown-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--amber-line);
+  background: var(--amber-dim);
+}
+
+.countdown-bar span {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.countdown-bar strong {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--amber);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.countdown-bar strong.reached {
+  color: var(--mw);
+}
+
 .chart-frame {
   position: relative;
   width: 100%;
@@ -2223,6 +2254,10 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
                 <span><i class="line-mw"></i>MW</span>
               </div>
             </div>
+            <div class="countdown-bar" id="countdownBar">
+              <span>เวลาที่เหลือโดยประมาณจนกว่า Y จะถึง X Target (ตามอัตรา TU/TD ปัจจุบัน)</span>
+              <strong id="countdownReadout">—</strong>
+            </div>
             <div class="chart-frame"><canvas id="chart" aria-label="Realtime Y and MW trend"></canvas></div>
           </section>
         </section>
@@ -2434,6 +2469,7 @@ const yReadout = document.querySelector("#yReadout");
 const mwReadout = document.querySelector("#mwReadout");
 const mwLossReadout = document.querySelector("#mwLossReadout");
 const rateReadout = document.querySelector("#rateReadout");
+const countdownReadout = document.querySelector("#countdownReadout");
 const runToggle = document.querySelector("#runToggle");
 const resetButton = document.querySelector("#resetButton");
 const clearButton = document.querySelector("#clearButton");
@@ -2514,6 +2550,21 @@ function formatHoursMinutes(totalMinutes) {
     m = 0;
     h += 1;
   }
+  return `${h}h ${String(m).padStart(2, "0")}m`;
+}
+
+function formatCountdown(totalSeconds) {
+  const safe = Math.max(0, totalSeconds);
+  if (safe < 60) return `${safe.toFixed(1)}s`;
+  if (safe < 3600) {
+    const m = Math.floor(safe / 60);
+    const s = Math.round(safe - m * 60);
+    if (s === 60) return `${m + 1}m 00s`;
+    return `${m}m ${String(s).padStart(2, "0")}s`;
+  }
+  const h = Math.floor(safe / 3600);
+  let m = Math.round((safe - h * 3600) / 60);
+  if (m === 60) return `${h + 1}h 00m`;
   return `${h}h ${String(m).padStart(2, "0")}m`;
 }
 
@@ -2760,6 +2811,19 @@ function render(settings) {
   mwReadout.textContent = `${liveMw.toFixed(2)} MW`;
   mwLossReadout.textContent = `${liveLoss.toFixed(2)} MW`;
   rateReadout.textContent = `${liveRate.toFixed(3)} C/min`;
+
+  const errorNow = settings.x - state.y;
+  const absErrorNow = Math.abs(errorNow);
+  if (absErrorNow < 0.0005) {
+    countdownReadout.textContent = "ถึง X Target แล้ว";
+    countdownReadout.classList.add("reached");
+  } else {
+    const timeConstantNow = errorNow > 0 ? settings.tuSeconds : settings.tdSeconds;
+    const secondsRemaining = (absErrorNow * timeConstantNow) / settings.nrm;
+    countdownReadout.textContent = `~${formatCountdown(secondsRemaining)}`;
+    countdownReadout.classList.remove("reached");
+  }
+
   renderRgeBlock(settings);
   renderChart(settings);
 }
