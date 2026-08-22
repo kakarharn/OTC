@@ -120,6 +120,16 @@ h1, h2, h3, p { margin: 0; }
   transition: background 0.2s ease, color 0.2s ease;
 }
 
+.app-version {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--muted-dim);
+  letter-spacing: 0.02em;
+}
+
 .view-switch button.active {
   color: #06231f;
   background: var(--teal);
@@ -1350,6 +1360,27 @@ body.view-technical #view-technical { display: block; }
   color: var(--muted);
 }
 
+.savings-time-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line-soft);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.savings-time-row strong {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--teal);
+  font-variant-numeric: tabular-nums;
+}
+
 /* --- CTA --- */
 
 .cta-section { text-align: center; }
@@ -1599,7 +1630,7 @@ body.view-technical #view-technical { display: block; }
 /* --- Chart (fixed sizing, no layout feedback loop) --- */
 
 .chart-panel { padding: 18px 20px 20px; display: grid; gap: 12px; }
-.chart-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.chart-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
 .chart-header h2 { font-family: var(--font-display); font-size: 1rem; }
 .chart-header p { margin-top: 4px; color: var(--muted); font-size: 0.84rem; max-width: 46ch; }
 
@@ -1819,6 +1850,10 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
 
   .tech-shell { padding: 10px; padding-top: 64px; padding-bottom: 84px; gap: 10px; }
   .tech-topbar { padding: 14px 16px; flex-wrap: wrap; gap: 10px; }
+  .legend { justify-content: flex-start; }
+  .countdown-bar { padding: 9px 12px; gap: 8px; }
+  .countdown-bar span { font-size: 0.7rem; }
+  .countdown-bar strong { font-size: 0.92rem; }
   .readout-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 10px; }
   .readout strong { font-size: 1.05rem; }
   .rge-diagram { grid-template-columns: 1fr; gap: 12px; }
@@ -1875,6 +1910,8 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
 }
 
 @media (max-width: 520px) {
+  .app-version { display: none; }
+  .view-switch button { padding: 7px 12px; font-size: 0.72rem; }
   .readout-grid { grid-template-columns: 1fr 1fr; }
   .hook-title { font-size: clamp(1.7rem, 9vw, 2.2rem); line-height: 1.18; }
   .hook-sub { font-size: 0.9rem; margin-top: 18px; }
@@ -1907,6 +1944,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
     <nav class="view-switch">
       <button type="button" data-view="executive" class="active">Dashboard</button>
       <button type="button" data-view="technical">Technical</button>
+      <span class="app-version" id="appVersion">v38</span>
     </nav>
 
     <!-- ============================================================
@@ -2121,17 +2159,17 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
         <section class="pitch-section" id="pitchCompare">
           <div class="pitch-inner">
             <span class="pitch-eyebrow tone-mw">Emergency Response Impact</span>
-            <h2 class="section-title">ผลของการตอบสนองด้วย Force TU ทันทีที่พบปัญหา</h2>
-            <p class="section-subhead">Force TU Override ลดผลกระทบได้มากแค่ไหน เทียบกับปล่อยให้ Recovery ตามปกติ</p>
-            <p class="section-lede">เปรียบเทียบผลการประเมินระหว่าง Current Configuration (ไม่ตอบสนอง) และ Force TU Override (มาตรการฉุกเฉินชั่วคราวเมื่อพบว่า OTC ถูก Reset) — เป็น Scenario สำหรับการศึกษาเปรียบเทียบ ควรผ่านการตรวจสอบและอนุมัติเป็น SOP ก่อนนำไปปฏิบัติจริง</p>
-            <p class="force-tu-explainer">Force TU ทำให้ OTC กลับสู่ Reference ภายในไม่กี่วินาที — เร็วกว่า Startup Duration ของทุก Condition มาก จึงไม่มีช่วงเวลาที่ MW ต่ำกว่าที่ NCC สั่งให้เห็นเลย เมื่อไม่มี Post Event เกิดขึ้นจริง <strong>ก็ไม่มี Resumption Process และไม่มีค่าปรับ Post Event เลยแม้แต่บาทเดียว</strong> ต่างจาก Current Configuration ที่ปล่อยให้ OTC Recovery ตามปกติ ซึ่งจะมีช่วงเวลาที่ MW ต่ำกว่าที่สั่งจริง และถูกบทปรับตามระยะเวลาที่เกิดขึ้น</p>
+            <h2 class="section-title">ผลของการตอบสนองด้วย Adjust TU ทันทีที่พบปัญหา</h2>
+            <p class="section-subhead">Adjust TU Override ลดผลกระทบได้มากแค่ไหน เทียบกับปล่อยให้ Recovery ตามปกติ</p>
+            <p class="section-lede">เปรียบเทียบผลการประเมินระหว่าง Current Configuration (ไม่ตอบสนอง) และ Adjust TU Override (มาตรการฉุกเฉินชั่วคราวเมื่อพบว่า OTC ถูก Reset) — เป็น Scenario สำหรับการศึกษาเปรียบเทียบ ควรผ่านการตรวจสอบและอนุมัติเป็น SOP ก่อนนำไปปฏิบัติจริง</p>
+            <p class="force-tu-explainer">Adjust TU ทำให้ OTC กลับสู่ Reference ภายในไม่กี่วินาที — เร็วกว่า Startup Duration ของทุก Condition มาก จึงไม่มีช่วงเวลาที่ MW ต่ำกว่าที่ NCC สั่งให้เห็นเลย เมื่อไม่มี Post Event เกิดขึ้นจริง <strong>ก็ไม่มี Resumption Process และไม่มีค่าปรับ Post Event เลยแม้แต่บาทเดียว</strong> ต่างจาก Current Configuration ที่ปล่อยให้ OTC Recovery ตามปกติ ซึ่งจะมีช่วงเวลาที่ MW ต่ำกว่าที่สั่งจริง และถูกบทปรับตามระยะเวลาที่เกิดขึ้น</p>
             <div id="compareLocked" class="locked-prompt">กรอก <strong>อัตราค่าปรับ Post Event</strong> ด้านบนสุด เพื่อดูตัวเลขเปรียบเทียบ</div>
             <div id="compareContent" hidden>
               <div class="compare-table">
                 <div class="compare-row compare-row-head">
                   <span>Condition</span>
                   <span>Current Configuration</span>
-                  <span>Force TU Override</span>
+                  <span>Adjust TU Override</span>
                   <span>เวลาที่ตัดออกได้</span>
                 </div>
                 <div class="compare-row" data-scenario="hot">
@@ -2153,7 +2191,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
                   <strong class="compare-row-pct" id="comparePctCold">—</strong>
                 </div>
               </div>
-              <p class="compare-footnote" id="compareRateNote">Current Ramp Rate — Force TU Override</p>
+              <p class="compare-footnote" id="compareRateNote">Current Ramp Rate — Adjust TU Override</p>
 
               <div class="savings-stamp-card">
                 <span class="savings-stamp-title" id="savingsVizTitle">สำหรับ HOT START</span>
@@ -2165,8 +2203,12 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
                   </span>
                 </div>
                 <span class="savings-stamp-caption" id="savingsLabel">ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อปี</span>
+                <div class="savings-time-row">
+                  <span>เวลารอ OTC Recovery ที่ลดได้ (เทียบกับ Current Configuration ที่ไม่ตอบสนอง)</span>
+                  <strong id="savingsTimeSaved">—</strong>
+                </div>
               </div>
-              <p class="trip-risk-disclaimer">⚠ หมายเหตุ: Trip Risk Scenario (Worst Case สำหรับ HOT/WARM) ไม่ได้ลดลงจาก Force TU Override ในตารางนี้ เพราะเป็นความเสี่ยงจาก Loss of Flame ที่เกิดจาก IGV ค้างที่ 100% ระหว่าง Baseload Window ไม่ใช่จากความเร็วของ OTC Recovery</p>
+              <p class="trip-risk-disclaimer">⚠ หมายเหตุ: Trip Risk Scenario (Worst Case สำหรับ HOT/WARM) ไม่ได้ลดลงจาก Adjust TU Override ในตารางนี้ เพราะเป็นความเสี่ยงจาก Loss of Flame ที่เกิดจาก IGV ค้างที่ 100% ระหว่าง Baseload Window ไม่ใช่จากความเร็วของ OTC Recovery</p>
             </div>
           </div>
         </section>
@@ -2234,7 +2276,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
                 <small>Y(n)=Y(n-1)+YA</small>
               </div>
               <div class="pin-stack pin-right">
-                <div class="pin editable" data-pin="y"><span class="pin-label">Y (force)</span><strong class="pin-value" id="blockY">572.00 C</strong></div>
+                <div class="pin editable" data-pin="y"><span class="pin-label">Y (Adjust)</span><strong class="pin-value" id="blockY">572.00 C</strong></div>
                 <div class="pin"><span class="pin-label">YA / scan</span><strong class="pin-value" id="blockYa">0.000000 C</strong></div>
                 <div class="pin"><span class="pin-label">Rate</span><strong class="pin-value" id="blockRate">0.000 C/min</strong></div>
               </div>
@@ -2340,12 +2382,12 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
           </details>
 
           <details class="control-section" open>
-            <summary><h2>Force TU (Emergency Override)</h2></summary>
+            <summary><h2>Adjust TU (Emergency Override)</h2></summary>
             <div class="control-body">
-              <label>Effective Rate หลัง Force TU (°C / min)
+              <label>Effective Rate หลัง Adjust TU (°C / min)
                 <input id="tuAfterFixInput" type="number" value="6000" min="0.01" step="1">
               </label>
-              <p class="hint">เทียบเท่า Force TU=10ms ที่ RGE(R1) (สไลด์ 13B) — มาตรการฉุกเฉินชั่วคราวตอนพบว่า OTC ถูก Reset ไม่ใช่การปรับ RGE ถาวร ใช้เปรียบเทียบใน Executive Dashboard หัวข้อ "Emergency Response Impact"</p>
+              <p class="hint">เทียบเท่า Adjust TU=10ms ที่ RGE(R1) (สไลด์ 13B) — มาตรการฉุกเฉินชั่วคราวตอนพบว่า OTC ถูก Reset ไม่ใช่การปรับ RGE ถาวร ใช้เปรียบเทียบใน Executive Dashboard หัวข้อ "Emergency Response Impact"</p>
             </div>
           </details>
 
@@ -2394,6 +2436,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
     </div>
 
     <script>
+const APP_VERSION = "v38";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -3140,6 +3183,7 @@ const comparePctCells = {
 };
 const savingsValue = document.querySelector("#savingsValue");
 const savingsVizTitle = document.querySelector("#savingsVizTitle");
+const savingsTimeSaved = document.querySelector("#savingsTimeSaved");
 const savingsOldValue = document.querySelector("#savingsOldValue");
 const savingsStampMark = document.querySelector("#savingsStampMark");
 
@@ -3429,8 +3473,10 @@ function renderCompareTable(rate) {
   let maxCutScenario = SCENARIOS[0];
   let maxCutBad = 0;
   let maxCutGood = 0;
+  let maxCutMinutes = 0;
   let selectedBad = null;
   let selectedGood = null;
+  let selectedMinutes = null;
 
   SCENARIOS.forEach((sc) => {
     const badResult = computeScenario(appliedConfig[sc.durationKey], rate, 0, penaltyRate);
@@ -3438,16 +3484,19 @@ function renderCompareTable(rate) {
     const badAnnual = badResult.estimatedPenalty * annualForCompare;
     const goodAnnual = goodResult.estimatedPenalty * annualForCompare;
     const cut = Math.max(0, badAnnual - goodAnnual);
+    const minutesCut = Math.max(0, badResult.recoveryRemainingMin - goodResult.recoveryRemainingMin);
     if (cut > maxPenaltyCut) {
       maxPenaltyCut = cut;
       maxCutScenario = sc;
       maxCutBad = badAnnual;
       maxCutGood = goodAnnual;
+      maxCutMinutes = minutesCut;
     }
     if (execState.scenario === sc.key) {
       selectedCut = cut;
       selectedBad = badAnnual;
       selectedGood = goodAnnual;
+      selectedMinutes = minutesCut;
     }
 
     const cells = compareCells[sc.key];
@@ -3461,16 +3510,16 @@ function renderCompareTable(rate) {
     }
 
     const pctEl = comparePctCells[sc.key];
-    const minutesCut = Math.max(0, badResult.recoveryRemainingMin - goodResult.recoveryRemainingMin);
     pctEl.textContent = minutesCut > 0 ? `-${formatHoursMinutes(minutesCut)}` : "—";
   });
 
-  compareRateNote.textContent = `Current Ramp Rate ${rate.toFixed(2)} °C/min → Force TU Override (เทียบเท่า TU=10ms)`;
+  compareRateNote.textContent = `Current Ramp Rate ${rate.toFixed(2)} °C/min → Adjust TU Override (เทียบเท่า TU=10ms)`;
 
   const displayCut = selectedCut !== null ? selectedCut : maxPenaltyCut;
   const displayScenario = execState.scenario ? SCENARIOS.find((s) => s.key === execState.scenario) : maxCutScenario;
   const displayBad = selectedBad !== null ? selectedBad : maxCutBad;
   const displayGood = selectedGood !== null ? selectedGood : maxCutGood;
+  const displayMinutes = selectedMinutes !== null ? selectedMinutes : maxCutMinutes;
 
   const scopeLabel = execState.scenario ? "" : " (สูงสุด · แต่ละ Startup Condition ไม่ได้รวมกัน)";
   savingsLabel.textContent = annualReady()
@@ -3479,6 +3528,7 @@ function renderCompareTable(rate) {
 
   savingsVizTitle.textContent = `สำหรับ ${displayScenario.tag} START`;
   savingsOldValue.textContent = `฿${formatBaht(displayBad)}`;
+  savingsTimeSaved.textContent = displayMinutes > 0 ? `-${formatHoursMinutes(displayMinutes)}` : "ไม่มีเวลาให้ลด";
 
   const savingsText = displayGood > 0 ? `฿${formatBaht(displayGood)}` : "฿0 · ไม่มีค่าปรับ";
   if (lastSavingsValue !== displayCut) {
@@ -3853,6 +3903,9 @@ discardAllChanges();
 renderExecutive();
 resetAll();
 requestAnimationFrame(tick);
+
+const appVersionEl = document.querySelector("#appVersion");
+if (appVersionEl) appVersionEl.textContent = APP_VERSION;
 
 requestAnimationFrame(() => {
   viewScan.classList.add("sweeping");

@@ -108,6 +108,16 @@ h1, h2, h3, p { margin: 0; }
   transition: background 0.2s ease, color 0.2s ease;
 }
 
+.app-version {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--muted-dim);
+  letter-spacing: 0.02em;
+}
+
 .view-switch button.active {
   color: #06231f;
   background: var(--teal);
@@ -1338,6 +1348,27 @@ body.view-technical #view-technical { display: block; }
   color: var(--muted);
 }
 
+.savings-time-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line-soft);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.savings-time-row strong {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--teal);
+  font-variant-numeric: tabular-nums;
+}
+
 /* --- CTA --- */
 
 .cta-section { text-align: center; }
@@ -1587,7 +1618,7 @@ body.view-technical #view-technical { display: block; }
 /* --- Chart (fixed sizing, no layout feedback loop) --- */
 
 .chart-panel { padding: 18px 20px 20px; display: grid; gap: 12px; }
-.chart-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.chart-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
 .chart-header h2 { font-family: var(--font-display); font-size: 1rem; }
 .chart-header p { margin-top: 4px; color: var(--muted); font-size: 0.84rem; max-width: 46ch; }
 
@@ -1807,6 +1838,10 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
 
   .tech-shell { padding: 10px; padding-top: 64px; padding-bottom: 84px; gap: 10px; }
   .tech-topbar { padding: 14px 16px; flex-wrap: wrap; gap: 10px; }
+  .legend { justify-content: flex-start; }
+  .countdown-bar { padding: 9px 12px; gap: 8px; }
+  .countdown-bar span { font-size: 0.7rem; }
+  .countdown-bar strong { font-size: 0.92rem; }
   .readout-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 10px; }
   .readout strong { font-size: 1.05rem; }
   .rge-diagram { grid-template-columns: 1fr; gap: 12px; }
@@ -1863,6 +1898,8 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
 }
 
 @media (max-width: 520px) {
+  .app-version { display: none; }
+  .view-switch button { padding: 7px 12px; font-size: 0.72rem; }
   .readout-grid { grid-template-columns: 1fr 1fr; }
   .hook-title { font-size: clamp(1.7rem, 9vw, 2.2rem); line-height: 1.18; }
   .hook-sub { font-size: 0.9rem; margin-top: 18px; }

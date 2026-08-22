@@ -19,6 +19,7 @@
     <nav class="view-switch">
       <button type="button" data-view="executive" class="active">Dashboard</button>
       <button type="button" data-view="technical">Technical</button>
+      <span class="app-version" id="appVersion">v38</span>
     </nav>
 
     <!-- ============================================================
@@ -233,17 +234,17 @@
         <section class="pitch-section" id="pitchCompare">
           <div class="pitch-inner">
             <span class="pitch-eyebrow tone-mw">Emergency Response Impact</span>
-            <h2 class="section-title">ผลของการตอบสนองด้วย Force TU ทันทีที่พบปัญหา</h2>
-            <p class="section-subhead">Force TU Override ลดผลกระทบได้มากแค่ไหน เทียบกับปล่อยให้ Recovery ตามปกติ</p>
-            <p class="section-lede">เปรียบเทียบผลการประเมินระหว่าง Current Configuration (ไม่ตอบสนอง) และ Force TU Override (มาตรการฉุกเฉินชั่วคราวเมื่อพบว่า OTC ถูก Reset) — เป็น Scenario สำหรับการศึกษาเปรียบเทียบ ควรผ่านการตรวจสอบและอนุมัติเป็น SOP ก่อนนำไปปฏิบัติจริง</p>
-            <p class="force-tu-explainer">Force TU ทำให้ OTC กลับสู่ Reference ภายในไม่กี่วินาที — เร็วกว่า Startup Duration ของทุก Condition มาก จึงไม่มีช่วงเวลาที่ MW ต่ำกว่าที่ NCC สั่งให้เห็นเลย เมื่อไม่มี Post Event เกิดขึ้นจริง <strong>ก็ไม่มี Resumption Process และไม่มีค่าปรับ Post Event เลยแม้แต่บาทเดียว</strong> ต่างจาก Current Configuration ที่ปล่อยให้ OTC Recovery ตามปกติ ซึ่งจะมีช่วงเวลาที่ MW ต่ำกว่าที่สั่งจริง และถูกบทปรับตามระยะเวลาที่เกิดขึ้น</p>
+            <h2 class="section-title">ผลของการตอบสนองด้วย Adjust TU ทันทีที่พบปัญหา</h2>
+            <p class="section-subhead">Adjust TU Override ลดผลกระทบได้มากแค่ไหน เทียบกับปล่อยให้ Recovery ตามปกติ</p>
+            <p class="section-lede">เปรียบเทียบผลการประเมินระหว่าง Current Configuration (ไม่ตอบสนอง) และ Adjust TU Override (มาตรการฉุกเฉินชั่วคราวเมื่อพบว่า OTC ถูก Reset) — เป็น Scenario สำหรับการศึกษาเปรียบเทียบ ควรผ่านการตรวจสอบและอนุมัติเป็น SOP ก่อนนำไปปฏิบัติจริง</p>
+            <p class="force-tu-explainer">Adjust TU ทำให้ OTC กลับสู่ Reference ภายในไม่กี่วินาที — เร็วกว่า Startup Duration ของทุก Condition มาก จึงไม่มีช่วงเวลาที่ MW ต่ำกว่าที่ NCC สั่งให้เห็นเลย เมื่อไม่มี Post Event เกิดขึ้นจริง <strong>ก็ไม่มี Resumption Process และไม่มีค่าปรับ Post Event เลยแม้แต่บาทเดียว</strong> ต่างจาก Current Configuration ที่ปล่อยให้ OTC Recovery ตามปกติ ซึ่งจะมีช่วงเวลาที่ MW ต่ำกว่าที่สั่งจริง และถูกบทปรับตามระยะเวลาที่เกิดขึ้น</p>
             <div id="compareLocked" class="locked-prompt">กรอก <strong>อัตราค่าปรับ Post Event</strong> ด้านบนสุด เพื่อดูตัวเลขเปรียบเทียบ</div>
             <div id="compareContent" hidden>
               <div class="compare-table">
                 <div class="compare-row compare-row-head">
                   <span>Condition</span>
                   <span>Current Configuration</span>
-                  <span>Force TU Override</span>
+                  <span>Adjust TU Override</span>
                   <span>เวลาที่ตัดออกได้</span>
                 </div>
                 <div class="compare-row" data-scenario="hot">
@@ -265,7 +266,7 @@
                   <strong class="compare-row-pct" id="comparePctCold">—</strong>
                 </div>
               </div>
-              <p class="compare-footnote" id="compareRateNote">Current Ramp Rate — Force TU Override</p>
+              <p class="compare-footnote" id="compareRateNote">Current Ramp Rate — Adjust TU Override</p>
 
               <div class="savings-stamp-card">
                 <span class="savings-stamp-title" id="savingsVizTitle">สำหรับ HOT START</span>
@@ -277,8 +278,12 @@
                   </span>
                 </div>
                 <span class="savings-stamp-caption" id="savingsLabel">ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อปี</span>
+                <div class="savings-time-row">
+                  <span>เวลารอ OTC Recovery ที่ลดได้ (เทียบกับ Current Configuration ที่ไม่ตอบสนอง)</span>
+                  <strong id="savingsTimeSaved">—</strong>
+                </div>
               </div>
-              <p class="trip-risk-disclaimer">⚠ หมายเหตุ: Trip Risk Scenario (Worst Case สำหรับ HOT/WARM) ไม่ได้ลดลงจาก Force TU Override ในตารางนี้ เพราะเป็นความเสี่ยงจาก Loss of Flame ที่เกิดจาก IGV ค้างที่ 100% ระหว่าง Baseload Window ไม่ใช่จากความเร็วของ OTC Recovery</p>
+              <p class="trip-risk-disclaimer">⚠ หมายเหตุ: Trip Risk Scenario (Worst Case สำหรับ HOT/WARM) ไม่ได้ลดลงจาก Adjust TU Override ในตารางนี้ เพราะเป็นความเสี่ยงจาก Loss of Flame ที่เกิดจาก IGV ค้างที่ 100% ระหว่าง Baseload Window ไม่ใช่จากความเร็วของ OTC Recovery</p>
             </div>
           </div>
         </section>
@@ -346,7 +351,7 @@
                 <small>Y(n)=Y(n-1)+YA</small>
               </div>
               <div class="pin-stack pin-right">
-                <div class="pin editable" data-pin="y"><span class="pin-label">Y (force)</span><strong class="pin-value" id="blockY">572.00 C</strong></div>
+                <div class="pin editable" data-pin="y"><span class="pin-label">Y (Adjust)</span><strong class="pin-value" id="blockY">572.00 C</strong></div>
                 <div class="pin"><span class="pin-label">YA / scan</span><strong class="pin-value" id="blockYa">0.000000 C</strong></div>
                 <div class="pin"><span class="pin-label">Rate</span><strong class="pin-value" id="blockRate">0.000 C/min</strong></div>
               </div>
@@ -452,12 +457,12 @@
           </details>
 
           <details class="control-section" open>
-            <summary><h2>Force TU (Emergency Override)</h2></summary>
+            <summary><h2>Adjust TU (Emergency Override)</h2></summary>
             <div class="control-body">
-              <label>Effective Rate หลัง Force TU (°C / min)
+              <label>Effective Rate หลัง Adjust TU (°C / min)
                 <input id="tuAfterFixInput" type="number" value="6000" min="0.01" step="1">
               </label>
-              <p class="hint">เทียบเท่า Force TU=10ms ที่ RGE(R1) (สไลด์ 13B) — มาตรการฉุกเฉินชั่วคราวตอนพบว่า OTC ถูก Reset ไม่ใช่การปรับ RGE ถาวร ใช้เปรียบเทียบใน Executive Dashboard หัวข้อ "Emergency Response Impact"</p>
+              <p class="hint">เทียบเท่า Adjust TU=10ms ที่ RGE(R1) (สไลด์ 13B) — มาตรการฉุกเฉินชั่วคราวตอนพบว่า OTC ถูก Reset ไม่ใช่การปรับ RGE ถาวร ใช้เปรียบเทียบใน Executive Dashboard หัวข้อ "Emergency Response Impact"</p>
             </div>
           </details>
 

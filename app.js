@@ -1,3 +1,4 @@
+const APP_VERSION = "v38";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -744,6 +745,7 @@ const comparePctCells = {
 };
 const savingsValue = document.querySelector("#savingsValue");
 const savingsVizTitle = document.querySelector("#savingsVizTitle");
+const savingsTimeSaved = document.querySelector("#savingsTimeSaved");
 const savingsOldValue = document.querySelector("#savingsOldValue");
 const savingsStampMark = document.querySelector("#savingsStampMark");
 
@@ -1033,8 +1035,10 @@ function renderCompareTable(rate) {
   let maxCutScenario = SCENARIOS[0];
   let maxCutBad = 0;
   let maxCutGood = 0;
+  let maxCutMinutes = 0;
   let selectedBad = null;
   let selectedGood = null;
+  let selectedMinutes = null;
 
   SCENARIOS.forEach((sc) => {
     const badResult = computeScenario(appliedConfig[sc.durationKey], rate, 0, penaltyRate);
@@ -1042,16 +1046,19 @@ function renderCompareTable(rate) {
     const badAnnual = badResult.estimatedPenalty * annualForCompare;
     const goodAnnual = goodResult.estimatedPenalty * annualForCompare;
     const cut = Math.max(0, badAnnual - goodAnnual);
+    const minutesCut = Math.max(0, badResult.recoveryRemainingMin - goodResult.recoveryRemainingMin);
     if (cut > maxPenaltyCut) {
       maxPenaltyCut = cut;
       maxCutScenario = sc;
       maxCutBad = badAnnual;
       maxCutGood = goodAnnual;
+      maxCutMinutes = minutesCut;
     }
     if (execState.scenario === sc.key) {
       selectedCut = cut;
       selectedBad = badAnnual;
       selectedGood = goodAnnual;
+      selectedMinutes = minutesCut;
     }
 
     const cells = compareCells[sc.key];
@@ -1065,16 +1072,16 @@ function renderCompareTable(rate) {
     }
 
     const pctEl = comparePctCells[sc.key];
-    const minutesCut = Math.max(0, badResult.recoveryRemainingMin - goodResult.recoveryRemainingMin);
     pctEl.textContent = minutesCut > 0 ? `-${formatHoursMinutes(minutesCut)}` : "—";
   });
 
-  compareRateNote.textContent = `Current Ramp Rate ${rate.toFixed(2)} °C/min → Force TU Override (เทียบเท่า TU=10ms)`;
+  compareRateNote.textContent = `Current Ramp Rate ${rate.toFixed(2)} °C/min → Adjust TU Override (เทียบเท่า TU=10ms)`;
 
   const displayCut = selectedCut !== null ? selectedCut : maxPenaltyCut;
   const displayScenario = execState.scenario ? SCENARIOS.find((s) => s.key === execState.scenario) : maxCutScenario;
   const displayBad = selectedBad !== null ? selectedBad : maxCutBad;
   const displayGood = selectedGood !== null ? selectedGood : maxCutGood;
+  const displayMinutes = selectedMinutes !== null ? selectedMinutes : maxCutMinutes;
 
   const scopeLabel = execState.scenario ? "" : " (สูงสุด · แต่ละ Startup Condition ไม่ได้รวมกัน)";
   savingsLabel.textContent = annualReady()
@@ -1083,6 +1090,7 @@ function renderCompareTable(rate) {
 
   savingsVizTitle.textContent = `สำหรับ ${displayScenario.tag} START`;
   savingsOldValue.textContent = `฿${formatBaht(displayBad)}`;
+  savingsTimeSaved.textContent = displayMinutes > 0 ? `-${formatHoursMinutes(displayMinutes)}` : "ไม่มีเวลาให้ลด";
 
   const savingsText = displayGood > 0 ? `฿${formatBaht(displayGood)}` : "฿0 · ไม่มีค่าปรับ";
   if (lastSavingsValue !== displayCut) {
@@ -1457,6 +1465,9 @@ discardAllChanges();
 renderExecutive();
 resetAll();
 requestAnimationFrame(tick);
+
+const appVersionEl = document.querySelector("#appVersion");
+if (appVersionEl) appVersionEl.textContent = APP_VERSION;
 
 requestAnimationFrame(() => {
   viewScan.classList.add("sweeping");
