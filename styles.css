@@ -354,6 +354,7 @@ body.view-technical #view-technical { display: block; }
 }
 
 .condition-select button:hover { transform: translateY(-2px); }
+.condition-select button:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
 
 .condition-select .cond-icon {
   color: var(--muted-dim);
@@ -481,6 +482,13 @@ body.view-technical #view-technical { display: block; }
 }
 
 .result-item.highlight strong { font-size: 1.3rem; color: var(--rose); }
+
+.kpi-flash { animation: kpiFlash 0.6s ease-out; }
+
+@keyframes kpiFlash {
+  0% { color: var(--teal); text-shadow: 0 0 12px var(--teal); }
+  100% { color: inherit; text-shadow: none; }
+}
 
 .result-card[data-condition="hot"] {
   border-color: var(--hot-line);

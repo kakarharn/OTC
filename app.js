@@ -1,4 +1,4 @@
-const APP_VERSION = "v42";
+const APP_VERSION = "v43";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -803,6 +803,14 @@ function currentRampRateCPerMin() {
   return tuMinutes > 0 ? appliedConfig.nrm / tuMinutes : 0;
 }
 
+function setKpiValue(el, text) {
+  if (el.textContent === text) return;
+  el.textContent = text;
+  el.classList.remove("kpi-flash");
+  void el.offsetWidth;
+  el.classList.add("kpi-flash");
+}
+
 function animateNumber(el, from, to, duration, formatter) {
   const start = performance.now();
   function frame(now) {
@@ -967,12 +975,12 @@ function renderExecutive() {
   resultCard.hidden = false;
   resultCard.dataset.condition = meta.key;
   resultTag.textContent = `ผลการประเมิน ${meta.tag} START`;
-  resRefPower.textContent = `${appliedConfig.refActivePower.toFixed(0)} MW`;
-  resActivePower.textContent = `${r.predictedPower.toFixed(0)} MW`;
-  resMwLoss.textContent = `${r.mwLoss.toFixed(0)} MW`;
-  resAdditionalRecovery.textContent = formatHoursMinutes(r.recoveryRemainingMin);
-  resPenaltyDuration.textContent = formatHoursMinutes(r.totalPenaltyDurationHr * 60);
-  resPenalty.textContent = `฿${formatBaht(r.estimatedPenalty)}`;
+  setKpiValue(resRefPower, `${appliedConfig.refActivePower.toFixed(0)} MW`);
+  setKpiValue(resActivePower, `${r.predictedPower.toFixed(0)} MW`);
+  setKpiValue(resMwLoss, `${r.mwLoss.toFixed(0)} MW`);
+  setKpiValue(resAdditionalRecovery, formatHoursMinutes(r.recoveryRemainingMin));
+  setKpiValue(resPenaltyDuration, formatHoursMinutes(r.totalPenaltyDurationHr * 60));
+  setKpiValue(resPenalty, `฿${formatBaht(r.estimatedPenalty)}`);
 
   detailYAtComplete.textContent = `${r.yAtComplete.toFixed(0)}°C`;
   detailReferenceY.textContent = `${appliedConfig.referenceY.toFixed(0)}°C`;
