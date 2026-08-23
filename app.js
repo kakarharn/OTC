@@ -1,4 +1,4 @@
-const APP_VERSION = "v40";
+const APP_VERSION = "v41";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -909,17 +909,17 @@ tripRiskToggle.addEventListener("click", () => {
 
 function buildNarrative(meta, r) {
   const tripNote = meta.key === "hot" || meta.key === "warm"
-    ? `\n\n⚠ ${meta.label} ยังเสี่ยง Trip จาก Loss of Flame หาก OTC ยังไม่ Recovery ทันช่วง Baseload — ดูรายละเอียดที่ Trip Risk Scenario ด้านบน`
+    ? `\n\n⚠ ${meta.label} ยังเสี่ยง Trip จาก Loss of Flame หาก OTC ยังไม่ Recovery ทันช่วง Baseload ดูรายละเอียดที่ Trip Risk Scenario ด้านบน`
     : "";
 
   if (!r.postEventOccurred) {
-    return `${meta.label}: OTC Controller Recovery ทันเวลาก่อน Startup เสร็จ — ไม่มี MW Loss และไม่มีค่าปรับ Post Event${tripNote}`;
+    return `${meta.label}: OTC Controller Recovery ทันเวลาก่อน Startup เสร็จ ไม่มี MW Loss และไม่มีค่าปรับ Post Event${tripNote}`;
   }
 
   const recoveryText = formatHoursMinutes(r.recoveryRemainingMin);
   const postEventText = formatHoursMinutes(r.totalPenaltyDurationHr * 60);
 
-  return `${meta.label}: OTC Recovery ไม่ทัน Startup ทำให้กำลังผลิตต่ำกว่าอ้างอิงประมาณ ${r.mwLoss.toFixed(0)} MW ต้องรอ Recovery เพิ่ม ${recoveryText} รวม Resumption ${appliedConfig.resumptionHr} ชม. → Post Event รวม ${postEventText} คาดว่าค่าปรับประมาณ ฿${formatBaht(r.estimatedPenalty)}${tripNote}`;
+  return `${meta.label}: OTC Recovery ไม่ทัน Startup ทำให้กำลังผลิตต่ำกว่าอ้างอิงประมาณ ${r.mwLoss.toFixed(0)} MW ต้องรอ Recovery เพิ่ม ${recoveryText} รวม Resumption อีก ${appliedConfig.resumptionHr} ชม. เป็น Post Event รวม ${postEventText} คาดว่าค่าปรับอยู่ที่ ฿${formatBaht(r.estimatedPenalty)}${tripNote}`;
 }
 
 function renderExecutive() {
