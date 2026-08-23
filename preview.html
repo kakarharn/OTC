@@ -157,6 +157,49 @@ h1, h2, h3, p { margin: 0; }
   letter-spacing: 0.02em;
 }
 
+.sticky-summary {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(11, 19, 25, 0.88);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-soft);
+  opacity: 0;
+  transform: translate(-50%, 90px);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+  pointer-events: none;
+}
+
+.sticky-summary.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+}
+
+.sticky-summary-tag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.sticky-summary-value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--rose);
+}
+
+body.view-technical .sticky-summary { display: none; }
+
 .view-switch button.active {
   color: #06231f;
   background: var(--teal);
@@ -313,6 +356,7 @@ body.view-technical #view-technical { display: block; }
 .condition-select button {
   display: grid;
   gap: 6px;
+  justify-items: center;
   padding: 16px 10px;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -322,6 +366,16 @@ body.view-technical #view-technical { display: block; }
 }
 
 .condition-select button:hover { transform: translateY(-2px); }
+
+.condition-select .cond-icon {
+  color: var(--muted-dim);
+  transition: color 0.15s ease, transform 0.2s ease;
+}
+
+.condition-select button:hover .cond-icon { transform: scale(1.1); }
+.condition-select button[data-scenario="hot"].active .cond-icon { color: var(--hot); }
+.condition-select button[data-scenario="warm"].active .cond-icon { color: var(--warm); }
+.condition-select button[data-scenario="cold"].active .cond-icon { color: var(--cold); }
 
 .condition-select button.active {
   border-color: var(--rose-line);
@@ -1995,8 +2049,13 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
     <nav class="view-switch">
       <button type="button" data-view="executive" class="active">Dashboard</button>
       <button type="button" data-view="technical">Technical</button>
-      <span class="app-version" id="appVersion">v41</span>
+      <span class="app-version" id="appVersion">v42</span>
     </nav>
+
+    <div class="sticky-summary" id="stickySummary">
+      <span class="sticky-summary-tag" id="stickyTag">HOT START</span>
+      <span class="sticky-summary-value" id="stickyValue">฿0</span>
+    </div>
 
     <!-- ============================================================
          EXECUTIVE PITCH VIEW
@@ -2020,17 +2079,26 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
             <p class="hero-subhead-note">เลือก Startup Condition เพื่อประเมินกำลังผลิตที่อาจหายไป ระยะเวลาคืนความพร้อม และค่าปรับ Post Event โดยประมาณ</p>
 
             <div class="condition-select" id="conditionSelect">
-              <button type="button" data-scenario="hot"><span class="cond-tag">HOT</span><span class="cond-min" id="condHotMin">180 min</span></button>
-              <button type="button" data-scenario="warm"><span class="cond-tag">WARM</span><span class="cond-min" id="condWarmMin">270 min</span></button>
-              <button type="button" data-scenario="cold"><span class="cond-tag">COLD</span><span class="cond-min" id="condColdMin">450 min</span></button>
+              <button type="button" data-scenario="hot">
+                <svg class="cond-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2c1 3-3 4-3 7a3 3 0 0 0 6 0c0-1-.5-2-1-2.5.5 2 0 4-2 4.5-2.5.6-4-1.5-4-4 0-3.5 3-4.5 3-5.5-1 0-4 2-4 6a5 5 0 0 0 10 0c0-4-3-4.5-5-5.5z"/></svg>
+                <span class="cond-tag">HOT</span><span class="cond-min" id="condHotMin">180 min</span>
+              </button>
+              <button type="button" data-scenario="warm">
+                <svg class="cond-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+                <span class="cond-tag">WARM</span><span class="cond-min" id="condWarmMin">270 min</span>
+              </button>
+              <button type="button" data-scenario="cold">
+                <svg class="cond-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M5 6l14 12M19 6L5 18M2 12h20M6 4l1.5 3M18 4l-1.5 3M6 20l1.5-3M18 20l-1.5-3"/></svg>
+                <span class="cond-tag">COLD</span><span class="cond-min" id="condColdMin">450 min</span>
+              </button>
             </div>
 
             <div class="hero-inputs hero-inputs-double">
               <label>อัตราค่าปรับ Post Event (บาท / ชั่วโมง)
-                <input id="quickPenaltyRate" type="number" placeholder="เช่น 100000" min="0" step="1000">
+                <input id="quickPenaltyRate" type="number" value="100000" placeholder="เช่น 100000" min="0" step="1000">
               </label>
               <label>จำนวน OTC Controller Reset ต่อปี (ครั้ง / ปี)
-                <input id="quickAnnualEvents" type="number" placeholder="เช่น 6" min="0" step="1">
+                <input id="quickAnnualEvents" type="number" value="6" placeholder="เช่น 6" min="0" step="1">
               </label>
             </div>
 
@@ -2487,7 +2555,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
     </div>
 
     <script>
-const APP_VERSION = "v41";
+const APP_VERSION = "v42";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -2519,8 +2587,8 @@ let appliedConfig = {
 let execState = {
   scenario: null,
   resetY: 0,
-  penaltyRate: null,
-  annualEvents: null
+  penaltyRate: 100000,
+  annualEvents: 6
 };
 
 let revealed = false;
@@ -3415,6 +3483,8 @@ function renderExecutive() {
   const unlocked = revealed && inputsReady() && execState.scenario;
   const rate = currentRampRateCPerMin();
 
+  if (typeof updateStickySummary === "function") updateStickySummary();
+
   condHotMin.textContent = `${appliedConfig.hotMin} min`;
   condWarmMin.textContent = `${appliedConfig.warmMin} min`;
   condColdMin.textContent = `${appliedConfig.coldMin} min`;
@@ -3604,6 +3674,39 @@ const revealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0.3, rootMargin: "0px 0px -8% 0px" });
 
 document.querySelectorAll(".pitch-section, .mech-step, .pt-step, .pt-arrow, .pt-total").forEach((section) => revealObserver.observe(section));
+
+/* ---------- sticky summary bar ---------- */
+
+const stickySummary = document.querySelector("#stickySummary");
+const stickyTag = document.querySelector("#stickyTag");
+const stickyValue = document.querySelector("#stickyValue");
+let heroInView = true;
+
+const heroObserver = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      heroInView = entry.isIntersecting;
+      updateStickySummary();
+    });
+  },
+  { threshold: 0.15 }
+);
+const pitchHeroEl = document.querySelector("#pitchHero");
+if (pitchHeroEl) heroObserver.observe(pitchHeroEl);
+
+function updateStickySummary() {
+  const ready = Boolean(execState.scenario) && inputsReady();
+  if (!ready || heroInView) {
+    stickySummary.classList.remove("visible");
+    return;
+  }
+  const meta = SCENARIOS.find((sc) => sc.key === execState.scenario);
+  const rate = currentRampRateCPerMin();
+  const r = computeScenario(appliedConfig[meta.durationKey], rate, execState.resetY, execState.penaltyRate);
+  stickyTag.textContent = `${meta.tag} START`;
+  stickyValue.textContent = r.postEventOccurred ? `฿${formatBaht(r.estimatedPenalty)}` : "ไม่มีค่าปรับ";
+  stickySummary.classList.add("visible");
+}
 
 document.querySelectorAll(".mech-step").forEach((step) => {
   const toggle = () => {

@@ -1,4 +1,4 @@
-const APP_VERSION = "v41";
+const APP_VERSION = "v42";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -30,8 +30,8 @@ let appliedConfig = {
 let execState = {
   scenario: null,
   resetY: 0,
-  penaltyRate: null,
-  annualEvents: null
+  penaltyRate: 100000,
+  annualEvents: 6
 };
 
 let revealed = false;
@@ -926,6 +926,8 @@ function renderExecutive() {
   const unlocked = revealed && inputsReady() && execState.scenario;
   const rate = currentRampRateCPerMin();
 
+  if (typeof updateStickySummary === "function") updateStickySummary();
+
   condHotMin.textContent = `${appliedConfig.hotMin} min`;
   condWarmMin.textContent = `${appliedConfig.warmMin} min`;
   condColdMin.textContent = `${appliedConfig.coldMin} min`;
@@ -1115,6 +1117,39 @@ const revealObserver = new IntersectionObserver((entries) => {
 }, { threshold: 0.3, rootMargin: "0px 0px -8% 0px" });
 
 document.querySelectorAll(".pitch-section, .mech-step, .pt-step, .pt-arrow, .pt-total").forEach((section) => revealObserver.observe(section));
+
+/* ---------- sticky summary bar ---------- */
+
+const stickySummary = document.querySelector("#stickySummary");
+const stickyTag = document.querySelector("#stickyTag");
+const stickyValue = document.querySelector("#stickyValue");
+let heroInView = true;
+
+const heroObserver = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      heroInView = entry.isIntersecting;
+      updateStickySummary();
+    });
+  },
+  { threshold: 0.15 }
+);
+const pitchHeroEl = document.querySelector("#pitchHero");
+if (pitchHeroEl) heroObserver.observe(pitchHeroEl);
+
+function updateStickySummary() {
+  const ready = Boolean(execState.scenario) && inputsReady();
+  if (!ready || heroInView) {
+    stickySummary.classList.remove("visible");
+    return;
+  }
+  const meta = SCENARIOS.find((sc) => sc.key === execState.scenario);
+  const rate = currentRampRateCPerMin();
+  const r = computeScenario(appliedConfig[meta.durationKey], rate, execState.resetY, execState.penaltyRate);
+  stickyTag.textContent = `${meta.tag} START`;
+  stickyValue.textContent = r.postEventOccurred ? `฿${formatBaht(r.estimatedPenalty)}` : "ไม่มีค่าปรับ";
+  stickySummary.classList.add("visible");
+}
 
 document.querySelectorAll(".mech-step").forEach((step) => {
   const toggle = () => {

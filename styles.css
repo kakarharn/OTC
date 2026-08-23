@@ -145,6 +145,49 @@ h1, h2, h3, p { margin: 0; }
   letter-spacing: 0.02em;
 }
 
+.sticky-summary {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(11, 19, 25, 0.88);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-soft);
+  opacity: 0;
+  transform: translate(-50%, 90px);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+  pointer-events: none;
+}
+
+.sticky-summary.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+}
+
+.sticky-summary-tag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.sticky-summary-value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--rose);
+}
+
+body.view-technical .sticky-summary { display: none; }
+
 .view-switch button.active {
   color: #06231f;
   background: var(--teal);
@@ -301,6 +344,7 @@ body.view-technical #view-technical { display: block; }
 .condition-select button {
   display: grid;
   gap: 6px;
+  justify-items: center;
   padding: 16px 10px;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -310,6 +354,16 @@ body.view-technical #view-technical { display: block; }
 }
 
 .condition-select button:hover { transform: translateY(-2px); }
+
+.condition-select .cond-icon {
+  color: var(--muted-dim);
+  transition: color 0.15s ease, transform 0.2s ease;
+}
+
+.condition-select button:hover .cond-icon { transform: scale(1.1); }
+.condition-select button[data-scenario="hot"].active .cond-icon { color: var(--hot); }
+.condition-select button[data-scenario="warm"].active .cond-icon { color: var(--warm); }
+.condition-select button[data-scenario="cold"].active .cond-icon { color: var(--cold); }
 
 .condition-select button.active {
   border-color: var(--rose-line);
