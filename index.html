@@ -19,7 +19,7 @@
     <nav class="view-switch">
       <button type="button" data-view="executive" class="active">Dashboard</button>
       <button type="button" data-view="technical">Technical</button>
-      <span class="app-version" id="appVersion">v38</span>
+      <span class="app-version" id="appVersion">v39</span>
     </nav>
 
     <!-- ============================================================
@@ -89,7 +89,7 @@
                 <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
               </button>
               <div id="tripRiskCard" class="trip-risk-card" hidden>
-                <p class="trip-risk-note">หาก Firing Temperature ถูกลดต่ำลงต่อเนื่องขณะ IGV ค้างที่ 100% อาจทำให้ GT เกิด Trip ได้จากหลายสาเหตุ เช่น Loss of Flame หรือระบบ Protection/Monitoring อื่นสั่งตัดเครื่อง — ตัวเลขนี้เป็น Worst Case แยกจากค่าปรับปกติ ไม่ได้บวกรวมกัน</p>
+                <p class="trip-risk-note">Firing Temperature ต่ำต่อเนื่องขณะ IGV ค้าง 100% อาจทำให้ GT Trip ได้ (Loss of Flame หรือ Protection อื่น) — ตัวเลขนี้เป็น Worst Case แยกจากค่าปรับปกติ</p>
                 <div class="trip-risk-grid">
                   <div class="trip-risk-item highlight"><span>ค่าปรับ Post Event หาก Trip (Worst Case)</span><strong id="tripPenalty">฿—</strong></div>
                 </div>
@@ -125,7 +125,7 @@
           <div class="pitch-inner">
             <span class="pitch-eyebrow tone-teal">Reset Mechanism</span>
             <h2 class="section-title">Gas Turbine OTC Controller Reset ส่งผลอย่างไร?</h2>
-            <p class="section-lede">เมื่อ OTC Controller ถูก Reset ระบบต้องใช้เวลาในการ Recovery กลับสู่ระดับพร้อมรับ Load หาก Startup เสร็จก่อนการ Recovery สมบูรณ์ ความสามารถในการรับ Load อาจต่ำกว่าระดับอ้างอิง ส่งผลให้เกิด MW Loss และต้องใช้เวลาเพิ่มเติมก่อนเข้าสู่กระบวนการ Resumption และการคืนค่าความพร้อม</p>
+            <p class="section-lede">OTC Controller ที่ถูก Reset ต้องใช้เวลา Recovery กลับสู่ระดับพร้อมรับ Load — ถ้า Startup เสร็จก่อน อาจเกิด MW Loss และต้องรอ Resumption เพิ่มก่อนคืนค่าความพร้อม</p>
             <div class="mech-track">
               <div class="mech-step" tabindex="0" role="button" aria-expanded="false">
                 <div class="mech-dot"></div>
@@ -166,7 +166,7 @@
 
             <div class="penalty-timeline-wrap">
               <h3 class="subsection-title">Penalty Timeline: จาก Startup Complete ถึง NCC รับคืนเครื่อง</h3>
-              <p class="subsection-note">การที่ OTC Controller Recovery ถึงระดับพร้อมรับ Load ไม่ได้หมายความว่า Post Event Process สิ้นสุดทันที เพราะยังมี Resumption Process ก่อนที่ NCC จะรับคืนเครื่องและคืนค่าความพร้อมให้</p>
+              <p class="subsection-note">OTC Recovery พร้อมรับ Load แล้ว ไม่ได้แปลว่า Post Event จบทันที — ยังต้องผ่าน Resumption Process ก่อน NCC จะคืนค่าความพร้อมให้</p>
               <div id="penaltyTimelineLocked" class="locked-prompt">เลือก <strong>Startup Condition</strong> ด้านบนสุด เพื่อดู Penalty Timeline</div>
               <div id="penaltyTimelineContent" hidden>
                 <div class="penalty-timeline">
@@ -236,8 +236,8 @@
             <span class="pitch-eyebrow tone-mw">Emergency Response Impact</span>
             <h2 class="section-title">ผลของการตอบสนองด้วย Adjust TU ทันทีที่พบปัญหา</h2>
             <p class="section-subhead">Adjust TU Override ลดผลกระทบได้มากแค่ไหน เทียบกับปล่อยให้ Recovery ตามปกติ</p>
-            <p class="section-lede">เปรียบเทียบผลการประเมินระหว่าง Current Configuration (ไม่ตอบสนอง) และ Adjust TU Override (มาตรการฉุกเฉินชั่วคราวเมื่อพบว่า OTC ถูก Reset) — เป็น Scenario สำหรับการศึกษาเปรียบเทียบ ควรผ่านการตรวจสอบและอนุมัติเป็น SOP ก่อนนำไปปฏิบัติจริง</p>
-            <p class="force-tu-explainer">Adjust TU ทำให้ OTC กลับสู่ Reference ภายในไม่กี่วินาที — เร็วกว่า Startup Duration ของทุก Condition มาก จึงไม่มีช่วงเวลาที่ MW ต่ำกว่าที่ NCC สั่งให้เห็นเลย เมื่อไม่มี Post Event เกิดขึ้นจริง <strong>ก็ไม่มี Resumption Process และไม่มีค่าปรับ Post Event เลยแม้แต่บาทเดียว</strong> ต่างจาก Current Configuration ที่ปล่อยให้ OTC Recovery ตามปกติ ซึ่งจะมีช่วงเวลาที่ MW ต่ำกว่าที่สั่งจริง และถูกบทปรับตามระยะเวลาที่เกิดขึ้น</p>
+            <p class="section-lede">เทียบ Current Configuration (ไม่ตอบสนอง) กับ Adjust TU Override (มาตรการฉุกเฉินชั่วคราว) — เป็น Scenario ศึกษาเปรียบเทียบ ต้องผ่านอนุมัติเป็น SOP ก่อนใช้จริง</p>
+            <p class="force-tu-explainer">Adjust TU ทำให้ OTC กลับ Reference ภายในไม่กี่วินาที เร็วกว่า Startup ทุก Condition — จึงไม่มี Post Event และ<strong>ไม่มีค่าปรับเลย</strong> ต่างจาก Current Configuration ที่ปล่อยตามปกติแล้วโดนบทปรับตามเวลาที่เกิดขึ้นจริง</p>
             <div id="compareLocked" class="locked-prompt">กรอก <strong>อัตราค่าปรับ Post Event</strong> ด้านบนสุด เพื่อดูตัวเลขเปรียบเทียบ</div>
             <div id="compareContent" hidden>
               <div class="compare-table">
@@ -283,7 +283,7 @@
                   <strong id="savingsTimeSaved">—</strong>
                 </div>
               </div>
-              <p class="trip-risk-disclaimer">⚠ หมายเหตุ: Trip Risk Scenario (Worst Case สำหรับ HOT/WARM) ไม่ได้ลดลงจาก Adjust TU Override ในตารางนี้ เพราะเป็นความเสี่ยงจาก Loss of Flame ที่เกิดจาก IGV ค้างที่ 100% ระหว่าง Baseload Window ไม่ใช่จากความเร็วของ OTC Recovery</p>
+              <p class="trip-risk-disclaimer">⚠ Trip Risk (HOT/WARM) ไม่ลดลงจาก Adjust TU เพราะเป็นความเสี่ยงจาก IGV ค้าง 100% ไม่ใช่จากความเร็ว OTC Recovery</p>
             </div>
           </div>
         </section>
@@ -296,7 +296,7 @@
               เปิด Engineering Console
               <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
             </button>
-            <p class="disclaimer">ผลลัพธ์จากโปรแกรมเป็นค่าประมาณจาก Engineering Model และสมมติฐานที่กำหนดในระบบ ใช้สำหรับการศึกษาและประเมินผลกระทบจาก Gas Turbine OTC Controller Reset เท่านั้น ผลลัพธ์อาจแตกต่างจากการคำนวณค่าปรับ Post Event อย่างเป็นทางการตามหลักเกณฑ์และเงื่อนไขที่เกี่ยวข้อง</p>
+            <p class="disclaimer">ผลลัพธ์เป็นค่าประมาณจาก Engineering Model สำหรับการศึกษาผลกระทบ Gas Turbine OTC Controller Reset เท่านั้น อาจแตกต่างจากค่าปรับ Post Event อย่างเป็นทางการ</p>
             <p class="prepared-by">Prepared by Thitiwat Tapaophong</p>
           </div>
         </section>
@@ -462,7 +462,7 @@
               <label>Effective Rate หลัง Adjust TU (°C / min)
                 <input id="tuAfterFixInput" type="number" value="6000" min="0.01" step="1">
               </label>
-              <p class="hint">เทียบเท่า Adjust TU=10ms ที่ RGE(R1) (สไลด์ 13B) — มาตรการฉุกเฉินชั่วคราวตอนพบว่า OTC ถูก Reset ไม่ใช่การปรับ RGE ถาวร ใช้เปรียบเทียบใน Executive Dashboard หัวข้อ "Emergency Response Impact"</p>
+              <p class="hint">เทียบเท่า Adjust TU=10ms ที่ RGE(R1) — มาตรการฉุกเฉินชั่วคราว ไม่ใช่การปรับ RGE ถาวร</p>
             </div>
           </details>
 
@@ -481,7 +481,7 @@
               <label>GT Power Decline Rate (MW / min)
                 <input id="gtPowerDeclineRateInput" type="number" value="1" min="0.01" step="0.1">
               </label>
-              <p class="hint">Worst-case: Loss of Flame Trip ระหว่าง Baseload Window — กำลังผลิตตกค้างที่ Floor นี้จนกว่าจะ Restart + Resumption เสร็จ ใช้เฉพาะ Startup Condition HOT/WARM ในหน้า Dashboard</p>
+              <p class="hint">Worst-case: Loss of Flame ระหว่าง Baseload Window — กำลังผลิตค้างที่ Floor นี้จนกว่า Restart + Resumption เสร็จ (ใช้เฉพาะ HOT/WARM)</p>
             </div>
           </details>
 

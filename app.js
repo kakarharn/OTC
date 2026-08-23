@@ -1,4 +1,4 @@
-const APP_VERSION = "v38";
+const APP_VERSION = "v39";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -909,21 +909,17 @@ tripRiskToggle.addEventListener("click", () => {
 
 function buildNarrative(meta, r) {
   const tripNote = meta.key === "hot" || meta.key === "warm"
-    ? `\n\nนอกจากนี้ ${meta.label} ยังมีความเสี่ยงเพิ่มขึ้นที่เครื่องจะเกิด Trip จาก Loss of Flame หาก OTC Controller ยังไม่ Recovery ทันขณะเข้าสู่ช่วง Baseload Window ซึ่งจะทำให้กำลังผลิตลดฮวบและค่าปรับ Post Event สูงกว่าที่ประเมินไว้มาก (ดูรายละเอียดที่ Trip Risk Scenario ด้านบน)`
+    ? `\n\n⚠ ${meta.label} ยังเสี่ยง Trip จาก Loss of Flame หาก OTC ยังไม่ Recovery ทันช่วง Baseload — ดูรายละเอียดที่ Trip Risk Scenario ด้านบน`
     : "";
 
   if (!r.postEventOccurred) {
-    return `สำหรับ ${meta.label} ภายใต้ค่าที่กำหนดใน Engineering Model ระบบประเมินว่า OTC Controller จะ Recovery กลับสู่ระดับพร้อมรับ Load ได้ทันเวลา ก่อนที่ Startup Process จะเสร็จสิ้น จึงไม่เกิด MW Loss และไม่มีค่าปรับ Post Event สำหรับเหตุการณ์นี้${tripNote}`;
+    return `${meta.label}: OTC Controller Recovery ทันเวลาก่อน Startup เสร็จ — ไม่มี MW Loss และไม่มีค่าปรับ Post Event${tripNote}`;
   }
 
   const recoveryText = formatHoursMinutes(r.recoveryRemainingMin);
   const postEventText = formatHoursMinutes(r.totalPenaltyDurationHr * 60);
 
-  return `สำหรับ ${meta.label} ภายใต้ค่าที่กำหนดใน Engineering Model ระบบประเมินว่า เมื่อ Startup Process เสร็จสิ้น OTC Controller อาจยัง Recovery ไม่สมบูรณ์ ส่งผลให้กำลังผลิตที่สามารถทำได้ต่ำกว่าระดับอ้างอิงประมาณ ${r.mwLoss.toFixed(0)} MW
-
-ระบบประเมินว่าต้องใช้เวลา Recovery เพิ่มเติมประมาณ ${recoveryText} และเมื่อรวม Resumption Process อีก ${appliedConfig.resumptionHr} ชั่วโมง ระยะเวลา Post Event โดยประมาณอยู่ที่ ${postEventText}
-
-จากอัตราค่าปรับ Post Event ที่กำหนด ค่าปรับ Post Event โดยประมาณสำหรับเหตุการณ์นี้อยู่ที่ ฿${formatBaht(r.estimatedPenalty)}${tripNote}`;
+  return `${meta.label}: OTC Recovery ไม่ทัน Startup ทำให้กำลังผลิตต่ำกว่าอ้างอิงประมาณ ${r.mwLoss.toFixed(0)} MW ต้องรอ Recovery เพิ่ม ${recoveryText} รวม Resumption ${appliedConfig.resumptionHr} ชม. → Post Event รวม ${postEventText} คาดว่าค่าปรับประมาณ ฿${formatBaht(r.estimatedPenalty)}${tripNote}`;
 }
 
 function renderExecutive() {
