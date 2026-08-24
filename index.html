@@ -19,7 +19,7 @@
     <nav class="view-switch">
       <button type="button" data-view="executive" class="active">Dashboard</button>
       <button type="button" data-view="technical">Technical</button>
-      <span class="app-version" id="appVersion">v44</span>
+      <span class="app-version" id="appVersion">v45</span>
     </nav>
 
     <div class="sticky-summary" id="stickySummary">
@@ -63,16 +63,7 @@
               </button>
             </div>
 
-            <div class="hero-inputs hero-inputs-double">
-              <label>BAC — อัตราค่าปรับตามสัญญา (บาท / MW)
-                <input id="quickPenaltyRate" type="number" value="428.6801" placeholder="เช่น 428.6801" min="0" step="0.0001">
-              </label>
-              <label>จำนวน OTC Controller Reset ต่อปี (ครั้ง / ปี)
-                <input id="quickAnnualEvents" type="number" value="6" placeholder="เช่น 6" min="0" step="1">
-              </label>
-            </div>
-
-            <div id="resultLocked" class="locked-prompt">เลือก <strong>Startup Condition</strong> ด้านบน หลังจากกรอกอัตราค่าปรับ Post Event เพื่อดูผลการประเมิน</div>
+            <div id="resultLocked" class="locked-prompt">เลือก <strong>Startup Condition</strong> ด้านบนเพื่อดูผลการประเมิน</div>
 
             <div id="resultCard" class="result-card" hidden>
               <span class="result-tag" id="resultTag">ผลการประเมิน COLD START</span>
@@ -94,8 +85,8 @@
                 <div class="detail-item"><span>ค่า Reference (Setpoint)</span><strong id="detailReferenceY">—°C</strong></div>
                 <div class="detail-item"><span>Ramp Rate ที่ใช้คำนวณ</span><strong id="detailRampRate">— °C/min</strong></div>
                 <div class="detail-item"><span>Startup Duration</span><strong id="detailDuration">— min</strong></div>
-                <div class="detail-item detail-divider"><span>DRA1 (คิดทุกกรณีที่มี Gap)</span><strong id="detailDra1">฿—</strong></div>
-                <div class="detail-item"><span>DSN/DDF (Deviation ≥ 20 MW เลือกค่าสูงสุด)</span><strong id="detailThreshold">฿—</strong></div>
+                <div class="detail-item detail-divider"><span>DRA1</span><strong id="detailDra1">฿—</strong></div>
+                <div class="detail-item"><span>DSN/DDF</span><strong id="detailThreshold">฿—</strong></div>
               </div>
             </div>
 
@@ -233,7 +224,7 @@
             <span class="pitch-eyebrow">Post Event Penalty · Annual</span>
             <h2 class="section-title">ประมาณการค่าปรับ Post Event ต่อปี</h2>
             <p class="section-lede">ประเมินจากค่าปรับ Post Event โดยประมาณต่อเหตุการณ์ และจำนวน OTC Controller Reset ที่กำหนดต่อปี</p>
-            <div id="bignumLocked" class="locked-prompt">เลือก Startup Condition และกรอกจำนวน OTC Controller Reset ต่อปีด้านบนสุด เพื่อประมาณการค่าปรับต่อปี</div>
+            <div id="bignumLocked" class="locked-prompt">เลือก Startup Condition ด้านบนสุด เพื่อประมาณการค่าปรับต่อปี</div>
             <div id="bignumContent" hidden>
               <div class="bignum-label" id="bignumScenarioLabel">อ้างอิงจาก Cold Start</div>
               <div class="annual-tiers">
@@ -489,7 +480,7 @@
                 <input id="tripFloorMwInput" type="number" value="340" min="0" step="1">
               </label>
               <label>Trip Restart Duration (min)
-                <input id="tripRestartMinInput" type="number" value="120" min="0" step="1">
+                <input id="tripRestartMinInput" type="number" value="300" min="0" step="1">
               </label>
               <label>GT Unit Active Power (MW)
                 <input id="gtUnitPowerInput" type="number" value="240" min="0" step="1">

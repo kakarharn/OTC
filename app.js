@@ -1,4 +1,4 @@
-const APP_VERSION = "v44";
+const APP_VERSION = "v45";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -22,7 +22,7 @@ let appliedConfig = {
   annualEvents: 6,
   rampRateAfterFix: 6000,
   tripFloorMw: 340,
-  tripRestartMin: 120,
+  tripRestartMin: 300,
   gtUnitPower: 240,
   gtPowerDeclineRate: 1
 };
@@ -252,14 +252,8 @@ function applyAllChanges() {
     appliedConfig[field.key] = Math.max(field.min, numberValue(field.input, appliedConfig[field.key]));
   });
 
-  if (!Number.isFinite(Number.parseFloat(quickPenaltyRate.value))) {
-    execState.penaltyRate = appliedConfig.penaltyRate;
-    quickPenaltyRate.value = appliedConfig.penaltyRate;
-  }
-  if (!Number.isFinite(Number.parseFloat(quickAnnualEvents.value))) {
-    execState.annualEvents = appliedConfig.annualEvents;
-    quickAnnualEvents.value = appliedConfig.annualEvents;
-  }
+  execState.penaltyRate = appliedConfig.penaltyRate;
+  execState.annualEvents = appliedConfig.annualEvents;
 
   refreshPending();
   renderExecutive();
@@ -751,8 +745,6 @@ const savingsTimeSaved = document.querySelector("#savingsTimeSaved");
 const savingsOldValue = document.querySelector("#savingsOldValue");
 const savingsStampMark = document.querySelector("#savingsStampMark");
 
-const quickPenaltyRate = document.querySelector("#quickPenaltyRate");
-const quickAnnualEvents = document.querySelector("#quickAnnualEvents");
 const bignumLocked = document.querySelector("#bignumLocked");
 const bignumContent = document.querySelector("#bignumContent");
 const compareLocked = document.querySelector("#compareLocked");
@@ -807,12 +799,14 @@ function computeScenario(durationMin, rampRateCPerMin, resetY, bacRate) {
   const postEventOccurred = yGap > 0;
 
   // ---- สูตรค่าปรับจริง: Total Deduction = DRA1 + MAX(DSN, DDF) ----
-  const eventHours = recoveryRemainingMin / 60;
+  // ระยะเวลาที่โดนค่าปรับ = ลากยาวที่ MW ต่ำสุด ตั้งแต่เกิดเหตุจนกว่า OTC จะ Recovered แล้ว
+  // บวก Resumption Auto (Worst Case: ศูนย์รับคืนอัตโนมัติ 4 ชม.)
+  const eventHours = postEventOccurred ? (recoveryRemainingMin / 60 + appliedConfig.resumptionHr) : 0;
   const deviation = mwLoss; // Declare = Dispatch = DCC เต็ม จึง Deviation = MW Loss ตรงๆ
 
-  // DRA1: คิดทุกกรณีที่มี Gap เกิดขึ้น ไม่มีเกณฑ์ขั้นต่ำ — อัตรา(บาท/ชม.) x จำนวนชั่วโมง
+  // DRA1: คิดทุกกรณีที่มี Gap เกิดขึ้น ไม่มีเกณฑ์ขั้นต่ำ — อัตรา(บาท/ชม.) x จำนวนชั่วโมงรวม
   const dra1Rate = bacRate * deviation * PPA_WEIGHT;
-  const dra1Total = postEventOccurred ? dra1Rate * eventHours : 0;
+  const dra1Total = dra1Rate * eventHours;
 
   // DSN: ค่าปรับเพิ่มเมื่อ Deviation >= 20 MW คูณด้วย EH (ตัวคูณความไม่ทันตั้งตัว)
   const draKy = bacRate * (appliedConfig.refActivePower - predictedPower) * PPA_WEIGHT;
@@ -824,8 +818,8 @@ function computeScenario(durationMin, rampRateCPerMin, resetY, bacRate) {
   const thresholdPenalty = Math.max(dsn, ddf);
   const estimatedPenalty = dra1Total + thresholdPenalty;
 
-  // Timeline การปฏิบัติงาน (แยกจากค่าปรับ) — ใช้แสดงผลใน Penalty Timeline เท่านั้น
-  const totalPenaltyDurationHr = postEventOccurred ? (eventHours + appliedConfig.resumptionHr) : 0;
+  // Timeline การปฏิบัติงาน = ชั่วโมงเดียวกับที่ใช้คิดค่าปรับ (Recovery + Resumption Auto)
+  const totalPenaltyDurationHr = eventHours;
 
   return {
     yAtComplete, yGap, mwLoss, predictedPower, recoveryRemainingMin,
@@ -836,7 +830,8 @@ function computeScenario(durationMin, rampRateCPerMin, resetY, bacRate) {
 
 function computeTripScenario(bacRate) {
   const mwLoss = Math.max(0, appliedConfig.refActivePower - appliedConfig.tripFloorMw);
-  const eventHours = appliedConfig.tripRestartMin / 60;
+  // ลากยาวที่ Trip Floor ตั้งแต่ Trip จนกว่า Restart จะเสร็จ บวก Resumption Auto (Worst Case)
+  const eventHours = appliedConfig.tripRestartMin / 60 + appliedConfig.resumptionHr;
   const deviation = mwLoss;
 
   const dra1Rate = bacRate * deviation * PPA_WEIGHT;
@@ -848,7 +843,7 @@ function computeTripScenario(bacRate) {
   const thresholdPenalty = Math.max(dsn, ddf);
 
   const estimatedPenalty = dra1Total + thresholdPenalty;
-  const totalPenaltyDurationHr = eventHours + appliedConfig.resumptionHr;
+  const totalPenaltyDurationHr = eventHours;
   return { floorMw: appliedConfig.tripFloorMw, mwLoss, totalPenaltyDurationHr, estimatedPenalty, dra1Total, thresholdPenalty };
 }
 
@@ -906,25 +901,14 @@ let lastAnnualExposure = null;
 let lastSavingsValue = null;
 
 function inputsReady() {
-  return Number.isFinite(Number.parseFloat(quickPenaltyRate.value));
+  return true;
 }
 
 function annualReady() {
-  return Number.isFinite(Number.parseFloat(quickAnnualEvents.value));
-}
-
-function flashMissingInputs() {
-  if (!Number.isFinite(Number.parseFloat(quickPenaltyRate.value))) {
-    quickPenaltyRate.classList.add("field-missing");
-    setTimeout(() => quickPenaltyRate.classList.remove("field-missing"), 1200);
-  }
+  return true;
 }
 
 function selectCondition(key) {
-  if (!inputsReady()) {
-    flashMissingInputs();
-    return;
-  }
   execState.scenario = key;
   revealed = true;
   renderExecutive();
@@ -1161,16 +1145,6 @@ function renderCompareTable(rate) {
   }
 }
 
-quickPenaltyRate.addEventListener("input", () => {
-  const parsed = Number.parseFloat(quickPenaltyRate.value);
-  execState.penaltyRate = Number.isFinite(parsed) ? Math.max(0, parsed) : parsed;
-  renderExecutive();
-});
-quickAnnualEvents.addEventListener("input", () => {
-  const parsed = Number.parseFloat(quickAnnualEvents.value);
-  execState.annualEvents = Number.isFinite(parsed) ? Math.max(0, parsed) : parsed;
-  renderExecutive();
-});
 
 /* ---------- scroll reveal ---------- */
 

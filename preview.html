@@ -2060,7 +2060,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
     <nav class="view-switch">
       <button type="button" data-view="executive" class="active">Dashboard</button>
       <button type="button" data-view="technical">Technical</button>
-      <span class="app-version" id="appVersion">v44</span>
+      <span class="app-version" id="appVersion">v45</span>
     </nav>
 
     <div class="sticky-summary" id="stickySummary">
@@ -2104,16 +2104,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
               </button>
             </div>
 
-            <div class="hero-inputs hero-inputs-double">
-              <label>BAC — อัตราค่าปรับตามสัญญา (บาท / MW)
-                <input id="quickPenaltyRate" type="number" value="428.6801" placeholder="เช่น 428.6801" min="0" step="0.0001">
-              </label>
-              <label>จำนวน OTC Controller Reset ต่อปี (ครั้ง / ปี)
-                <input id="quickAnnualEvents" type="number" value="6" placeholder="เช่น 6" min="0" step="1">
-              </label>
-            </div>
-
-            <div id="resultLocked" class="locked-prompt">เลือก <strong>Startup Condition</strong> ด้านบน หลังจากกรอกอัตราค่าปรับ Post Event เพื่อดูผลการประเมิน</div>
+            <div id="resultLocked" class="locked-prompt">เลือก <strong>Startup Condition</strong> ด้านบนเพื่อดูผลการประเมิน</div>
 
             <div id="resultCard" class="result-card" hidden>
               <span class="result-tag" id="resultTag">ผลการประเมิน COLD START</span>
@@ -2135,8 +2126,8 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
                 <div class="detail-item"><span>ค่า Reference (Setpoint)</span><strong id="detailReferenceY">—°C</strong></div>
                 <div class="detail-item"><span>Ramp Rate ที่ใช้คำนวณ</span><strong id="detailRampRate">— °C/min</strong></div>
                 <div class="detail-item"><span>Startup Duration</span><strong id="detailDuration">— min</strong></div>
-                <div class="detail-item detail-divider"><span>DRA1 (คิดทุกกรณีที่มี Gap)</span><strong id="detailDra1">฿—</strong></div>
-                <div class="detail-item"><span>DSN/DDF (Deviation ≥ 20 MW เลือกค่าสูงสุด)</span><strong id="detailThreshold">฿—</strong></div>
+                <div class="detail-item detail-divider"><span>DRA1</span><strong id="detailDra1">฿—</strong></div>
+                <div class="detail-item"><span>DSN/DDF</span><strong id="detailThreshold">฿—</strong></div>
               </div>
             </div>
 
@@ -2274,7 +2265,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
             <span class="pitch-eyebrow">Post Event Penalty · Annual</span>
             <h2 class="section-title">ประมาณการค่าปรับ Post Event ต่อปี</h2>
             <p class="section-lede">ประเมินจากค่าปรับ Post Event โดยประมาณต่อเหตุการณ์ และจำนวน OTC Controller Reset ที่กำหนดต่อปี</p>
-            <div id="bignumLocked" class="locked-prompt">เลือก Startup Condition และกรอกจำนวน OTC Controller Reset ต่อปีด้านบนสุด เพื่อประมาณการค่าปรับต่อปี</div>
+            <div id="bignumLocked" class="locked-prompt">เลือก Startup Condition ด้านบนสุด เพื่อประมาณการค่าปรับต่อปี</div>
             <div id="bignumContent" hidden>
               <div class="bignum-label" id="bignumScenarioLabel">อ้างอิงจาก Cold Start</div>
               <div class="annual-tiers">
@@ -2530,7 +2521,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
                 <input id="tripFloorMwInput" type="number" value="340" min="0" step="1">
               </label>
               <label>Trip Restart Duration (min)
-                <input id="tripRestartMinInput" type="number" value="120" min="0" step="1">
+                <input id="tripRestartMinInput" type="number" value="300" min="0" step="1">
               </label>
               <label>GT Unit Active Power (MW)
                 <input id="gtUnitPowerInput" type="number" value="240" min="0" step="1">
@@ -2568,7 +2559,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
     </div>
 
     <script>
-const APP_VERSION = "v44";
+const APP_VERSION = "v45";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -2592,7 +2583,7 @@ let appliedConfig = {
   annualEvents: 6,
   rampRateAfterFix: 6000,
   tripFloorMw: 340,
-  tripRestartMin: 120,
+  tripRestartMin: 300,
   gtUnitPower: 240,
   gtPowerDeclineRate: 1
 };
@@ -2822,14 +2813,8 @@ function applyAllChanges() {
     appliedConfig[field.key] = Math.max(field.min, numberValue(field.input, appliedConfig[field.key]));
   });
 
-  if (!Number.isFinite(Number.parseFloat(quickPenaltyRate.value))) {
-    execState.penaltyRate = appliedConfig.penaltyRate;
-    quickPenaltyRate.value = appliedConfig.penaltyRate;
-  }
-  if (!Number.isFinite(Number.parseFloat(quickAnnualEvents.value))) {
-    execState.annualEvents = appliedConfig.annualEvents;
-    quickAnnualEvents.value = appliedConfig.annualEvents;
-  }
+  execState.penaltyRate = appliedConfig.penaltyRate;
+  execState.annualEvents = appliedConfig.annualEvents;
 
   refreshPending();
   renderExecutive();
@@ -3321,8 +3306,6 @@ const savingsTimeSaved = document.querySelector("#savingsTimeSaved");
 const savingsOldValue = document.querySelector("#savingsOldValue");
 const savingsStampMark = document.querySelector("#savingsStampMark");
 
-const quickPenaltyRate = document.querySelector("#quickPenaltyRate");
-const quickAnnualEvents = document.querySelector("#quickAnnualEvents");
 const bignumLocked = document.querySelector("#bignumLocked");
 const bignumContent = document.querySelector("#bignumContent");
 const compareLocked = document.querySelector("#compareLocked");
@@ -3377,12 +3360,14 @@ function computeScenario(durationMin, rampRateCPerMin, resetY, bacRate) {
   const postEventOccurred = yGap > 0;
 
   // ---- สูตรค่าปรับจริง: Total Deduction = DRA1 + MAX(DSN, DDF) ----
-  const eventHours = recoveryRemainingMin / 60;
+  // ระยะเวลาที่โดนค่าปรับ = ลากยาวที่ MW ต่ำสุด ตั้งแต่เกิดเหตุจนกว่า OTC จะ Recovered แล้ว
+  // บวก Resumption Auto (Worst Case: ศูนย์รับคืนอัตโนมัติ 4 ชม.)
+  const eventHours = postEventOccurred ? (recoveryRemainingMin / 60 + appliedConfig.resumptionHr) : 0;
   const deviation = mwLoss; // Declare = Dispatch = DCC เต็ม จึง Deviation = MW Loss ตรงๆ
 
-  // DRA1: คิดทุกกรณีที่มี Gap เกิดขึ้น ไม่มีเกณฑ์ขั้นต่ำ — อัตรา(บาท/ชม.) x จำนวนชั่วโมง
+  // DRA1: คิดทุกกรณีที่มี Gap เกิดขึ้น ไม่มีเกณฑ์ขั้นต่ำ — อัตรา(บาท/ชม.) x จำนวนชั่วโมงรวม
   const dra1Rate = bacRate * deviation * PPA_WEIGHT;
-  const dra1Total = postEventOccurred ? dra1Rate * eventHours : 0;
+  const dra1Total = dra1Rate * eventHours;
 
   // DSN: ค่าปรับเพิ่มเมื่อ Deviation >= 20 MW คูณด้วย EH (ตัวคูณความไม่ทันตั้งตัว)
   const draKy = bacRate * (appliedConfig.refActivePower - predictedPower) * PPA_WEIGHT;
@@ -3394,8 +3379,8 @@ function computeScenario(durationMin, rampRateCPerMin, resetY, bacRate) {
   const thresholdPenalty = Math.max(dsn, ddf);
   const estimatedPenalty = dra1Total + thresholdPenalty;
 
-  // Timeline การปฏิบัติงาน (แยกจากค่าปรับ) — ใช้แสดงผลใน Penalty Timeline เท่านั้น
-  const totalPenaltyDurationHr = postEventOccurred ? (eventHours + appliedConfig.resumptionHr) : 0;
+  // Timeline การปฏิบัติงาน = ชั่วโมงเดียวกับที่ใช้คิดค่าปรับ (Recovery + Resumption Auto)
+  const totalPenaltyDurationHr = eventHours;
 
   return {
     yAtComplete, yGap, mwLoss, predictedPower, recoveryRemainingMin,
@@ -3406,7 +3391,8 @@ function computeScenario(durationMin, rampRateCPerMin, resetY, bacRate) {
 
 function computeTripScenario(bacRate) {
   const mwLoss = Math.max(0, appliedConfig.refActivePower - appliedConfig.tripFloorMw);
-  const eventHours = appliedConfig.tripRestartMin / 60;
+  // ลากยาวที่ Trip Floor ตั้งแต่ Trip จนกว่า Restart จะเสร็จ บวก Resumption Auto (Worst Case)
+  const eventHours = appliedConfig.tripRestartMin / 60 + appliedConfig.resumptionHr;
   const deviation = mwLoss;
 
   const dra1Rate = bacRate * deviation * PPA_WEIGHT;
@@ -3418,7 +3404,7 @@ function computeTripScenario(bacRate) {
   const thresholdPenalty = Math.max(dsn, ddf);
 
   const estimatedPenalty = dra1Total + thresholdPenalty;
-  const totalPenaltyDurationHr = eventHours + appliedConfig.resumptionHr;
+  const totalPenaltyDurationHr = eventHours;
   return { floorMw: appliedConfig.tripFloorMw, mwLoss, totalPenaltyDurationHr, estimatedPenalty, dra1Total, thresholdPenalty };
 }
 
@@ -3476,25 +3462,14 @@ let lastAnnualExposure = null;
 let lastSavingsValue = null;
 
 function inputsReady() {
-  return Number.isFinite(Number.parseFloat(quickPenaltyRate.value));
+  return true;
 }
 
 function annualReady() {
-  return Number.isFinite(Number.parseFloat(quickAnnualEvents.value));
-}
-
-function flashMissingInputs() {
-  if (!Number.isFinite(Number.parseFloat(quickPenaltyRate.value))) {
-    quickPenaltyRate.classList.add("field-missing");
-    setTimeout(() => quickPenaltyRate.classList.remove("field-missing"), 1200);
-  }
+  return true;
 }
 
 function selectCondition(key) {
-  if (!inputsReady()) {
-    flashMissingInputs();
-    return;
-  }
   execState.scenario = key;
   revealed = true;
   renderExecutive();
@@ -3731,16 +3706,6 @@ function renderCompareTable(rate) {
   }
 }
 
-quickPenaltyRate.addEventListener("input", () => {
-  const parsed = Number.parseFloat(quickPenaltyRate.value);
-  execState.penaltyRate = Number.isFinite(parsed) ? Math.max(0, parsed) : parsed;
-  renderExecutive();
-});
-quickAnnualEvents.addEventListener("input", () => {
-  const parsed = Number.parseFloat(quickAnnualEvents.value);
-  execState.annualEvents = Number.isFinite(parsed) ? Math.max(0, parsed) : parsed;
-  renderExecutive();
-});
 
 /* ---------- scroll reveal ---------- */
 
