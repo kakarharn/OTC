@@ -1,4 +1,4 @@
-const APP_VERSION = "v56";
+const APP_VERSION = "v57";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -1297,14 +1297,24 @@ function drawHeroChart(now) {
     heroCtx.stroke();
     heroCtx.setLineDash([]);
 
-    /* ---- OTC Actual: ไหลลงจาก 572°C ด้วยอัตราเดียวกับ OTC Recovery (curveRate) มาเจอกันตรงกลาง แล้ววิ่งขึ้นด้วยกัน ---- */
+    /* ---- OTC Actual: ค้างที่ 572°C จนถึงจุด Startup Complete (จุดเดียวกับที่ MW เริ่มตก)
+           แล้วค่อยไหลลงด้วยอัตราเดียวกับ OTC Recovery (curveRate) จนไปเจอกัน แล้ววิ่งขึ้นด้วยกัน ---- */
+    const dropStartMin = isSelected
+      ? appliedConfig[SCENARIOS.find((s) => s.key === execState.scenario).durationKey]
+      : totalMin;
+    heroChartMeta.dropStartMin = dropStartMin;
     const otcActualSteps = 48;
     heroCtx.beginPath();
     for (let i = 0; i <= otcActualSteps; i += 1) {
       const min = (totalMin / otcActualSteps) * i;
-      const declineValue = Math.max(0, curveReferenceY - curveRate * min);
       const recoveryValue = Math.min(curveReferenceY, curveResetY + curveRate * min);
-      const actualValue = Math.max(declineValue, recoveryValue);
+      let actualValue;
+      if (min <= dropStartMin) {
+        actualValue = curveReferenceY;
+      } else {
+        const declineValue = Math.max(0, curveReferenceY - curveRate * (min - dropStartMin));
+        actualValue = Math.max(declineValue, recoveryValue);
+      }
       const px = xFor(min);
       const py = yFor(actualValue);
       if (i === 0) heroCtx.moveTo(px, py);
@@ -1552,9 +1562,15 @@ requestAnimationFrame(drawHeroChart);
 
 function heroChartValueAt(min) {
   if (!heroChartMeta) return null;
-  const { curveReferenceY, curveResetY, curveRate, isSelected, powerPoints } = heroChartMeta;
+  const { curveReferenceY, curveResetY, curveRate, isSelected, powerPoints, dropStartMin } = heroChartMeta;
   const otcTemp = Math.min(curveReferenceY, curveResetY + curveRate * min);
-  const otcActual = Math.max(Math.max(0, curveReferenceY - curveRate * min), otcTemp);
+  let otcActual;
+  if (min <= dropStartMin) {
+    otcActual = curveReferenceY;
+  } else {
+    const declineValue = Math.max(0, curveReferenceY - curveRate * (min - dropStartMin));
+    otcActual = Math.max(declineValue, otcTemp);
+  }
   let gtPower = null;
   let tripped = false;
   if (isSelected && powerPoints && powerPoints.length) {
