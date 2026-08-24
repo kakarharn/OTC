@@ -1,4 +1,4 @@
-const APP_VERSION = "v46";
+const APP_VERSION = "v48";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -714,9 +714,6 @@ const ptRecoveryTime = document.querySelector("#ptRecoveryTime");
 const ptResumptionTime = document.querySelector("#ptResumptionTime");
 const ptTotalTime = document.querySelector("#ptTotalTime");
 const tripRiskWrap = document.querySelector("#tripRiskWrap");
-const tripRiskToggle = document.querySelector("#tripRiskToggle");
-const tripRiskCard = document.querySelector("#tripRiskCard");
-const tripPenalty = document.querySelector("#tripPenalty");
 const narrativeLocked = document.querySelector("#narrativeLocked");
 const narrativeText = document.querySelector("#narrativeText");
 const mechGapNote = document.querySelector("#mechGapNote");
@@ -942,18 +939,6 @@ detailToggle.addEventListener("click", () => {
   }
 });
 
-tripRiskToggle.addEventListener("click", () => {
-  const isOpen = tripRiskToggle.getAttribute("aria-expanded") === "true";
-  tripRiskToggle.setAttribute("aria-expanded", String(!isOpen));
-  tripRiskCard.hidden = isOpen;
-  tripRiskToggle.classList.toggle("open", !isOpen);
-
-  if (!isOpen) {
-    const tripR = computeTripScenario(execState.penaltyRate);
-    animateDetailNumber(tripPenalty, tripR.estimatedPenalty, (v) => `฿${formatBaht(v)}`);
-  }
-});
-
 function buildNarrative(meta, r, willTrip) {
   if (willTrip) {
     const totalText = formatHoursMinutes(r.totalPenaltyDurationHr * 60);
@@ -1000,14 +985,12 @@ function renderExecutive() {
     penaltyTimelineLocked.hidden = false;
     penaltyTimelineContent.hidden = true;
     tripRiskWrap.hidden = true;
-    tripRiskCard.hidden = true;
     return;
   }
 
   const meta = SCENARIOS.find((sc) => sc.key === execState.scenario);
   const r = computeScenarioWithTrip(meta, rate, execState.penaltyRate);
   const willTrip = r.willTrip;
-  const tripR = willTrip ? computeTripScenario(execState.penaltyRate) : null;
 
   resultLocked.hidden = true;
   resultCard.hidden = false;
@@ -1039,15 +1022,7 @@ function renderExecutive() {
   animateMinutesNumber(ptResumptionTime, resumptionMinForDisplay);
   animateMinutesNumber(ptTotalTime, r.totalPenaltyDurationHr * 60);
 
-  if (willTrip) {
-    tripRiskWrap.hidden = false;
-    tripPenalty.textContent = `฿${formatBaht(tripR.estimatedPenalty)}`;
-  } else {
-    tripRiskWrap.hidden = true;
-    tripRiskCard.hidden = true;
-    tripRiskToggle.setAttribute("aria-expanded", "false");
-    tripRiskToggle.classList.remove("open");
-  }
+  tripRiskWrap.hidden = !willTrip;
 }
 
 function renderCompareTable(rate) {

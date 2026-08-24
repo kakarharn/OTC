@@ -522,6 +522,17 @@ body.view-technical #view-technical { display: block; }
 
 .result-item.highlight strong { font-size: 1.3rem; color: var(--rose); }
 
+.result-annual-note {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line-soft);
+  font-size: 0.76rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.result-annual-note strong { color: var(--ink); font-weight: 700; }
+
 .kpi-flash { animation: kpiFlash 0.6s ease-out; }
 
 @keyframes kpiFlash {
@@ -604,38 +615,13 @@ body.view-technical #view-technical { display: block; }
   font-variant-numeric: tabular-nums;
 }
 
-.trip-risk-wrap { margin-top: 18px; }
-
-.trip-risk-toggle {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px;
-  border: 1px dashed var(--hot-line);
-  border-radius: 8px;
-  background: none;
-  color: var(--hot);
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
-}
-
-.trip-risk-toggle:hover { background: var(--hot-dim); }
-.trip-risk-toggle svg { transition: transform 0.25s ease; }
-.trip-risk-toggle.open svg { transform: rotate(180deg); }
-
-.trip-risk-card {
-  margin-top: 14px;
-  padding: 22px 24px;
-  border-radius: 14px;
+.trip-risk-wrap {
+  margin-top: 18px;
+  padding: 16px 20px;
+  border-radius: 10px;
   border: 1px solid var(--hot-line);
   background: linear-gradient(160deg, var(--hot-dim), var(--panel-soft));
   backdrop-filter: blur(10px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .trip-risk-note {
@@ -643,31 +629,7 @@ body.view-technical #view-technical { display: block; }
   font-size: 0.84rem;
   line-height: 1.6;
   max-width: 62ch;
-  margin-bottom: 18px;
 }
-
-.trip-risk-grid { display: grid; gap: 0; }
-
-.trip-risk-item {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: 10px 0;
-  border-top: 1px dashed var(--line-soft);
-  font-size: 0.86rem;
-  color: var(--muted);
-}
-
-.trip-risk-item:first-child { border-top: none; }
-
-.trip-risk-item strong {
-  font-family: var(--font-mono);
-  font-size: 1.05rem;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-
-.trip-risk-item.highlight strong { font-size: 1.3rem; color: var(--hot); }
 
 .trip-risk-disclaimer {
   margin-top: 16px;
@@ -1852,7 +1814,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
   .penalty-timeline { gap: 14px 8px; }
   .pt-step { min-width: 90px; }
   .pt-arrow { display: none; }
-  .trip-risk-card { padding: 18px 16px; }
+  .trip-risk-wrap { padding: 14px 16px; }
 
   .tech-shell { padding: 10px; padding-top: 64px; padding-bottom: 84px; gap: 10px; }
   .tech-topbar { padding: 14px 16px; flex-wrap: wrap; gap: 10px; }
@@ -1953,7 +1915,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
     <nav class="view-switch">
       <button type="button" data-view="executive" class="active">Dashboard</button>
       <button type="button" data-view="technical">Technical</button>
-      <span class="app-version" id="appVersion">v46</span>
+      <span class="app-version" id="appVersion">v48</span>
     </nav>
 
     <div class="sticky-summary" id="stickySummary">
@@ -2012,6 +1974,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
                 <div class="result-item"><span>ระยะเวลา Post Event โดยประมาณ</span><strong id="resPenaltyDuration">—</strong></div>
                 <div class="result-item highlight"><span>ค่าปรับ Post Event โดยประมาณ</span><strong id="resPenalty">฿—</strong></div>
               </div>
+              <p class="result-annual-note">ตัวเลขนี้คือค่าปรับ<strong>ต่อ 1 เหตุการณ์</strong> — หากเกิดซ้ำในปีเดียวกัน ค่าเสียหายต่อปี = ตัวเลขนี้ × จำนวนครั้งที่เกิดขึ้นจริง</p>
 
               <button type="button" class="detail-toggle" id="detailToggle" aria-expanded="false">
                 <span>ดูรายละเอียดการคำนวณ</span>
@@ -2028,16 +1991,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
             </div>
 
             <div id="tripRiskWrap" class="trip-risk-wrap" hidden>
-              <button type="button" class="trip-risk-toggle" id="tripRiskToggle" aria-expanded="false">
-                <span>⚠ ดู Trip Risk Scenario (Worst Case)</span>
-                <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-              </button>
-              <div id="tripRiskCard" class="trip-risk-card" hidden>
-                <p class="trip-risk-note">Firing Temperature ต่ำต่อเนื่องขณะ IGV ค้าง 100% อาจทำให้ GT Trip ได้ เช่น Loss of Flame หรือ Protection อื่นสั่งตัด ตัวเลขนี้เป็น Worst Case แยกจากค่าปรับปกติ</p>
-                <div class="trip-risk-grid">
-                  <div class="trip-risk-item highlight"><span>ค่าปรับ Post Event หาก Trip (Worst Case)</span><strong id="tripPenalty">฿—</strong></div>
-                </div>
-              </div>
+              <p class="trip-risk-note">⚠ Firing Temperature ต่ำต่อเนื่องขณะ IGV ค้าง 100% ทำให้ GT เกิด Trip จาก Loss of Flame ได้ (หรือระบบ Protection อื่นสั่งตัด) — ตัวเลขด้านบนคือค่าปรับที่คาดว่าจะเกิดขึ้นจริงจากเหตุการณ์นี้</p>
             </div>
           </div>
           <div class="scroll-hint">
@@ -2202,7 +2156,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
                     <strong id="savingsValue">฿0</strong>
                   </span>
                 </div>
-                <span class="savings-stamp-caption" id="savingsLabel">ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อปี</span>
+                <span class="savings-stamp-caption" id="savingsLabel">ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อครั้ง</span>
                 <div class="savings-time-row">
                   <span>เวลารอ OTC Recovery ที่ลดได้ (เทียบกับ Current Configuration ที่ไม่ตอบสนอง)</span>
                   <strong id="savingsTimeSaved">—</strong>
@@ -2436,7 +2390,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
     </div>
 
     <script>
-const APP_VERSION = "v46";
+const APP_VERSION = "v48";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -3152,9 +3106,6 @@ const ptRecoveryTime = document.querySelector("#ptRecoveryTime");
 const ptResumptionTime = document.querySelector("#ptResumptionTime");
 const ptTotalTime = document.querySelector("#ptTotalTime");
 const tripRiskWrap = document.querySelector("#tripRiskWrap");
-const tripRiskToggle = document.querySelector("#tripRiskToggle");
-const tripRiskCard = document.querySelector("#tripRiskCard");
-const tripPenalty = document.querySelector("#tripPenalty");
 const narrativeLocked = document.querySelector("#narrativeLocked");
 const narrativeText = document.querySelector("#narrativeText");
 const mechGapNote = document.querySelector("#mechGapNote");
@@ -3380,18 +3331,6 @@ detailToggle.addEventListener("click", () => {
   }
 });
 
-tripRiskToggle.addEventListener("click", () => {
-  const isOpen = tripRiskToggle.getAttribute("aria-expanded") === "true";
-  tripRiskToggle.setAttribute("aria-expanded", String(!isOpen));
-  tripRiskCard.hidden = isOpen;
-  tripRiskToggle.classList.toggle("open", !isOpen);
-
-  if (!isOpen) {
-    const tripR = computeTripScenario(execState.penaltyRate);
-    animateDetailNumber(tripPenalty, tripR.estimatedPenalty, (v) => `฿${formatBaht(v)}`);
-  }
-});
-
 function buildNarrative(meta, r, willTrip) {
   if (willTrip) {
     const totalText = formatHoursMinutes(r.totalPenaltyDurationHr * 60);
@@ -3438,14 +3377,12 @@ function renderExecutive() {
     penaltyTimelineLocked.hidden = false;
     penaltyTimelineContent.hidden = true;
     tripRiskWrap.hidden = true;
-    tripRiskCard.hidden = true;
     return;
   }
 
   const meta = SCENARIOS.find((sc) => sc.key === execState.scenario);
   const r = computeScenarioWithTrip(meta, rate, execState.penaltyRate);
   const willTrip = r.willTrip;
-  const tripR = willTrip ? computeTripScenario(execState.penaltyRate) : null;
 
   resultLocked.hidden = true;
   resultCard.hidden = false;
@@ -3477,15 +3414,7 @@ function renderExecutive() {
   animateMinutesNumber(ptResumptionTime, resumptionMinForDisplay);
   animateMinutesNumber(ptTotalTime, r.totalPenaltyDurationHr * 60);
 
-  if (willTrip) {
-    tripRiskWrap.hidden = false;
-    tripPenalty.textContent = `฿${formatBaht(tripR.estimatedPenalty)}`;
-  } else {
-    tripRiskWrap.hidden = true;
-    tripRiskCard.hidden = true;
-    tripRiskToggle.setAttribute("aria-expanded", "false");
-    tripRiskToggle.classList.remove("open");
-  }
+  tripRiskWrap.hidden = !willTrip;
 }
 
 function renderCompareTable(rate) {

@@ -19,7 +19,7 @@
     <nav class="view-switch">
       <button type="button" data-view="executive" class="active">Dashboard</button>
       <button type="button" data-view="technical">Technical</button>
-      <span class="app-version" id="appVersion">v46</span>
+      <span class="app-version" id="appVersion">v48</span>
     </nav>
 
     <div class="sticky-summary" id="stickySummary">
@@ -78,6 +78,7 @@
                 <div class="result-item"><span>ระยะเวลา Post Event โดยประมาณ</span><strong id="resPenaltyDuration">—</strong></div>
                 <div class="result-item highlight"><span>ค่าปรับ Post Event โดยประมาณ</span><strong id="resPenalty">฿—</strong></div>
               </div>
+              <p class="result-annual-note">ตัวเลขนี้คือค่าปรับ<strong>ต่อ 1 เหตุการณ์</strong> — หากเกิดซ้ำในปีเดียวกัน ค่าเสียหายต่อปี = ตัวเลขนี้ × จำนวนครั้งที่เกิดขึ้นจริง</p>
 
               <button type="button" class="detail-toggle" id="detailToggle" aria-expanded="false">
                 <span>ดูรายละเอียดการคำนวณ</span>
@@ -94,16 +95,7 @@
             </div>
 
             <div id="tripRiskWrap" class="trip-risk-wrap" hidden>
-              <button type="button" class="trip-risk-toggle" id="tripRiskToggle" aria-expanded="false">
-                <span>⚠ ดู Trip Risk Scenario (Worst Case)</span>
-                <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-              </button>
-              <div id="tripRiskCard" class="trip-risk-card" hidden>
-                <p class="trip-risk-note">Firing Temperature ต่ำต่อเนื่องขณะ IGV ค้าง 100% อาจทำให้ GT Trip ได้ เช่น Loss of Flame หรือ Protection อื่นสั่งตัด ตัวเลขนี้เป็น Worst Case แยกจากค่าปรับปกติ</p>
-                <div class="trip-risk-grid">
-                  <div class="trip-risk-item highlight"><span>ค่าปรับ Post Event หาก Trip (Worst Case)</span><strong id="tripPenalty">฿—</strong></div>
-                </div>
-              </div>
+              <p class="trip-risk-note">⚠ Firing Temperature ต่ำต่อเนื่องขณะ IGV ค้าง 100% ทำให้ GT เกิด Trip จาก Loss of Flame ได้ (หรือระบบ Protection อื่นสั่งตัด) — ตัวเลขด้านบนคือค่าปรับที่คาดว่าจะเกิดขึ้นจริงจากเหตุการณ์นี้</p>
             </div>
           </div>
           <div class="scroll-hint">
@@ -268,7 +260,7 @@
                     <strong id="savingsValue">฿0</strong>
                   </span>
                 </div>
-                <span class="savings-stamp-caption" id="savingsLabel">ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อปี</span>
+                <span class="savings-stamp-caption" id="savingsLabel">ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อครั้ง</span>
                 <div class="savings-time-row">
                   <span>เวลารอ OTC Recovery ที่ลดได้ (เทียบกับ Current Configuration ที่ไม่ตอบสนอง)</span>
                   <strong id="savingsTimeSaved">—</strong>
