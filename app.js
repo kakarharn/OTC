@@ -1,4 +1,4 @@
-const APP_VERSION = "v54";
+const APP_VERSION = "v55";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -1233,12 +1233,13 @@ function drawHeroChart(now) {
     const isSelected = Boolean(execState.scenario);
     const riskColor = isSelected ? SCENARIO_COLORS[execState.scenario] : "#38bdf8";
     const tempLineColor = "#38bdf8"; // OTC Recovery (เส้นไต่ขึ้น 0→572°C)
+    const actualLineColor = "#fb923c"; // OTC Actual (572°C คงที่)
 
     heroChartTag.textContent = isSelected
       ? `${SCENARIOS.find((s) => s.key === execState.scenario).label} · OTC Recovery`
       : "OTC Recovery · เลือก Condition ด้านบนสุด";
 
-    const pad = { left: 46, right: 50, top: 30, bottom: 26 };
+    const pad = { left: 46, right: 50, top: 42, bottom: 26 };
     const plotW = w - pad.left - pad.right;
     const plotH = h - pad.top - pad.bottom;
     const yFor = (val) => pad.top + (1 - (val - curveResetY) / (curveReferenceY - curveResetY)) * plotH;
@@ -1286,7 +1287,7 @@ function drawHeroChart(now) {
     }
     heroCtx.textBaseline = "middle";
 
-    /* ---- 572°C reference line ---- */
+    /* ---- 572°C reference guide (จางๆ) ---- */
     heroCtx.setLineDash([3, 4]);
     heroCtx.strokeStyle = "#324451";
     heroCtx.lineWidth = 1;
@@ -1295,6 +1296,14 @@ function drawHeroChart(now) {
     heroCtx.lineTo(w - pad.right, yFor(curveReferenceY));
     heroCtx.stroke();
     heroCtx.setLineDash([]);
+
+    /* ---- OTC Actual: เส้นทึบที่ระดับ 572°C (ค่าความพร้อมที่ NCC ต้องการ) ---- */
+    heroCtx.strokeStyle = actualLineColor;
+    heroCtx.lineWidth = 1.8;
+    heroCtx.beginPath();
+    heroCtx.moveTo(pad.left, yFor(curveReferenceY));
+    heroCtx.lineTo(w - pad.right, yFor(curveReferenceY));
+    heroCtx.stroke();
 
     /* ---- Right axis: GT Active Power (MW) — คนละหน่วยกับแกนซ้าย ทำแกนแยกให้ชัด ---- */
     if (Boolean(execState.scenario)) {
@@ -1456,7 +1465,7 @@ function drawHeroChart(now) {
       const labelX = clamp(xFor(Math.min(duration, totalMin)), pad.left + labelWidth / 2 + 2, w - pad.right - labelWidth / 2 - 2);
       heroCtx.textAlign = "center";
       heroCtx.textBaseline = "alphabetic";
-      heroCtx.fillText(labelText, labelX, pad.top - 8);
+      heroCtx.fillText(labelText, labelX, 34);
       heroCtx.textBaseline = "middle";
     }
 
@@ -1570,6 +1579,7 @@ function updateHeroTooltip(clientX, clientY) {
   const timeLabel = min < 60 ? `${min.toFixed(1)} นาที` : `${(min / 60).toFixed(1)} ชม.`;
   let html = `<strong>เวลา: ${timeLabel} หลัง Reset</strong>`;
   html += `<div class="tt-otc">OTC Recovery: ${values.otcTemp.toFixed(1)}°C</div>`;
+  html += `<div class="tt-actual">OTC Actual: ${appliedConfig.referenceY.toFixed(1)}°C</div>`;
   if (values.gtPower !== null) {
     html += `<div class="tt-power">GT Active Power: ${values.gtPower.toFixed(0)} MW</div>`;
     if (values.tripped) html += `<div class="tt-trip">⚠ GT TRIP</div>`;

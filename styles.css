@@ -323,6 +323,7 @@ body.view-technical #view-technical { display: block; }
 
 .chart-tooltip strong { display: block; color: var(--ink); font-size: 0.72rem; margin-bottom: 3px; }
 .chart-tooltip .tt-otc { color: var(--cold); }
+.chart-tooltip .tt-actual { color: #fb923c; }
 .chart-tooltip .tt-power { color: var(--amber); }
 .chart-tooltip .tt-trip { color: var(--rose); font-weight: 700; }
 
@@ -352,6 +353,7 @@ body.view-technical #view-technical { display: block; }
 
 .chart-legend .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .chart-legend .dot-line { background: var(--cold); }
+.chart-legend .dot-actual { background: #fb923c; }
 .chart-legend .dot-power { background: #e8a53d; }
 .chart-legend .dot-marker { background: var(--rose); }
 .chart-legend .dot-restore { background: #7dd3fc; }
