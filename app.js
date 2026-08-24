@@ -1,4 +1,4 @@
-const APP_VERSION = "v52";
+const APP_VERSION = "v53";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -1231,7 +1231,7 @@ function drawHeroChart(now) {
     const isSelected = Boolean(execState.scenario);
     const riskColor = isSelected ? SCENARIO_COLORS[execState.scenario] : "#38bdf8";
     const tempLineColor = "#38bdf8"; // OTC Recovery (เส้นไต่ขึ้น 0→572°C)
-    const actualLineColor = "#fb923c"; // OTC Actual (เป้าหมาย 572°C คงที่)
+    const actualLineColor = "#facc15"; // OTC Actual (ไหลลงจาก 572 มาเจอ OTC Recovery)
 
     heroChartTag.textContent = isSelected
       ? `${SCENARIOS.find((s) => s.key === execState.scenario).label} · OTC Recovery`
@@ -1285,12 +1285,31 @@ function drawHeroChart(now) {
     }
     heroCtx.textBaseline = "middle";
 
-    /* ---- OTC Actual: เส้นเป้าหมาย 572°C คงที่ (สีส้มทึบ) ---- */
-    heroCtx.strokeStyle = actualLineColor;
-    heroCtx.lineWidth = 1.6;
+    /* ---- 572°C reference guide line (บางๆ จางๆ) ---- */
+    heroCtx.setLineDash([3, 4]);
+    heroCtx.strokeStyle = "#324451";
+    heroCtx.lineWidth = 1;
     heroCtx.beginPath();
     heroCtx.moveTo(pad.left, yFor(curveReferenceY));
     heroCtx.lineTo(w - pad.right, yFor(curveReferenceY));
+    heroCtx.stroke();
+    heroCtx.setLineDash([]);
+
+    /* ---- OTC Actual: ไหลลงจาก 572°C มาเจอ OTC Recovery ที่ไล่ขึ้นจาก 0 แล้ววิ่งขึ้นด้วยกัน (กลไกจริงของ RGE Reset) ---- */
+    const otcActualSteps = 48;
+    heroCtx.beginPath();
+    for (let i = 0; i <= otcActualSteps; i += 1) {
+      const min = (totalMin / otcActualSteps) * i;
+      const declineValue = Math.max(0, curveReferenceY - curveRate * min);
+      const recoveryValue = Math.min(curveReferenceY, curveResetY + curveRate * min);
+      const actualValue = Math.max(declineValue, recoveryValue);
+      const px = xFor(min);
+      const py = yFor(actualValue);
+      if (i === 0) heroCtx.moveTo(px, py);
+      else heroCtx.lineTo(px, py);
+    }
+    heroCtx.strokeStyle = actualLineColor;
+    heroCtx.lineWidth = 1.8;
     heroCtx.stroke();
 
     /* ---- Right axis: GT Active Power (MW) — ใช้สเกลจริง 0-710 MW ตรงกับ Result Card ---- */
@@ -1349,47 +1368,33 @@ function drawHeroChart(now) {
         heroCtx.setLineDash([]);
       }
 
-      /* ---- GT Active Power: Step Function ตามตัวเลขจริง ตรงกับ Result Card เป๊ะ
-             710 MW เต็ม จนถึง Startup Complete -> ตกทันทีเหลือ MW ต่ำสุดจริง (Trip Floor หรือค่าที่คำนวณได้)
-             ค้างที่ระดับนั้นตลอดช่วง Post Event Duration -> กลับขึ้น 710 MW เมื่อ Resumption เสร็จ ---- */
+      /* ---- GT Active Power: เทรนด์ลาดเอียงนุ่มนวล ใช้ตัวเลขจริงตรงกับ Result Card
+             710 MW เต็ม จนถึง Startup Complete -> ไล่ลงเหลือ MW ต่ำสุดจริง (Trip Floor หรือค่าที่คำนวณได้)
+             ค้างที่ระดับนั้นตลอดช่วง Post Event Duration -> ไล่กลับขึ้น 710 MW เมื่อ Resumption เสร็จ ---- */
       const powerAxisYFor2 = (mw) => pad.top + (1 - mw / appliedConfig.refActivePower) * plotH;
       const dropMin = Math.min(duration, totalMin);
       const restoreMin = noPenalty ? dropMin : Math.min(totalMin, duration + r.totalPenaltyDurationHr * 60);
       const floorMw = r.predictedPower;
+      const rampSpan = Math.min(totalMin * 0.06, 25);
+      const dropEnd = Math.min(restoreMin, dropMin + rampSpan);
+      const riseStart = Math.max(dropEnd, restoreMin - rampSpan);
 
       const powerPoints = [
         { min: 0, mw: appliedConfig.refActivePower },
         { min: dropMin, mw: appliedConfig.refActivePower }
       ];
       if (!noPenalty) {
-        powerPoints.push({ min: dropMin, mw: floorMw });
-        powerPoints.push({ min: restoreMin, mw: floorMw });
+        powerPoints.push({ min: dropEnd, mw: floorMw });
+        if (riseStart > dropEnd) powerPoints.push({ min: riseStart, mw: floorMw });
         powerPoints.push({ min: restoreMin, mw: appliedConfig.refActivePower });
         powerPoints.push({ min: totalMin, mw: appliedConfig.refActivePower });
       }
 
       heroChartMeta.powerPoints = powerPoints;
       heroChartMeta.gtFull = appliedConfig.refActivePower;
-
-      /* ---- แถบไฮไลท์แนวนอนช่วง MW ค้างที่ Floor (มองเห็นระยะเวลาที่กระทบชัดเจน) ---- */
-      if (!noPenalty) {
-        const bandY = powerAxisYFor2(floorMw);
-        const bandColor = r.willTrip ? "#fb5d6f" : POWER_LINE_COLOR;
-        heroCtx.fillStyle = hexToRgba(bandColor, 0.1);
-        heroCtx.fillRect(xFor(dropMin), pad.top, xFor(restoreMin) - xFor(dropMin), h - pad.top - pad.bottom);
-
-        heroCtx.setLineDash([1, 3]);
-        heroCtx.strokeStyle = hexToRgba(bandColor, 0.5);
-        heroCtx.lineWidth = 1;
-        heroCtx.beginPath();
-        heroCtx.moveTo(xFor(dropMin), bandY);
-        heroCtx.lineTo(xFor(restoreMin), bandY);
-        heroCtx.stroke();
-        heroCtx.setLineDash([]);
-      }
       heroChartMeta.willTrip = r.willTrip;
-      heroChartMeta.dropMin = dropMin;
-      heroChartMeta.restoreMin = restoreMin;
+      heroChartMeta.dropMin = dropEnd;
+      heroChartMeta.restoreMin = riseStart;
 
       heroCtx.beginPath();
       powerPoints.forEach((p, i) => {
@@ -1398,19 +1403,26 @@ function drawHeroChart(now) {
         if (i === 0) heroCtx.moveTo(px, py);
         else heroCtx.lineTo(px, py);
       });
-      heroCtx.strokeStyle = r.willTrip ? "#fb5d6f" : POWER_LINE_COLOR;
+      heroCtx.strokeStyle = POWER_LINE_COLOR;
       heroCtx.lineWidth = 2;
       heroCtx.stroke();
 
-      if (r.willTrip) {
-        heroCtx.font = "700 9.5px 'IBM Plex Mono', monospace";
+      /* ---- GT TRIP: เส้นบางๆ ที่ระดับ MW ต่ำสุดจริงตลอดช่วงที่ค้าง พร้อม Label สั้นๆ ---- */
+      if (r.willTrip && riseStart > dropEnd) {
+        heroCtx.beginPath();
+        heroCtx.moveTo(xFor(dropEnd), powerAxisYFor2(floorMw));
+        heroCtx.lineTo(xFor(riseStart), powerAxisYFor2(floorMw));
+        heroCtx.strokeStyle = "#fb5d6f";
+        heroCtx.lineWidth = 1.4;
+        heroCtx.stroke();
+
+        heroCtx.font = "700 9px 'IBM Plex Mono', monospace";
         heroCtx.fillStyle = "#fb5d6f";
         const tripLabel = "GT TRIP";
-        const tripLabelWidth = heroCtx.measureText(tripLabel).width;
-        const tripLabelX = clamp(xFor(dropMin) + 6 + tripLabelWidth / 2, pad.left + tripLabelWidth / 2 + 2, w - pad.right - tripLabelWidth / 2 - 2);
+        const tripMidMin = (dropEnd + riseStart) / 2;
         heroCtx.textAlign = "center";
         heroCtx.textBaseline = "alphabetic";
-        heroCtx.fillText(tripLabel, tripLabelX, powerAxisYFor2(floorMw) - 8);
+        heroCtx.fillText(tripLabel, xFor(tripMidMin), powerAxisYFor2(floorMw) - 6);
         heroCtx.textBaseline = "middle";
       }
 
@@ -1435,29 +1447,6 @@ function drawHeroChart(now) {
         heroCtx.textBaseline = "alphabetic";
         heroCtx.fillText(restoreLabel, restoreLabelX, pad.top + 22);
         heroCtx.textBaseline = "middle";
-
-        /* ---- GT Power Restored marker: จุดที่กำลังผลิตกลับเต็ม 710 MW จริง (คนละจุดกับ OTC Ready ถ้าเป็น Trip) ---- */
-        if (Math.abs(restoreMin - recoveryCompleteMin) > 2) {
-          const powerRestoreX = xFor(restoreMin);
-          heroCtx.setLineDash([2, 3]);
-          heroCtx.strokeStyle = hexToRgba(POWER_LINE_COLOR, 0.8);
-          heroCtx.lineWidth = 1.2;
-          heroCtx.beginPath();
-          heroCtx.moveTo(powerRestoreX, pad.top);
-          heroCtx.lineTo(powerRestoreX, h - pad.bottom);
-          heroCtx.stroke();
-          heroCtx.setLineDash([]);
-
-          const powerRestoreLabel = "GT Power Restored";
-          heroCtx.font = "600 9px 'IBM Plex Mono', monospace";
-          heroCtx.fillStyle = POWER_LINE_COLOR;
-          const powerRestoreWidth = heroCtx.measureText(powerRestoreLabel).width;
-          const powerRestoreLabelX = clamp(powerRestoreX, pad.left + powerRestoreWidth / 2 + 2, w - pad.right - powerRestoreWidth / 2 - 2);
-          heroCtx.textAlign = "center";
-          heroCtx.textBaseline = "alphabetic";
-          heroCtx.fillText(powerRestoreLabel, powerRestoreLabelX, h - pad.bottom - 8);
-          heroCtx.textBaseline = "middle";
-        }
       }
 
       const labelText = noPenalty ? "ไม่เสียค่าปรับ ฿0" : `฿${formatBahtCompact(r.estimatedPenalty)}`;
