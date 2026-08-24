@@ -19,7 +19,7 @@
     <nav class="view-switch">
       <button type="button" data-view="executive" class="active">Dashboard</button>
       <button type="button" data-view="technical">Technical</button>
-      <span class="app-version" id="appVersion">v45</span>
+      <span class="app-version" id="appVersion">v46</span>
     </nav>
 
     <div class="sticky-summary" id="stickySummary">
@@ -66,7 +66,10 @@
             <div id="resultLocked" class="locked-prompt">เลือก <strong>Startup Condition</strong> ด้านบนเพื่อดูผลการประเมิน</div>
 
             <div id="resultCard" class="result-card" hidden>
-              <span class="result-tag" id="resultTag">ผลการประเมิน COLD START</span>
+              <div class="result-tag-row">
+                <span class="result-tag" id="resultTag">ผลการประเมิน COLD START</span>
+                <span class="trip-badge" id="tripBadge" hidden>⚠ คาดว่า GT จะ TRIP</span>
+              </div>
               <div class="result-grid">
                 <div class="result-item"><span>กำลังผลิตอ้างอิง</span><strong id="resRefPower">— MW</strong></div>
                 <div class="result-item"><span>กำลังผลิตที่คาดว่าจะทำได้</span><strong id="resActivePower">— MW</strong></div>
@@ -216,25 +219,6 @@
             <h2 class="section-title">สรุปผลการประเมิน</h2>
             <div id="narrativeLocked" class="locked-prompt">คำอธิบายจะขึ้นหลังจากเลือก <strong>Startup Condition</strong> ด้านบนสุด</div>
             <p class="narrative-text" id="narrativeText" hidden></p>
-          </div>
-        </section>
-
-        <section class="pitch-section" id="pitchAnnual">
-          <div class="pitch-inner bignum-wrap">
-            <span class="pitch-eyebrow">Post Event Penalty · Annual</span>
-            <h2 class="section-title">ประมาณการค่าปรับ Post Event ต่อปี</h2>
-            <p class="section-lede">ประเมินจากค่าปรับ Post Event โดยประมาณต่อเหตุการณ์ และจำนวน OTC Controller Reset ที่กำหนดต่อปี</p>
-            <div id="bignumLocked" class="locked-prompt">เลือก Startup Condition ด้านบนสุด เพื่อประมาณการค่าปรับต่อปี</div>
-            <div id="bignumContent" hidden>
-              <div class="bignum-label" id="bignumScenarioLabel">อ้างอิงจาก Cold Start</div>
-              <div class="annual-tiers">
-                <div class="annual-tier"><span>ค่าปรับต่อเหตุการณ์</span><strong id="annualPerEvent">฿0</strong></div>
-                <div class="annual-tier"><span>จำนวน OTC Controller Reset</span><strong id="annualCount">0 ครั้ง/ปี</strong></div>
-              </div>
-              <div class="bignum-total-label">ค่าปรับ Post Event โดยประมาณต่อปี</div>
-              <div class="bignum" id="bignumValue">฿0</div>
-              <p class="bignum-sub">คำนวณจากค่าปรับต่อเหตุการณ์ คูณจำนวนครั้งที่ OTC Controller Reset ต่อปี เป็นตัวเลขประมาณการเท่านั้น</p>
-            </div>
           </div>
         </section>
 

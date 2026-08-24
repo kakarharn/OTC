@@ -1,4 +1,4 @@
-const APP_VERSION = "v45";
+const APP_VERSION = "v46";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -19,7 +19,6 @@ let appliedConfig = {
   mwLossFactor: 1.5,
   resumptionHr: 4,
   penaltyRate: 428.6801,
-  annualEvents: 6,
   rampRateAfterFix: 6000,
   tripFloorMw: 340,
   tripRestartMin: 300,
@@ -30,8 +29,7 @@ let appliedConfig = {
 let execState = {
   scenario: null,
   resetY: 0,
-  penaltyRate: 428.6801,
-  annualEvents: 6
+  penaltyRate: 428.6801
 };
 
 let revealed = false;
@@ -253,7 +251,6 @@ function applyAllChanges() {
   });
 
   execState.penaltyRate = appliedConfig.penaltyRate;
-  execState.annualEvents = appliedConfig.annualEvents;
 
   refreshPending();
   renderExecutive();
@@ -722,10 +719,6 @@ const tripRiskCard = document.querySelector("#tripRiskCard");
 const tripPenalty = document.querySelector("#tripPenalty");
 const narrativeLocked = document.querySelector("#narrativeLocked");
 const narrativeText = document.querySelector("#narrativeText");
-const bignumValue = document.querySelector("#bignumValue");
-const bignumScenarioLabel = document.querySelector("#bignumScenarioLabel");
-const annualPerEvent = document.querySelector("#annualPerEvent");
-const annualCount = document.querySelector("#annualCount");
 const mechGapNote = document.querySelector("#mechGapNote");
 const compareRateNote = document.querySelector("#compareRateNote");
 const savingsLabel = document.querySelector("#savingsLabel");
@@ -745,8 +738,6 @@ const savingsTimeSaved = document.querySelector("#savingsTimeSaved");
 const savingsOldValue = document.querySelector("#savingsOldValue");
 const savingsStampMark = document.querySelector("#savingsStampMark");
 
-const bignumLocked = document.querySelector("#bignumLocked");
-const bignumContent = document.querySelector("#bignumContent");
 const compareLocked = document.querySelector("#compareLocked");
 const compareContent = document.querySelector("#compareContent");
 const heroChart = document.querySelector("#heroChart");
@@ -847,6 +838,32 @@ function computeTripScenario(bacRate) {
   return { floorMw: appliedConfig.tripFloorMw, mwLoss, totalPenaltyDurationHr, estimatedPenalty, dra1Total, thresholdPenalty };
 }
 
+// HOT/WARM มีโอกาส Trip จาก Loss of Flame จริง (OTC กดลึกเกิน Trip Floor ทั้งคู่ตามข้อมูลจริง)
+// ฟังก์ชันนี้รวม Logic การสลับไปใช้ตัวเลข Trip Scenario (340 MW คงที่ + Restart/Resumption 9 ชม.คงที่)
+// เป็นค่าหลักสำหรับทุกจุดในแอปที่ต้องอ้างอิงผลลัพธ์ของ HOT/WARM ให้ตรงกันหมด
+function computeScenarioWithTrip(sc, rampRateCPerMin, bacRate) {
+  const r = computeScenario(appliedConfig[sc.durationKey], rampRateCPerMin, 0, bacRate);
+  const isHotWarm = sc.key === "hot" || sc.key === "warm";
+  const rawMwLoss = r.yGap * appliedConfig.mwLossFactor;
+  const maxRealisticLoss = Math.max(0, appliedConfig.refActivePower - appliedConfig.tripFloorMw);
+  const wouldHitFloor = rawMwLoss > maxRealisticLoss;
+  const willTrip = isHotWarm && wouldHitFloor;
+  if (!willTrip) return { ...r, willTrip };
+  const tripR = computeTripScenario(bacRate);
+  return {
+    ...r,
+    mwLoss: tripR.mwLoss,
+    predictedPower: appliedConfig.refActivePower - tripR.mwLoss,
+    recoveryRemainingMin: appliedConfig.tripRestartMin,
+    totalPenaltyDurationHr: tripR.totalPenaltyDurationHr,
+    estimatedPenalty: tripR.estimatedPenalty,
+    dra1Total: tripR.dra1Total,
+    thresholdPenalty: tripR.thresholdPenalty,
+    postEventOccurred: true,
+    willTrip: true
+  };
+}
+
 function currentRampRateCPerMin() {
   const tuMinutes = appliedConfig.tuSeconds / 60;
   return tuMinutes > 0 ? appliedConfig.nrm / tuMinutes : 0;
@@ -876,17 +893,6 @@ function animateMinutesNumber(el, targetMinutes) {
   animateNumber(el, 0, Math.max(0, targetMinutes), 900, (v) => formatHoursMinutes(v));
 }
 
-function animateBignumValue(target) {
-  bignumValue.classList.remove("landed", "shockwave");
-  bignumValue.classList.add("counting");
-  animateNumber(bignumValue, 0, target, 1200, (v) => `฿${formatBaht(v)}`);
-  setTimeout(() => {
-    bignumValue.classList.remove("counting");
-    bignumValue.classList.add("landed", "shockwave");
-    setTimeout(() => bignumValue.classList.remove("landed", "shockwave"), 800);
-  }, 1200);
-}
-
 function animateSavingsValue(target, finalText) {
   savingsOldValue.classList.remove("struck");
   savingsStampMark.classList.remove("stamping");
@@ -897,14 +903,9 @@ function animateSavingsValue(target, finalText) {
   setTimeout(() => savingsStampMark.classList.remove("stamping"), 950);
 }
 
-let lastAnnualExposure = null;
 let lastSavingsValue = null;
 
 function inputsReady() {
-  return true;
-}
-
-function annualReady() {
   return true;
 }
 
@@ -953,19 +954,20 @@ tripRiskToggle.addEventListener("click", () => {
   }
 });
 
-function buildNarrative(meta, r) {
-  const tripNote = meta.key === "hot" || meta.key === "warm"
-    ? `\n\n⚠ ${meta.label} ยังเสี่ยง Trip จาก Loss of Flame หาก OTC ยังไม่ Recovery ทันช่วง Baseload ดูรายละเอียดที่ Trip Risk Scenario ด้านบน`
-    : "";
+function buildNarrative(meta, r, willTrip) {
+  if (willTrip) {
+    const totalText = formatHoursMinutes(r.totalPenaltyDurationHr * 60);
+    return `${meta.label}: คาดว่า GT จะ Trip จาก Loss of Flame (Firing Temperature ต่ำต่อเนื่องขณะ IGV ค้างที่ 100%) กำลังผลิตจะเหลือ ${r.predictedPower.toFixed(0)} MW จนกว่าจะ Restart และผ่าน Resumption รวม ${totalText} คาดว่าค่าปรับอยู่ที่ ฿${formatBaht(r.estimatedPenalty)}`;
+  }
 
   if (!r.postEventOccurred) {
-    return `${meta.label}: OTC Controller Recovery ทันเวลาก่อน Startup เสร็จ ไม่มี MW Loss และไม่มีค่าปรับ Post Event${tripNote}`;
+    return `${meta.label}: OTC Controller Recovery ทันเวลาก่อน Startup เสร็จ ไม่มี MW Loss และไม่มีค่าปรับ Post Event`;
   }
 
   const recoveryText = formatHoursMinutes(r.recoveryRemainingMin);
   const postEventText = formatHoursMinutes(r.totalPenaltyDurationHr * 60);
 
-  return `${meta.label}: OTC Recovery ไม่ทัน Startup ทำให้กำลังผลิตต่ำกว่าอ้างอิงประมาณ ${r.mwLoss.toFixed(0)} MW ต้องรอ Recovery เพิ่ม ${recoveryText} รวม Resumption อีก ${appliedConfig.resumptionHr} ชม. เป็น Post Event รวม ${postEventText} คาดว่าค่าปรับอยู่ที่ ฿${formatBaht(r.estimatedPenalty)}${tripNote}`;
+  return `${meta.label}: OTC Recovery ไม่ทัน Startup ทำให้กำลังผลิตต่ำกว่าอ้างอิงประมาณ ${r.mwLoss.toFixed(0)} MW ต้องรอ Recovery เพิ่ม ${recoveryText} รวม Resumption อีก ${appliedConfig.resumptionHr} ชม. เป็น Post Event รวม ${postEventText} คาดว่าค่าปรับอยู่ที่ ฿${formatBaht(r.estimatedPenalty)}`;
 }
 
 function renderExecutive() {
@@ -999,20 +1001,19 @@ function renderExecutive() {
     penaltyTimelineContent.hidden = true;
     tripRiskWrap.hidden = true;
     tripRiskCard.hidden = true;
-    if (!annualReady()) {
-      bignumLocked.hidden = false;
-      bignumContent.hidden = true;
-    }
     return;
   }
 
   const meta = SCENARIOS.find((sc) => sc.key === execState.scenario);
-  const r = computeScenario(appliedConfig[meta.durationKey], rate, execState.resetY, execState.penaltyRate);
+  const r = computeScenarioWithTrip(meta, rate, execState.penaltyRate);
+  const willTrip = r.willTrip;
+  const tripR = willTrip ? computeTripScenario(execState.penaltyRate) : null;
 
   resultLocked.hidden = true;
   resultCard.hidden = false;
   resultCard.dataset.condition = meta.key;
   resultTag.textContent = `ผลการประเมิน ${meta.tag} START`;
+  tripBadge.hidden = !willTrip;
   setKpiValue(resRefPower, `${appliedConfig.refActivePower.toFixed(0)} MW`);
   setKpiValue(resActivePower, `${r.predictedPower.toFixed(0)} MW`);
   setKpiValue(resMwLoss, `${r.mwLoss.toFixed(0)} MW`);
@@ -1029,7 +1030,7 @@ function renderExecutive() {
 
   narrativeLocked.hidden = true;
   narrativeText.hidden = false;
-  narrativeText.textContent = buildNarrative(meta, r);
+  narrativeText.textContent = buildNarrative(meta, r, willTrip);
 
   penaltyTimelineLocked.hidden = true;
   penaltyTimelineContent.hidden = false;
@@ -1038,8 +1039,7 @@ function renderExecutive() {
   animateMinutesNumber(ptResumptionTime, resumptionMinForDisplay);
   animateMinutesNumber(ptTotalTime, r.totalPenaltyDurationHr * 60);
 
-  if (meta.key === "hot" || meta.key === "warm") {
-    const tripR = computeTripScenario(execState.penaltyRate);
+  if (willTrip) {
     tripRiskWrap.hidden = false;
     tripPenalty.textContent = `฿${formatBaht(tripR.estimatedPenalty)}`;
   } else {
@@ -1048,34 +1048,11 @@ function renderExecutive() {
     tripRiskToggle.setAttribute("aria-expanded", "false");
     tripRiskToggle.classList.remove("open");
   }
-
-  if (!annualReady()) {
-    bignumLocked.hidden = false;
-    bignumContent.hidden = true;
-    return;
-  }
-
-  bignumLocked.hidden = true;
-  bignumContent.hidden = false;
-
-  bignumScenarioLabel.textContent = `อ้างอิงจาก ${meta.label}`;
-  annualPerEvent.textContent = `฿${formatBaht(r.estimatedPenalty)}`;
-  annualCount.textContent = `${execState.annualEvents} ครั้ง/ปี`;
-
-  const annualExposure = r.estimatedPenalty * execState.annualEvents;
-  const targetText = `฿${formatBaht(annualExposure)}`;
-  if (lastAnnualExposure !== annualExposure) {
-    lastAnnualExposure = annualExposure;
-    animateBignumValue(annualExposure);
-  } else {
-    bignumValue.textContent = targetText;
-  }
 }
 
 function renderCompareTable(rate) {
   const goodRate = appliedConfig.rampRateAfterFix;
   const penaltyRate = execState.penaltyRate;
-  const annualForCompare = annualReady() ? execState.annualEvents : 1;
   let maxPenaltyCut = 0;
   let selectedCut = null;
   let maxCutScenario = SCENARIOS[0];
@@ -1087,10 +1064,10 @@ function renderCompareTable(rate) {
   let selectedMinutes = null;
 
   SCENARIOS.forEach((sc) => {
-    const badResult = computeScenario(appliedConfig[sc.durationKey], rate, 0, penaltyRate);
-    const goodResult = computeScenario(appliedConfig[sc.durationKey], goodRate, 0, penaltyRate);
-    const badAnnual = badResult.estimatedPenalty * annualForCompare;
-    const goodAnnual = goodResult.estimatedPenalty * annualForCompare;
+    const badResult = computeScenarioWithTrip(sc, rate, penaltyRate);
+    const goodResult = computeScenarioWithTrip(sc, goodRate, penaltyRate);
+    const badAnnual = badResult.estimatedPenalty;
+    const goodAnnual = goodResult.estimatedPenalty;
     const cut = Math.max(0, badAnnual - goodAnnual);
     const minutesCut = Math.max(0, badResult.recoveryRemainingMin - goodResult.recoveryRemainingMin);
     if (cut > maxPenaltyCut) {
@@ -1130,9 +1107,7 @@ function renderCompareTable(rate) {
   const displayMinutes = selectedMinutes !== null ? selectedMinutes : maxCutMinutes;
 
   const scopeLabel = execState.scenario ? "" : " (สูงสุด · แต่ละ Startup Condition ไม่ได้รวมกัน)";
-  savingsLabel.textContent = annualReady()
-    ? `ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อปี${scopeLabel}`
-    : `ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อครั้ง${scopeLabel}`;
+  savingsLabel.textContent = `ค่าปรับ Post Event ที่ตัดออกได้ทั้งหมดต่อครั้ง${scopeLabel}`;
 
   savingsVizTitle.textContent = `สำหรับ ${displayScenario.tag} START`;
   savingsOldValue.textContent = `฿${formatBaht(displayBad)}`;
