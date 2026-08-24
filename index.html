@@ -19,7 +19,7 @@
     <nav class="view-switch">
       <button type="button" data-view="executive" class="active">Dashboard</button>
       <button type="button" data-view="technical">Technical</button>
-      <span class="app-version" id="appVersion">v48</span>
+      <span class="app-version" id="appVersion">v49</span>
     </nav>
 
     <div class="sticky-summary" id="stickySummary">
@@ -74,7 +74,7 @@
                 <div class="result-item"><span>กำลังผลิตอ้างอิง</span><strong id="resRefPower">— MW</strong></div>
                 <div class="result-item"><span>กำลังผลิตที่คาดว่าจะทำได้</span><strong id="resActivePower">— MW</strong></div>
                 <div class="result-item"><span>กำลังผลิตที่คาดว่าจะหายไป (MW Loss)</span><strong id="resMwLoss">— MW</strong></div>
-                <div class="result-item"><span>เวลา Recovery เพิ่มเติม</span><strong id="resAdditionalRecovery">—</strong></div>
+                <div class="result-item"><span id="resAdditionalRecoveryLabel">เวลา Recovery เพิ่มเติม</span><strong id="resAdditionalRecovery">—</strong></div>
                 <div class="result-item"><span>ระยะเวลา Post Event โดยประมาณ</span><strong id="resPenaltyDuration">—</strong></div>
                 <div class="result-item highlight"><span>ค่าปรับ Post Event โดยประมาณ</span><strong id="resPenalty">฿—</strong></div>
               </div>
@@ -179,13 +179,13 @@
                   <div class="pt-arrow">→</div>
                   <div class="pt-step">
                     <span class="pt-dot pt-dot-hot"></span>
-                    <span class="pt-label">Additional OTC Recovery</span>
+                    <span class="pt-label" id="ptRecoveryLabel">Additional OTC Recovery</span>
                     <span class="pt-time" id="ptRecoveryTime">—</span>
                   </div>
                   <div class="pt-arrow">→</div>
                   <div class="pt-step">
                     <span class="pt-dot"></span>
-                    <span class="pt-label">OTC Controller Ready</span>
+                    <span class="pt-label" id="ptReadyLabel">OTC Controller Ready</span>
                   </div>
                   <div class="pt-arrow">→</div>
                   <div class="pt-step">

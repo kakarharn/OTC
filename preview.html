@@ -1915,7 +1915,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
     <nav class="view-switch">
       <button type="button" data-view="executive" class="active">Dashboard</button>
       <button type="button" data-view="technical">Technical</button>
-      <span class="app-version" id="appVersion">v48</span>
+      <span class="app-version" id="appVersion">v49</span>
     </nav>
 
     <div class="sticky-summary" id="stickySummary">
@@ -1970,7 +1970,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
                 <div class="result-item"><span>กำลังผลิตอ้างอิง</span><strong id="resRefPower">— MW</strong></div>
                 <div class="result-item"><span>กำลังผลิตที่คาดว่าจะทำได้</span><strong id="resActivePower">— MW</strong></div>
                 <div class="result-item"><span>กำลังผลิตที่คาดว่าจะหายไป (MW Loss)</span><strong id="resMwLoss">— MW</strong></div>
-                <div class="result-item"><span>เวลา Recovery เพิ่มเติม</span><strong id="resAdditionalRecovery">—</strong></div>
+                <div class="result-item"><span id="resAdditionalRecoveryLabel">เวลา Recovery เพิ่มเติม</span><strong id="resAdditionalRecovery">—</strong></div>
                 <div class="result-item"><span>ระยะเวลา Post Event โดยประมาณ</span><strong id="resPenaltyDuration">—</strong></div>
                 <div class="result-item highlight"><span>ค่าปรับ Post Event โดยประมาณ</span><strong id="resPenalty">฿—</strong></div>
               </div>
@@ -2075,13 +2075,13 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
                   <div class="pt-arrow">→</div>
                   <div class="pt-step">
                     <span class="pt-dot pt-dot-hot"></span>
-                    <span class="pt-label">Additional OTC Recovery</span>
+                    <span class="pt-label" id="ptRecoveryLabel">Additional OTC Recovery</span>
                     <span class="pt-time" id="ptRecoveryTime">—</span>
                   </div>
                   <div class="pt-arrow">→</div>
                   <div class="pt-step">
                     <span class="pt-dot"></span>
-                    <span class="pt-label">OTC Controller Ready</span>
+                    <span class="pt-label" id="ptReadyLabel">OTC Controller Ready</span>
                   </div>
                   <div class="pt-arrow">→</div>
                   <div class="pt-step">
@@ -2390,7 +2390,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
     </div>
 
     <script>
-const APP_VERSION = "v48";
+const APP_VERSION = "v49";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -3090,6 +3090,7 @@ const resRefPower = document.querySelector("#resRefPower");
 const resActivePower = document.querySelector("#resActivePower");
 const resMwLoss = document.querySelector("#resMwLoss");
 const resAdditionalRecovery = document.querySelector("#resAdditionalRecovery");
+const resAdditionalRecoveryLabel = document.querySelector("#resAdditionalRecoveryLabel");
 const resPenaltyDuration = document.querySelector("#resPenaltyDuration");
 const resPenalty = document.querySelector("#resPenalty");
 const detailToggle = document.querySelector("#detailToggle");
@@ -3103,6 +3104,8 @@ const detailThreshold = document.querySelector("#detailThreshold");
 const penaltyTimelineLocked = document.querySelector("#penaltyTimelineLocked");
 const penaltyTimelineContent = document.querySelector("#penaltyTimelineContent");
 const ptRecoveryTime = document.querySelector("#ptRecoveryTime");
+const ptRecoveryLabel = document.querySelector("#ptRecoveryLabel");
+const ptReadyLabel = document.querySelector("#ptReadyLabel");
 const ptResumptionTime = document.querySelector("#ptResumptionTime");
 const ptTotalTime = document.querySelector("#ptTotalTime");
 const tripRiskWrap = document.querySelector("#tripRiskWrap");
@@ -3392,6 +3395,7 @@ function renderExecutive() {
   setKpiValue(resRefPower, `${appliedConfig.refActivePower.toFixed(0)} MW`);
   setKpiValue(resActivePower, `${r.predictedPower.toFixed(0)} MW`);
   setKpiValue(resMwLoss, `${r.mwLoss.toFixed(0)} MW`);
+  resAdditionalRecoveryLabel.textContent = willTrip ? "ระยะเวลา Restart หลัง Trip" : "เวลา Recovery เพิ่มเติม";
   setKpiValue(resAdditionalRecovery, formatHoursMinutes(r.recoveryRemainingMin));
   setKpiValue(resPenaltyDuration, formatHoursMinutes(r.totalPenaltyDurationHr * 60));
   setKpiValue(resPenalty, `฿${formatBaht(r.estimatedPenalty)}`);
@@ -3410,6 +3414,8 @@ function renderExecutive() {
   penaltyTimelineLocked.hidden = true;
   penaltyTimelineContent.hidden = false;
   const resumptionMinForDisplay = r.postEventOccurred ? appliedConfig.resumptionHr * 60 : 0;
+  ptRecoveryLabel.textContent = willTrip ? "GT Restart" : "Additional OTC Recovery";
+  ptReadyLabel.textContent = willTrip ? "Restart Complete" : "OTC Controller Ready";
   animateMinutesNumber(ptRecoveryTime, r.recoveryRemainingMin);
   animateMinutesNumber(ptResumptionTime, resumptionMinForDisplay);
   animateMinutesNumber(ptTotalTime, r.totalPenaltyDurationHr * 60);

@@ -1,4 +1,4 @@
-const APP_VERSION = "v48";
+const APP_VERSION = "v49";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -698,6 +698,7 @@ const resRefPower = document.querySelector("#resRefPower");
 const resActivePower = document.querySelector("#resActivePower");
 const resMwLoss = document.querySelector("#resMwLoss");
 const resAdditionalRecovery = document.querySelector("#resAdditionalRecovery");
+const resAdditionalRecoveryLabel = document.querySelector("#resAdditionalRecoveryLabel");
 const resPenaltyDuration = document.querySelector("#resPenaltyDuration");
 const resPenalty = document.querySelector("#resPenalty");
 const detailToggle = document.querySelector("#detailToggle");
@@ -711,6 +712,8 @@ const detailThreshold = document.querySelector("#detailThreshold");
 const penaltyTimelineLocked = document.querySelector("#penaltyTimelineLocked");
 const penaltyTimelineContent = document.querySelector("#penaltyTimelineContent");
 const ptRecoveryTime = document.querySelector("#ptRecoveryTime");
+const ptRecoveryLabel = document.querySelector("#ptRecoveryLabel");
+const ptReadyLabel = document.querySelector("#ptReadyLabel");
 const ptResumptionTime = document.querySelector("#ptResumptionTime");
 const ptTotalTime = document.querySelector("#ptTotalTime");
 const tripRiskWrap = document.querySelector("#tripRiskWrap");
@@ -1000,6 +1003,7 @@ function renderExecutive() {
   setKpiValue(resRefPower, `${appliedConfig.refActivePower.toFixed(0)} MW`);
   setKpiValue(resActivePower, `${r.predictedPower.toFixed(0)} MW`);
   setKpiValue(resMwLoss, `${r.mwLoss.toFixed(0)} MW`);
+  resAdditionalRecoveryLabel.textContent = willTrip ? "ระยะเวลา Restart หลัง Trip" : "เวลา Recovery เพิ่มเติม";
   setKpiValue(resAdditionalRecovery, formatHoursMinutes(r.recoveryRemainingMin));
   setKpiValue(resPenaltyDuration, formatHoursMinutes(r.totalPenaltyDurationHr * 60));
   setKpiValue(resPenalty, `฿${formatBaht(r.estimatedPenalty)}`);
@@ -1018,6 +1022,8 @@ function renderExecutive() {
   penaltyTimelineLocked.hidden = true;
   penaltyTimelineContent.hidden = false;
   const resumptionMinForDisplay = r.postEventOccurred ? appliedConfig.resumptionHr * 60 : 0;
+  ptRecoveryLabel.textContent = willTrip ? "GT Restart" : "Additional OTC Recovery";
+  ptReadyLabel.textContent = willTrip ? "Restart Complete" : "OTC Controller Ready";
   animateMinutesNumber(ptRecoveryTime, r.recoveryRemainingMin);
   animateMinutesNumber(ptResumptionTime, resumptionMinForDisplay);
   animateMinutesNumber(ptTotalTime, r.totalPenaltyDurationHr * 60);
