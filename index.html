@@ -19,7 +19,7 @@
     <nav class="view-switch">
       <button type="button" data-view="executive" class="active">Dashboard</button>
       <button type="button" data-view="technical">Technical</button>
-      <span class="app-version" id="appVersion">v43</span>
+      <span class="app-version" id="appVersion">v44</span>
     </nav>
 
     <div class="sticky-summary" id="stickySummary">
@@ -64,8 +64,8 @@
             </div>
 
             <div class="hero-inputs hero-inputs-double">
-              <label>อัตราค่าปรับ Post Event (บาท / ชั่วโมง)
-                <input id="quickPenaltyRate" type="number" value="100000" placeholder="เช่น 100000" min="0" step="1000">
+              <label>BAC — อัตราค่าปรับตามสัญญา (บาท / MW)
+                <input id="quickPenaltyRate" type="number" value="428.6801" placeholder="เช่น 428.6801" min="0" step="0.0001">
               </label>
               <label>จำนวน OTC Controller Reset ต่อปี (ครั้ง / ปี)
                 <input id="quickAnnualEvents" type="number" value="6" placeholder="เช่น 6" min="0" step="1">
@@ -94,6 +94,8 @@
                 <div class="detail-item"><span>ค่า Reference (Setpoint)</span><strong id="detailReferenceY">—°C</strong></div>
                 <div class="detail-item"><span>Ramp Rate ที่ใช้คำนวณ</span><strong id="detailRampRate">— °C/min</strong></div>
                 <div class="detail-item"><span>Startup Duration</span><strong id="detailDuration">— min</strong></div>
+                <div class="detail-item detail-divider"><span>DRA1 (คิดทุกกรณีที่มี Gap)</span><strong id="detailDra1">฿—</strong></div>
+                <div class="detail-item"><span>DSN/DDF (Deviation ≥ 20 MW เลือกค่าสูงสุด)</span><strong id="detailThreshold">฿—</strong></div>
               </div>
             </div>
 
@@ -310,7 +312,7 @@
               เปิด Engineering Console
               <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
             </button>
-            <p class="disclaimer">ผลลัพธ์เป็นค่าประมาณจาก Engineering Model สำหรับการศึกษาผลกระทบ Gas Turbine OTC Controller Reset เท่านั้น อาจแตกต่างจากค่าปรับ Post Event อย่างเป็นทางการ</p>
+            <p class="disclaimer">คำนวณตามโครงสร้างสูตร PPA Deduction จริง (DRA1 + MAX(DSN, DDF)) อ้างอิงจากเอกสาร BPK-C5 PPA Deduction ภายใต้สมมติฐาน Declare เต็ม 710 MW และแจ้งศูนย์ล่วงหน้า 0 นาที (Worst Case) ตัวเลขจริงอาจแตกต่างตามเงื่อนไข ณ เวลาเกิดเหตุ</p>
             <p class="prepared-by">Prepared by Thitiwat Tapaophong</p>
           </div>
         </section>

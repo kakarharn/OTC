@@ -1,4 +1,4 @@
-const APP_VERSION = "v43";
+const APP_VERSION = "v44";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -18,7 +18,7 @@ let appliedConfig = {
   refActivePower: 710,
   mwLossFactor: 1.5,
   resumptionHr: 4,
-  penaltyRate: 100000,
+  penaltyRate: 428.6801,
   annualEvents: 6,
   rampRateAfterFix: 6000,
   tripFloorMw: 340,
@@ -30,7 +30,7 @@ let appliedConfig = {
 let execState = {
   scenario: null,
   resetY: 0,
-  penaltyRate: 100000,
+  penaltyRate: 428.6801,
   annualEvents: 6
 };
 
@@ -715,6 +715,8 @@ const detailYAtComplete = document.querySelector("#detailYAtComplete");
 const detailReferenceY = document.querySelector("#detailReferenceY");
 const detailRampRate = document.querySelector("#detailRampRate");
 const detailDuration = document.querySelector("#detailDuration");
+const detailDra1 = document.querySelector("#detailDra1");
+const detailThreshold = document.querySelector("#detailThreshold");
 const penaltyTimelineLocked = document.querySelector("#penaltyTimelineLocked");
 const penaltyTimelineContent = document.querySelector("#penaltyTimelineContent");
 const ptRecoveryTime = document.querySelector("#ptRecoveryTime");
@@ -772,7 +774,29 @@ const AXIS_LINE_COLOR = "#28414d";
 const POWER_LINE_COLOR = "#e8a53d";
 const RESTORATION_LINE_COLOR = "#7dd3fc";
 
-function computeScenario(durationMin, rampRateCPerMin, resetY, penaltyRate) {
+// ============================================================
+// PPA Deduction constants — อ้างอิงจากไฟล์ BPK-C5_PPA_Deduction001.xls
+// (Sheet: DSN_DDF, คำนวณค่าปรับต่อ 1 เหตุการณ์)
+// สมมติฐานสำหรับเคส OTC Controller Reset:
+//   - Declare/Dispatch ก่อนเกิดเหตุ = DCC เต็ม (710 MW) เสมอ
+//   - แจ้งศูนย์ล่วงหน้า 0 นาทีเสมอ (เป็น Auto Reset ไม่ทันตั้งตัว)
+//     -> Time Face (DDF) = (30-0)^2/900 = 1 เสมอ
+//   - เวลาที่เกิด Event ใช้ Worst Case เสมอ (T1=2) -> EH = T1(2)+T2(5) = 7 ชม. เสมอ
+//   - Weight ก่อน/ระหว่างเหตุการณ์ = 1 (ตามค่าเริ่มต้นของ Sheet คำนวณต่อเหตุการณ์)
+// ============================================================
+const PPA_EH = 7; // Effective Hours multiplier (Worst Case: T1=2 + T2=5)
+const PPA_TIME_FACE = 1; // (30 - นาทีแจ้งล่วงหน้า)^2 / 900 เมื่อแจ้งล่วงหน้า 0 นาที
+const PPA_DEVIATION_THRESHOLD_MW = 20; // DSN/DDF เริ่มมีผลเมื่อ Deviation >= 20 MW
+const PPA_WEIGHT = 1;
+
+function ddfStepFunction(deviationMw) {
+  if (deviationMw < PPA_DEVIATION_THRESHOLD_MW) return 0;
+  if (deviationMw <= 100) return deviationMw * 5000;
+  if (deviationMw <= 400) return (deviationMw - 100) * 10000 + 500000;
+  return (deviationMw - 400) * 15000 + 3500000;
+}
+
+function computeScenario(durationMin, rampRateCPerMin, resetY, bacRate) {
   const yAtComplete = Math.min(appliedConfig.referenceY, resetY + rampRateCPerMin * durationMin);
   const yGap = Math.max(0, appliedConfig.referenceY - yAtComplete);
   const rawMwLoss = Math.max(0, yGap * appliedConfig.mwLossFactor);
@@ -780,22 +804,52 @@ function computeScenario(durationMin, rampRateCPerMin, resetY, penaltyRate) {
   const mwLoss = Math.min(rawMwLoss, maxRealisticLoss);
   const predictedPower = appliedConfig.refActivePower - mwLoss;
   const recoveryRemainingMin = rampRateCPerMin > 0 ? yGap / rampRateCPerMin : 0;
-  // Resumption Process (NCC re-acceptance) เกิดขึ้นเฉพาะเมื่อมี Post Event จริง (Gap > 0)
-  // ถ้า OTC กลับถึง Reference ทันเวลาพอดี (Gap = 0) แปลว่าไม่มี MW หายให้ NCC เห็น จึงไม่มี Resumption และไม่มีค่าปรับเลย
-  // postEventOccurred คือความจริงทางฟิสิกส์ (Gap > 0) แยกจาก estimatedPenalty ที่เป็นตัวเงิน
-  // เพราะถ้า Penalty Rate ถูกตั้งเป็น 0 (ทดสอบ/ยังไม่ทราบอัตรา) estimatedPenalty จะเป็น 0 เสมอ
-  // แม้ Post Event จะเกิดขึ้นจริงก็ตาม ต้องแยกเช็คคนละตัวเพื่อไม่ให้ UI แสดงผลผิดพลาด
   const postEventOccurred = yGap > 0;
-  const totalPenaltyDurationHr = postEventOccurred ? (recoveryRemainingMin / 60 + appliedConfig.resumptionHr) : 0;
-  const estimatedPenalty = totalPenaltyDurationHr * penaltyRate;
-  return { yAtComplete, yGap, mwLoss, predictedPower, recoveryRemainingMin, totalPenaltyDurationHr, estimatedPenalty, postEventOccurred };
+
+  // ---- สูตรค่าปรับจริง: Total Deduction = DRA1 + MAX(DSN, DDF) ----
+  const eventHours = recoveryRemainingMin / 60;
+  const deviation = mwLoss; // Declare = Dispatch = DCC เต็ม จึง Deviation = MW Loss ตรงๆ
+
+  // DRA1: คิดทุกกรณีที่มี Gap เกิดขึ้น ไม่มีเกณฑ์ขั้นต่ำ — อัตรา(บาท/ชม.) x จำนวนชั่วโมง
+  const dra1Rate = bacRate * deviation * PPA_WEIGHT;
+  const dra1Total = postEventOccurred ? dra1Rate * eventHours : 0;
+
+  // DSN: ค่าปรับเพิ่มเมื่อ Deviation >= 20 MW คูณด้วย EH (ตัวคูณความไม่ทันตั้งตัว)
+  const draKy = bacRate * (appliedConfig.refActivePower - predictedPower) * PPA_WEIGHT;
+  const dsn = deviation < PPA_DEVIATION_THRESHOLD_MW ? 0 : draKy * PPA_EH;
+
+  // DDF: ค่าปรับเพิ่มแบบขั้นบันไดตาม Deviation คูณด้วย Time Face
+  const ddf = postEventOccurred ? ddfStepFunction(deviation) * PPA_TIME_FACE : 0;
+
+  const thresholdPenalty = Math.max(dsn, ddf);
+  const estimatedPenalty = dra1Total + thresholdPenalty;
+
+  // Timeline การปฏิบัติงาน (แยกจากค่าปรับ) — ใช้แสดงผลใน Penalty Timeline เท่านั้น
+  const totalPenaltyDurationHr = postEventOccurred ? (eventHours + appliedConfig.resumptionHr) : 0;
+
+  return {
+    yAtComplete, yGap, mwLoss, predictedPower, recoveryRemainingMin,
+    totalPenaltyDurationHr, estimatedPenalty, postEventOccurred,
+    dra1Total, thresholdPenalty, dsn, ddf
+  };
 }
 
-function computeTripScenario(penaltyRate) {
+function computeTripScenario(bacRate) {
   const mwLoss = Math.max(0, appliedConfig.refActivePower - appliedConfig.tripFloorMw);
-  const totalPenaltyDurationHr = appliedConfig.tripRestartMin / 60 + appliedConfig.resumptionHr;
-  const estimatedPenalty = totalPenaltyDurationHr * penaltyRate;
-  return { floorMw: appliedConfig.tripFloorMw, mwLoss, totalPenaltyDurationHr, estimatedPenalty };
+  const eventHours = appliedConfig.tripRestartMin / 60;
+  const deviation = mwLoss;
+
+  const dra1Rate = bacRate * deviation * PPA_WEIGHT;
+  const dra1Total = dra1Rate * eventHours;
+
+  const draKy = bacRate * (appliedConfig.refActivePower - appliedConfig.tripFloorMw) * PPA_WEIGHT;
+  const dsn = deviation < PPA_DEVIATION_THRESHOLD_MW ? 0 : draKy * PPA_EH;
+  const ddf = ddfStepFunction(deviation) * PPA_TIME_FACE;
+  const thresholdPenalty = Math.max(dsn, ddf);
+
+  const estimatedPenalty = dra1Total + thresholdPenalty;
+  const totalPenaltyDurationHr = eventHours + appliedConfig.resumptionHr;
+  return { floorMw: appliedConfig.tripFloorMw, mwLoss, totalPenaltyDurationHr, estimatedPenalty, dra1Total, thresholdPenalty };
 }
 
 function currentRampRateCPerMin() {
@@ -986,6 +1040,8 @@ function renderExecutive() {
   detailReferenceY.textContent = `${appliedConfig.referenceY.toFixed(0)}°C`;
   detailRampRate.textContent = `${rate.toFixed(2)} °C/min`;
   detailDuration.textContent = `${appliedConfig[meta.durationKey]} min`;
+  detailDra1.textContent = `฿${formatBaht(r.dra1Total)}`;
+  detailThreshold.textContent = `฿${formatBaht(r.thresholdPenalty)}`;
 
   narrativeLocked.hidden = true;
   narrativeText.hidden = false;

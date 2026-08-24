@@ -554,6 +554,9 @@ body.view-technical #view-technical { display: block; }
   border-top: 1px dashed var(--line-soft);
 }
 
+.detail-item.detail-divider { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 12px; }
+.detail-item.detail-divider strong, .detail-item.detail-divider + .detail-item strong { color: var(--rose); }
+
 .detail-item:first-child { border-top: none; }
 
 .detail-item strong {
