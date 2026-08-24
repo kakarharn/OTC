@@ -1,4 +1,4 @@
-const APP_VERSION = "v57";
+const APP_VERSION = "v58";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -1392,6 +1392,7 @@ function drawHeroChart(now) {
       let tripped = false;
       let tripMinX = null;
       const powerPoints = [];
+      const tripEligible = sc.key === "hot" || sc.key === "warm"; // COLD ไม่มีทาง Trip ตามสูตรจริง ต้องกันไว้ในกราฟด้วย
 
       for (let i = 0; i <= steps; i += 1) {
         const min = (totalMin / steps) * i;
@@ -1410,7 +1411,7 @@ function drawHeroChart(now) {
           if (tracked >= decline) {
             crossed = true;
             mw = tracked;
-          } else if (decline <= 0) {
+          } else if (decline <= 0 && tripEligible) {
             tripped = true;
             tripMinX = min;
             mw = 0;
