@@ -1,4 +1,4 @@
-const APP_VERSION = "v55";
+const APP_VERSION = "v56";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -1297,12 +1297,21 @@ function drawHeroChart(now) {
     heroCtx.stroke();
     heroCtx.setLineDash([]);
 
-    /* ---- OTC Actual: เส้นทึบที่ระดับ 572°C (ค่าความพร้อมที่ NCC ต้องการ) ---- */
+    /* ---- OTC Actual: ไหลลงจาก 572°C ด้วยอัตราเดียวกับ OTC Recovery (curveRate) มาเจอกันตรงกลาง แล้ววิ่งขึ้นด้วยกัน ---- */
+    const otcActualSteps = 48;
+    heroCtx.beginPath();
+    for (let i = 0; i <= otcActualSteps; i += 1) {
+      const min = (totalMin / otcActualSteps) * i;
+      const declineValue = Math.max(0, curveReferenceY - curveRate * min);
+      const recoveryValue = Math.min(curveReferenceY, curveResetY + curveRate * min);
+      const actualValue = Math.max(declineValue, recoveryValue);
+      const px = xFor(min);
+      const py = yFor(actualValue);
+      if (i === 0) heroCtx.moveTo(px, py);
+      else heroCtx.lineTo(px, py);
+    }
     heroCtx.strokeStyle = actualLineColor;
     heroCtx.lineWidth = 1.8;
-    heroCtx.beginPath();
-    heroCtx.moveTo(pad.left, yFor(curveReferenceY));
-    heroCtx.lineTo(w - pad.right, yFor(curveReferenceY));
     heroCtx.stroke();
 
     /* ---- Right axis: GT Active Power (MW) — คนละหน่วยกับแกนซ้าย ทำแกนแยกให้ชัด ---- */
@@ -1545,6 +1554,7 @@ function heroChartValueAt(min) {
   if (!heroChartMeta) return null;
   const { curveReferenceY, curveResetY, curveRate, isSelected, powerPoints } = heroChartMeta;
   const otcTemp = Math.min(curveReferenceY, curveResetY + curveRate * min);
+  const otcActual = Math.max(Math.max(0, curveReferenceY - curveRate * min), otcTemp);
   let gtPower = null;
   let tripped = false;
   if (isSelected && powerPoints && powerPoints.length) {
@@ -1557,7 +1567,7 @@ function heroChartValueAt(min) {
     gtPower = nearest.mw;
     tripped = gtPower <= 0.05;
   }
-  return { otcTemp, gtPower, tripped };
+  return { otcTemp, otcActual, gtPower, tripped };
 }
 
 function updateHeroTooltip(clientX, clientY) {
@@ -1579,7 +1589,7 @@ function updateHeroTooltip(clientX, clientY) {
   const timeLabel = min < 60 ? `${min.toFixed(1)} นาที` : `${(min / 60).toFixed(1)} ชม.`;
   let html = `<strong>เวลา: ${timeLabel} หลัง Reset</strong>`;
   html += `<div class="tt-otc">OTC Recovery: ${values.otcTemp.toFixed(1)}°C</div>`;
-  html += `<div class="tt-actual">OTC Actual: ${appliedConfig.referenceY.toFixed(1)}°C</div>`;
+  html += `<div class="tt-actual">OTC Actual: ${values.otcActual.toFixed(1)}°C</div>`;
   if (values.gtPower !== null) {
     html += `<div class="tt-power">GT Active Power: ${values.gtPower.toFixed(0)} MW</div>`;
     if (values.tripped) html += `<div class="tt-trip">⚠ GT TRIP</div>`;
