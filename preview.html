@@ -312,7 +312,31 @@ body.view-technical #view-technical { display: block; }
   overflow: hidden;
 }
 
-#heroChart { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+#heroChart { position: absolute; inset: 0; display: block; width: 100%; height: 100%; cursor: crosshair; }
+
+.chart-tooltip {
+  position: absolute;
+  z-index: 20;
+  padding: 8px 11px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(11, 19, 25, 0.95);
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-soft);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  line-height: 1.55;
+  color: var(--muted);
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  margin-top: -10px;
+}
+
+.chart-tooltip strong { display: block; color: var(--ink); font-size: 0.72rem; margin-bottom: 3px; }
+.chart-tooltip .tt-otc { color: var(--teal); }
+.chart-tooltip .tt-power { color: var(--amber); }
+.chart-tooltip .tt-trip { color: var(--rose); font-weight: 700; }
 
 .hero-chart-tag {
   position: absolute;
@@ -1915,7 +1939,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
     <nav class="view-switch">
       <button type="button" data-view="executive" class="active">Dashboard</button>
       <button type="button" data-view="technical">Technical</button>
-      <span class="app-version" id="appVersion">v49</span>
+      <span class="app-version" id="appVersion">v50</span>
     </nav>
 
     <div class="sticky-summary" id="stickySummary">
@@ -2007,7 +2031,8 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
             <p class="section-lede">เปรียบเทียบระยะเวลา Startup กับระยะเวลาที่ OTC Controller ต้องใช้ในการกลับสู่สภาวะพร้อมรับ Load เพื่อประเมินผลกระทบที่อาจเกิดขึ้นในแต่ละ Startup Condition</p>
             <div class="hero-chart-frame">
               <span class="hero-chart-tag" id="heroChartTag">OTC Recovery · illustrative</span>
-              <canvas id="heroChart" aria-hidden="true"></canvas>
+              <canvas id="heroChart" aria-label="OTC Recovery และ GT Active Power ตามเวลา — ชี้เมาส์หรือแตะเพื่อดูค่าตอนนั้น"></canvas>
+              <div class="chart-tooltip" id="heroChartTooltip" hidden></div>
             </div>
             <div class="chart-legend">
               <span><i class="dot dot-line"></i>OTC Actual (Temp)</span>
@@ -2390,7 +2415,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
     </div>
 
     <script>
-const APP_VERSION = "v49";
+const APP_VERSION = "v50";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -3600,6 +3625,10 @@ if (ctaToTechnicalButton) ctaToTechnicalButton.addEventListener("click", () => s
 
 /* ---------- Hero mini chart (always animating, decorative -> real) ---------- */
 
+const heroChartTooltip = document.querySelector("#heroChartTooltip");
+let heroChartMeta = null;
+let heroHoverMin = null;
+
 function drawHeroChart(now) {
   if (!bodyEl.classList.contains("view-executive")) {
     requestAnimationFrame(drawHeroChart);
@@ -3635,6 +3664,11 @@ function drawHeroChart(now) {
     const plotH = h - pad.top - pad.bottom;
     const yFor = (val) => pad.top + (1 - (val - curveResetY) / (curveReferenceY - curveResetY)) * plotH;
     const xFor = (min) => pad.left + (min / totalMin) * plotW;
+
+    heroChartMeta = {
+      totalMin, curveRate, curveReferenceY, curveResetY, pad, plotW,
+      isSelected, powerPoints: null, gtFull: null
+    };
 
     heroCtx.textBaseline = "middle";
     heroCtx.font = "500 9.5px 'IBM Plex Mono', monospace";
@@ -3779,6 +3813,9 @@ function drawHeroChart(now) {
         powerPoints.push({ min, mw });
       }
 
+      heroChartMeta.powerPoints = powerPoints;
+      heroChartMeta.gtFull = gtFull;
+
       heroCtx.beginPath();
       powerPoints.forEach((p, i) => {
         const px = xFor(p.min);
@@ -3869,10 +3906,124 @@ function drawHeroChart(now) {
     heroCtx.shadowBlur = 10;
     heroCtx.fill();
     heroCtx.shadowBlur = 0;
+
+    /* ---- Crosshair ตอน Hover/Touch: วาดทับบนสุดพร้อมจุดแสดงค่าแต่ละเส้น ---- */
+    if (heroHoverMin !== null) {
+      const hx = xFor(heroHoverMin);
+      heroCtx.save();
+      heroCtx.strokeStyle = "rgba(238, 244, 246, 0.35)";
+      heroCtx.lineWidth = 1;
+      heroCtx.setLineDash([3, 3]);
+      heroCtx.beginPath();
+      heroCtx.moveTo(hx, pad.top);
+      heroCtx.lineTo(hx, h - pad.bottom);
+      heroCtx.stroke();
+      heroCtx.setLineDash([]);
+
+      const hOtc = Math.min(curveReferenceY, curveResetY + curveRate * heroHoverMin);
+      heroCtx.beginPath();
+      heroCtx.arc(hx, yFor(hOtc), 4, 0, Math.PI * 2);
+      heroCtx.fillStyle = tempLineColor;
+      heroCtx.fill();
+      heroCtx.strokeStyle = "#06231f";
+      heroCtx.lineWidth = 1.5;
+      heroCtx.stroke();
+
+      if (isSelected && heroChartMeta.powerPoints) {
+        let nearest = heroChartMeta.powerPoints[0];
+        let nearestDist = Math.abs(nearest.min - heroHoverMin);
+        heroChartMeta.powerPoints.forEach((p) => {
+          const d = Math.abs(p.min - heroHoverMin);
+          if (d < nearestDist) { nearest = p; nearestDist = d; }
+        });
+        const powerYForHover = (mw) => pad.top + (1 - mw / heroChartMeta.gtFull) * plotH;
+        heroCtx.beginPath();
+        heroCtx.arc(hx, powerYForHover(nearest.mw), 4, 0, Math.PI * 2);
+        heroCtx.fillStyle = POWER_LINE_COLOR;
+        heroCtx.fill();
+        heroCtx.strokeStyle = "#2a1c05";
+        heroCtx.lineWidth = 1.5;
+        heroCtx.stroke();
+      }
+      heroCtx.restore();
+    }
   }
   requestAnimationFrame(drawHeroChart);
 }
 requestAnimationFrame(drawHeroChart);
+
+function heroChartValueAt(min) {
+  if (!heroChartMeta) return null;
+  const { curveReferenceY, curveResetY, curveRate, isSelected, powerPoints } = heroChartMeta;
+  const otcTemp = Math.min(curveReferenceY, curveResetY + curveRate * min);
+  let gtPower = null;
+  let tripped = false;
+  if (isSelected && powerPoints && powerPoints.length) {
+    let nearest = powerPoints[0];
+    let nearestDist = Math.abs(nearest.min - min);
+    powerPoints.forEach((p) => {
+      const d = Math.abs(p.min - min);
+      if (d < nearestDist) { nearest = p; nearestDist = d; }
+    });
+    gtPower = nearest.mw;
+    tripped = gtPower <= 0.05;
+  }
+  return { otcTemp, gtPower, tripped };
+}
+
+function updateHeroTooltip(clientX, clientY) {
+  if (!heroChartMeta) return;
+  const rect = heroChart.getBoundingClientRect();
+  const frameRect = heroChart.parentElement.getBoundingClientRect();
+  const mouseX = clientX - rect.left;
+  const { pad, plotW, totalMin } = heroChartMeta;
+  if (mouseX < pad.left - 4 || mouseX > pad.left + plotW + 4) {
+    heroHoverMin = null;
+    heroChartTooltip.hidden = true;
+    return;
+  }
+  const min = clamp(((mouseX - pad.left) / plotW) * totalMin, 0, totalMin);
+  heroHoverMin = min;
+  const values = heroChartValueAt(min);
+  if (!values) return;
+
+  const timeLabel = min < 60 ? `${min.toFixed(1)} นาที` : `${(min / 60).toFixed(1)} ชม.`;
+  let html = `<strong>เวลา: ${timeLabel} หลัง Reset</strong>`;
+  html += `<div class="tt-otc">OTC Actual: ${values.otcTemp.toFixed(1)}°C</div>`;
+  if (values.gtPower !== null) {
+    html += `<div class="tt-power">GT Active Power: ${values.gtPower.toFixed(0)} MW</div>`;
+    if (values.tripped) html += `<div class="tt-trip">⚠ GT TRIP</div>`;
+  }
+  heroChartTooltip.innerHTML = html;
+  heroChartTooltip.hidden = false;
+
+  const localX = clientX - frameRect.left;
+  const localY = clientY - frameRect.top;
+  const clampedX = clamp(localX, 40, frameRect.width - 40);
+  heroChartTooltip.style.left = `${clampedX}px`;
+  heroChartTooltip.style.top = `${Math.max(localY, 30)}px`;
+}
+
+if (heroChart) {
+  heroChart.addEventListener("mousemove", (e) => updateHeroTooltip(e.clientX, e.clientY));
+  heroChart.addEventListener("mouseleave", () => {
+    heroHoverMin = null;
+    heroChartTooltip.hidden = true;
+  });
+  heroChart.addEventListener("touchstart", (e) => {
+    if (e.touches[0]) updateHeroTooltip(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+  heroChart.addEventListener("touchmove", (e) => {
+    if (e.touches[0]) {
+      updateHeroTooltip(e.touches[0].clientX, e.touches[0].clientY);
+      e.preventDefault();
+    }
+  }, { passive: false });
+  heroChart.addEventListener("touchend", () => {
+    heroHoverMin = null;
+    heroChartTooltip.hidden = true;
+  });
+}
 
 /* ============================================================
    Boot

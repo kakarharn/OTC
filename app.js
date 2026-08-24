@@ -1,4 +1,4 @@
-const APP_VERSION = "v49";
+const APP_VERSION = "v50";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -1208,6 +1208,10 @@ if (ctaToTechnicalButton) ctaToTechnicalButton.addEventListener("click", () => s
 
 /* ---------- Hero mini chart (always animating, decorative -> real) ---------- */
 
+const heroChartTooltip = document.querySelector("#heroChartTooltip");
+let heroChartMeta = null;
+let heroHoverMin = null;
+
 function drawHeroChart(now) {
   if (!bodyEl.classList.contains("view-executive")) {
     requestAnimationFrame(drawHeroChart);
@@ -1243,6 +1247,11 @@ function drawHeroChart(now) {
     const plotH = h - pad.top - pad.bottom;
     const yFor = (val) => pad.top + (1 - (val - curveResetY) / (curveReferenceY - curveResetY)) * plotH;
     const xFor = (min) => pad.left + (min / totalMin) * plotW;
+
+    heroChartMeta = {
+      totalMin, curveRate, curveReferenceY, curveResetY, pad, plotW,
+      isSelected, powerPoints: null, gtFull: null
+    };
 
     heroCtx.textBaseline = "middle";
     heroCtx.font = "500 9.5px 'IBM Plex Mono', monospace";
@@ -1387,6 +1396,9 @@ function drawHeroChart(now) {
         powerPoints.push({ min, mw });
       }
 
+      heroChartMeta.powerPoints = powerPoints;
+      heroChartMeta.gtFull = gtFull;
+
       heroCtx.beginPath();
       powerPoints.forEach((p, i) => {
         const px = xFor(p.min);
@@ -1477,10 +1489,124 @@ function drawHeroChart(now) {
     heroCtx.shadowBlur = 10;
     heroCtx.fill();
     heroCtx.shadowBlur = 0;
+
+    /* ---- Crosshair ตอน Hover/Touch: วาดทับบนสุดพร้อมจุดแสดงค่าแต่ละเส้น ---- */
+    if (heroHoverMin !== null) {
+      const hx = xFor(heroHoverMin);
+      heroCtx.save();
+      heroCtx.strokeStyle = "rgba(238, 244, 246, 0.35)";
+      heroCtx.lineWidth = 1;
+      heroCtx.setLineDash([3, 3]);
+      heroCtx.beginPath();
+      heroCtx.moveTo(hx, pad.top);
+      heroCtx.lineTo(hx, h - pad.bottom);
+      heroCtx.stroke();
+      heroCtx.setLineDash([]);
+
+      const hOtc = Math.min(curveReferenceY, curveResetY + curveRate * heroHoverMin);
+      heroCtx.beginPath();
+      heroCtx.arc(hx, yFor(hOtc), 4, 0, Math.PI * 2);
+      heroCtx.fillStyle = tempLineColor;
+      heroCtx.fill();
+      heroCtx.strokeStyle = "#06231f";
+      heroCtx.lineWidth = 1.5;
+      heroCtx.stroke();
+
+      if (isSelected && heroChartMeta.powerPoints) {
+        let nearest = heroChartMeta.powerPoints[0];
+        let nearestDist = Math.abs(nearest.min - heroHoverMin);
+        heroChartMeta.powerPoints.forEach((p) => {
+          const d = Math.abs(p.min - heroHoverMin);
+          if (d < nearestDist) { nearest = p; nearestDist = d; }
+        });
+        const powerYForHover = (mw) => pad.top + (1 - mw / heroChartMeta.gtFull) * plotH;
+        heroCtx.beginPath();
+        heroCtx.arc(hx, powerYForHover(nearest.mw), 4, 0, Math.PI * 2);
+        heroCtx.fillStyle = POWER_LINE_COLOR;
+        heroCtx.fill();
+        heroCtx.strokeStyle = "#2a1c05";
+        heroCtx.lineWidth = 1.5;
+        heroCtx.stroke();
+      }
+      heroCtx.restore();
+    }
   }
   requestAnimationFrame(drawHeroChart);
 }
 requestAnimationFrame(drawHeroChart);
+
+function heroChartValueAt(min) {
+  if (!heroChartMeta) return null;
+  const { curveReferenceY, curveResetY, curveRate, isSelected, powerPoints } = heroChartMeta;
+  const otcTemp = Math.min(curveReferenceY, curveResetY + curveRate * min);
+  let gtPower = null;
+  let tripped = false;
+  if (isSelected && powerPoints && powerPoints.length) {
+    let nearest = powerPoints[0];
+    let nearestDist = Math.abs(nearest.min - min);
+    powerPoints.forEach((p) => {
+      const d = Math.abs(p.min - min);
+      if (d < nearestDist) { nearest = p; nearestDist = d; }
+    });
+    gtPower = nearest.mw;
+    tripped = gtPower <= 0.05;
+  }
+  return { otcTemp, gtPower, tripped };
+}
+
+function updateHeroTooltip(clientX, clientY) {
+  if (!heroChartMeta) return;
+  const rect = heroChart.getBoundingClientRect();
+  const frameRect = heroChart.parentElement.getBoundingClientRect();
+  const mouseX = clientX - rect.left;
+  const { pad, plotW, totalMin } = heroChartMeta;
+  if (mouseX < pad.left - 4 || mouseX > pad.left + plotW + 4) {
+    heroHoverMin = null;
+    heroChartTooltip.hidden = true;
+    return;
+  }
+  const min = clamp(((mouseX - pad.left) / plotW) * totalMin, 0, totalMin);
+  heroHoverMin = min;
+  const values = heroChartValueAt(min);
+  if (!values) return;
+
+  const timeLabel = min < 60 ? `${min.toFixed(1)} นาที` : `${(min / 60).toFixed(1)} ชม.`;
+  let html = `<strong>เวลา: ${timeLabel} หลัง Reset</strong>`;
+  html += `<div class="tt-otc">OTC Actual: ${values.otcTemp.toFixed(1)}°C</div>`;
+  if (values.gtPower !== null) {
+    html += `<div class="tt-power">GT Active Power: ${values.gtPower.toFixed(0)} MW</div>`;
+    if (values.tripped) html += `<div class="tt-trip">⚠ GT TRIP</div>`;
+  }
+  heroChartTooltip.innerHTML = html;
+  heroChartTooltip.hidden = false;
+
+  const localX = clientX - frameRect.left;
+  const localY = clientY - frameRect.top;
+  const clampedX = clamp(localX, 40, frameRect.width - 40);
+  heroChartTooltip.style.left = `${clampedX}px`;
+  heroChartTooltip.style.top = `${Math.max(localY, 30)}px`;
+}
+
+if (heroChart) {
+  heroChart.addEventListener("mousemove", (e) => updateHeroTooltip(e.clientX, e.clientY));
+  heroChart.addEventListener("mouseleave", () => {
+    heroHoverMin = null;
+    heroChartTooltip.hidden = true;
+  });
+  heroChart.addEventListener("touchstart", (e) => {
+    if (e.touches[0]) updateHeroTooltip(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+  heroChart.addEventListener("touchmove", (e) => {
+    if (e.touches[0]) {
+      updateHeroTooltip(e.touches[0].clientX, e.touches[0].clientY);
+      e.preventDefault();
+    }
+  }, { passive: false });
+  heroChart.addEventListener("touchend", () => {
+    heroHoverMin = null;
+    heroChartTooltip.hidden = true;
+  });
+}
 
 /* ============================================================
    Boot

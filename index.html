@@ -19,7 +19,7 @@
     <nav class="view-switch">
       <button type="button" data-view="executive" class="active">Dashboard</button>
       <button type="button" data-view="technical">Technical</button>
-      <span class="app-version" id="appVersion">v49</span>
+      <span class="app-version" id="appVersion">v50</span>
     </nav>
 
     <div class="sticky-summary" id="stickySummary">
@@ -111,7 +111,8 @@
             <p class="section-lede">เปรียบเทียบระยะเวลา Startup กับระยะเวลาที่ OTC Controller ต้องใช้ในการกลับสู่สภาวะพร้อมรับ Load เพื่อประเมินผลกระทบที่อาจเกิดขึ้นในแต่ละ Startup Condition</p>
             <div class="hero-chart-frame">
               <span class="hero-chart-tag" id="heroChartTag">OTC Recovery · illustrative</span>
-              <canvas id="heroChart" aria-hidden="true"></canvas>
+              <canvas id="heroChart" aria-label="OTC Recovery และ GT Active Power ตามเวลา — ชี้เมาส์หรือแตะเพื่อดูค่าตอนนั้น"></canvas>
+              <div class="chart-tooltip" id="heroChartTooltip" hidden></div>
             </div>
             <div class="chart-legend">
               <span><i class="dot dot-line"></i>OTC Actual (Temp)</span>
