@@ -352,7 +352,6 @@ body.view-technical #view-technical { display: block; }
 
 .chart-legend .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .chart-legend .dot-line { background: var(--cold); }
-.chart-legend .dot-actual { background: #facc15; }
 .chart-legend .dot-power { background: #e8a53d; }
 .chart-legend .dot-marker { background: var(--rose); }
 .chart-legend .dot-restore { background: #7dd3fc; }
