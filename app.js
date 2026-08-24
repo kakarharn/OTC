@@ -1,4 +1,4 @@
-const APP_VERSION = "v50";
+const APP_VERSION = "v52";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -21,9 +21,7 @@ let appliedConfig = {
   penaltyRate: 428.6801,
   rampRateAfterFix: 6000,
   tripFloorMw: 340,
-  tripRestartMin: 300,
-  gtUnitPower: 240,
-  gtPowerDeclineRate: 1
+  tripRestartMin: 300
 };
 
 let execState = {
@@ -59,8 +57,6 @@ const inputs = {
   tuAfterFix: document.querySelector("#tuAfterFixInput"),
   tripFloorMw: document.querySelector("#tripFloorMwInput"),
   tripRestartMin: document.querySelector("#tripRestartMinInput"),
-  gtUnitPower: document.querySelector("#gtUnitPowerInput"),
-  gtPowerDeclineRate: document.querySelector("#gtPowerDeclineRateInput"),
   window: document.querySelector("#windowInput")
 };
 
@@ -192,9 +188,7 @@ const PENDING_FIELDS = [
   { key: "resumptionHr", input: inputs.resumptionHr, min: 0 },
   { key: "rampRateAfterFix", input: inputs.tuAfterFix, min: 0.01 },
   { key: "tripFloorMw", input: inputs.tripFloorMw, min: 0 },
-  { key: "tripRestartMin", input: inputs.tripRestartMin, min: 0 },
-  { key: "gtUnitPower", input: inputs.gtUnitPower, min: 0 },
-  { key: "gtPowerDeclineRate", input: inputs.gtPowerDeclineRate, min: 0.01 }
+  { key: "tripRestartMin", input: inputs.tripRestartMin, min: 0 }
 ];
 
 function typedTuSeconds() {
@@ -272,7 +266,7 @@ discardButton.addEventListener("click", discardAllChanges);
 
 [inputs.nrm, inputs.hotMin, inputs.warmMin, inputs.coldMin, inputs.referenceY, inputs.refActivePower,
   inputs.mwLossFactor, inputs.resumptionHr, inputs.tuAfterFix,
-  inputs.tripFloorMw, inputs.tripRestartMin, inputs.gtUnitPower, inputs.gtPowerDeclineRate,
+  inputs.tripFloorMw, inputs.tripRestartMin,
   inputs.tu, inputs.td].forEach((el) => el.addEventListener("input", refreshPending));
 
 inputs.timeUnit.addEventListener("change", () => {
@@ -1235,8 +1229,9 @@ function drawHeroChart(now) {
     const totalMin = Math.max(maxDurationMin * 1.15, (curveReferenceY - curveResetY) / curveRate * 1.05);
 
     const isSelected = Boolean(execState.scenario);
-    const riskColor = isSelected ? SCENARIO_COLORS[execState.scenario] : "#2dd9c2";
-    const tempLineColor = "#2dd9c2";
+    const riskColor = isSelected ? SCENARIO_COLORS[execState.scenario] : "#38bdf8";
+    const tempLineColor = "#38bdf8"; // OTC Recovery (เส้นไต่ขึ้น 0→572°C)
+    const actualLineColor = "#fb923c"; // OTC Actual (เป้าหมาย 572°C คงที่)
 
     heroChartTag.textContent = isSelected
       ? `${SCENARIOS.find((s) => s.key === execState.scenario).label} · OTC Recovery`
@@ -1290,20 +1285,17 @@ function drawHeroChart(now) {
     }
     heroCtx.textBaseline = "middle";
 
-    /* ---- 572°C reference line ---- */
-    heroCtx.setLineDash([3, 4]);
-    heroCtx.strokeStyle = "#324451";
-    heroCtx.lineWidth = 1;
+    /* ---- OTC Actual: เส้นเป้าหมาย 572°C คงที่ (สีส้มทึบ) ---- */
+    heroCtx.strokeStyle = actualLineColor;
+    heroCtx.lineWidth = 1.6;
     heroCtx.beginPath();
     heroCtx.moveTo(pad.left, yFor(curveReferenceY));
     heroCtx.lineTo(w - pad.right, yFor(curveReferenceY));
     heroCtx.stroke();
-    heroCtx.setLineDash([]);
 
-    /* ---- Right axis: GT Active Power (MW) — คนละหน่วยกับแกนซ้าย ทำแกนแยกให้ชัด ---- */
+    /* ---- Right axis: GT Active Power (MW) — ใช้สเกลจริง 0-710 MW ตรงกับ Result Card ---- */
     if (Boolean(execState.scenario)) {
-      const gtFullAxis = Math.max(1, appliedConfig.gtUnitPower);
-      const powerAxisYFor = (mw) => pad.top + (1 - mw / gtFullAxis) * plotH;
+      const powerAxisYFor = (mw) => pad.top + (1 - mw / appliedConfig.refActivePower) * plotH;
 
       heroCtx.strokeStyle = hexToRgba(POWER_LINE_COLOR, 0.5);
       heroCtx.lineWidth = 1;
@@ -1317,7 +1309,7 @@ function drawHeroChart(now) {
       heroCtx.font = "500 9px 'IBM Plex Mono', monospace";
       heroCtx.fillText("0 MW", w - pad.right + 6, powerAxisYFor(0));
       heroCtx.font = "600 9.5px 'IBM Plex Mono', monospace";
-      heroCtx.fillText(`${gtFullAxis.toFixed(0)} MW`, w - pad.right + 6, powerAxisYFor(gtFullAxis));
+      heroCtx.fillText(`${appliedConfig.refActivePower.toFixed(0)} MW`, w - pad.right + 6, powerAxisYFor(appliedConfig.refActivePower));
       heroCtx.font = "500 9.5px 'IBM Plex Mono', monospace";
       heroCtx.textAlign = "center";
     }
@@ -1328,13 +1320,14 @@ function drawHeroChart(now) {
     if (isSelected) {
       const sc = SCENARIOS.find((s) => s.key === execState.scenario);
       const duration = appliedConfig[sc.durationKey];
-      const r = computeScenario(duration, curveRate, curveResetY, penaltyRateEffective);
+      const rawR = computeScenario(duration, curveRate, curveResetY, penaltyRateEffective);
+      const r = computeScenarioWithTrip(sc, curveRate, penaltyRateEffective);
       const noPenalty = !r.postEventOccurred;
       const recoveryCompleteMin = Math.min(totalMin, (curveReferenceY - curveResetY) / curveRate);
 
       if (!noPenalty) {
         const p1x = xFor(Math.min(duration, totalMin));
-        const p1y = yFor(r.yAtComplete);
+        const p1y = yFor(rawR.yAtComplete);
         const topY = yFor(curveReferenceY);
         const p3x = xFor(recoveryCompleteMin);
 
@@ -1356,80 +1349,72 @@ function drawHeroChart(now) {
         heroCtx.setLineDash([]);
       }
 
-      /* ---- GT Active Power (หน่วยเดียว): เต็ม 240 MW จนถึง Startup Complete แล้วลด 1 MW/min
-             จนกว่าจะ "ชน" เส้น OTC ที่ไต่ขึ้น (สัดส่วนเดียวกันบนกราฟ) แล้วไหลตามขึ้นไปจบที่ 240 พร้อม OTC ที่ 572°C
-             ถ้าลงถึง 0 ก่อนจะชนกัน ให้ค้างที่ 0 = GT Trip ---- */
-      const gtFull = Math.max(1, appliedConfig.gtUnitPower);
-      const declineRate = appliedConfig.gtPowerDeclineRate;
-      const powerYFor = (mw) => pad.top + (1 - mw / gtFull) * plotH;
+      /* ---- GT Active Power: Step Function ตามตัวเลขจริง ตรงกับ Result Card เป๊ะ
+             710 MW เต็ม จนถึง Startup Complete -> ตกทันทีเหลือ MW ต่ำสุดจริง (Trip Floor หรือค่าที่คำนวณได้)
+             ค้างที่ระดับนั้นตลอดช่วง Post Event Duration -> กลับขึ้น 710 MW เมื่อ Resumption เสร็จ ---- */
+      const powerAxisYFor2 = (mw) => pad.top + (1 - mw / appliedConfig.refActivePower) * plotH;
+      const dropMin = Math.min(duration, totalMin);
+      const restoreMin = noPenalty ? dropMin : Math.min(totalMin, duration + r.totalPenaltyDurationHr * 60);
+      const floorMw = r.predictedPower;
 
-      let crossed = false;
-      let tripped = false;
-      let tripMinX = null;
-      const powerPoints = [];
-
-      for (let i = 0; i <= steps; i += 1) {
-        const min = (totalMin / steps) * i;
-        let mw;
-        if (min < duration) {
-          mw = gtFull;
-        } else if (tripped) {
-          mw = 0;
-        } else if (crossed) {
-          const tempNow = Math.min(curveReferenceY, curveResetY + curveRate * min);
-          mw = gtFull * (tempNow / curveReferenceY);
-        } else {
-          const decline = Math.max(0, gtFull - (min - duration) * declineRate);
-          const tempNow = Math.min(curveReferenceY, curveResetY + curveRate * min);
-          const tracked = gtFull * (tempNow / curveReferenceY);
-          if (tracked >= decline) {
-            crossed = true;
-            mw = tracked;
-          } else if (decline <= 0) {
-            tripped = true;
-            tripMinX = min;
-            mw = 0;
-          } else {
-            mw = decline;
-          }
-        }
-        powerPoints.push({ min, mw });
+      const powerPoints = [
+        { min: 0, mw: appliedConfig.refActivePower },
+        { min: dropMin, mw: appliedConfig.refActivePower }
+      ];
+      if (!noPenalty) {
+        powerPoints.push({ min: dropMin, mw: floorMw });
+        powerPoints.push({ min: restoreMin, mw: floorMw });
+        powerPoints.push({ min: restoreMin, mw: appliedConfig.refActivePower });
+        powerPoints.push({ min: totalMin, mw: appliedConfig.refActivePower });
       }
 
       heroChartMeta.powerPoints = powerPoints;
-      heroChartMeta.gtFull = gtFull;
+      heroChartMeta.gtFull = appliedConfig.refActivePower;
+
+      /* ---- แถบไฮไลท์แนวนอนช่วง MW ค้างที่ Floor (มองเห็นระยะเวลาที่กระทบชัดเจน) ---- */
+      if (!noPenalty) {
+        const bandY = powerAxisYFor2(floorMw);
+        const bandColor = r.willTrip ? "#fb5d6f" : POWER_LINE_COLOR;
+        heroCtx.fillStyle = hexToRgba(bandColor, 0.1);
+        heroCtx.fillRect(xFor(dropMin), pad.top, xFor(restoreMin) - xFor(dropMin), h - pad.top - pad.bottom);
+
+        heroCtx.setLineDash([1, 3]);
+        heroCtx.strokeStyle = hexToRgba(bandColor, 0.5);
+        heroCtx.lineWidth = 1;
+        heroCtx.beginPath();
+        heroCtx.moveTo(xFor(dropMin), bandY);
+        heroCtx.lineTo(xFor(restoreMin), bandY);
+        heroCtx.stroke();
+        heroCtx.setLineDash([]);
+      }
+      heroChartMeta.willTrip = r.willTrip;
+      heroChartMeta.dropMin = dropMin;
+      heroChartMeta.restoreMin = restoreMin;
 
       heroCtx.beginPath();
       powerPoints.forEach((p, i) => {
         const px = xFor(p.min);
-        const py = powerYFor(p.mw);
+        const py = powerAxisYFor2(p.mw);
         if (i === 0) heroCtx.moveTo(px, py);
         else heroCtx.lineTo(px, py);
       });
-      heroCtx.strokeStyle = POWER_LINE_COLOR;
+      heroCtx.strokeStyle = r.willTrip ? "#fb5d6f" : POWER_LINE_COLOR;
       heroCtx.lineWidth = 2;
       heroCtx.stroke();
 
-      if (tripped && tripMinX !== null) {
-        heroCtx.beginPath();
-        heroCtx.moveTo(xFor(tripMinX), powerYFor(0));
-        heroCtx.lineTo(xFor(totalMin), powerYFor(0));
-        heroCtx.strokeStyle = "#fb5d6f";
-        heroCtx.lineWidth = 2.4;
-        heroCtx.stroke();
-
+      if (r.willTrip) {
         heroCtx.font = "700 9.5px 'IBM Plex Mono', monospace";
         heroCtx.fillStyle = "#fb5d6f";
         const tripLabel = "GT TRIP";
         const tripLabelWidth = heroCtx.measureText(tripLabel).width;
-        const tripLabelX = clamp(xFor(tripMinX) + 6 + tripLabelWidth / 2, pad.left + tripLabelWidth / 2 + 2, w - pad.right - tripLabelWidth / 2 - 2);
+        const tripLabelX = clamp(xFor(dropMin) + 6 + tripLabelWidth / 2, pad.left + tripLabelWidth / 2 + 2, w - pad.right - tripLabelWidth / 2 - 2);
         heroCtx.textAlign = "center";
         heroCtx.textBaseline = "alphabetic";
-        heroCtx.fillText(tripLabel, tripLabelX, powerYFor(0) - 6);
+        heroCtx.fillText(tripLabel, tripLabelX, powerAxisYFor2(floorMw) - 8);
         heroCtx.textBaseline = "middle";
       }
 
-      /* ---- Restoration Time marker: จุดที่ OTC กลับถึง 572°C พร้อม GT Active Power กลับเต็ม ---- */
+      /* ---- Restoration Time marker: จุดที่ OTC Recovery (เส้นฟ้า) กลับถึง 572°C จริง ---- */
       if (!noPenalty) {
         const restoreX = xFor(recoveryCompleteMin);
         heroCtx.setLineDash([2, 3]);
@@ -1441,7 +1426,7 @@ function drawHeroChart(now) {
         heroCtx.stroke();
         heroCtx.setLineDash([]);
 
-        const restoreLabel = `OTC Ready (572°C) +${r.recoveryRemainingMin.toFixed(0)}m`;
+        const restoreLabel = `OTC Ready (572°C) +${rawR.recoveryRemainingMin.toFixed(0)}m`;
         heroCtx.font = "600 9px 'IBM Plex Mono', monospace";
         heroCtx.fillStyle = RESTORATION_LINE_COLOR;
         const restoreWidth = heroCtx.measureText(restoreLabel).width;
@@ -1450,6 +1435,29 @@ function drawHeroChart(now) {
         heroCtx.textBaseline = "alphabetic";
         heroCtx.fillText(restoreLabel, restoreLabelX, pad.top + 22);
         heroCtx.textBaseline = "middle";
+
+        /* ---- GT Power Restored marker: จุดที่กำลังผลิตกลับเต็ม 710 MW จริง (คนละจุดกับ OTC Ready ถ้าเป็น Trip) ---- */
+        if (Math.abs(restoreMin - recoveryCompleteMin) > 2) {
+          const powerRestoreX = xFor(restoreMin);
+          heroCtx.setLineDash([2, 3]);
+          heroCtx.strokeStyle = hexToRgba(POWER_LINE_COLOR, 0.8);
+          heroCtx.lineWidth = 1.2;
+          heroCtx.beginPath();
+          heroCtx.moveTo(powerRestoreX, pad.top);
+          heroCtx.lineTo(powerRestoreX, h - pad.bottom);
+          heroCtx.stroke();
+          heroCtx.setLineDash([]);
+
+          const powerRestoreLabel = "GT Power Restored";
+          heroCtx.font = "600 9px 'IBM Plex Mono', monospace";
+          heroCtx.fillStyle = POWER_LINE_COLOR;
+          const powerRestoreWidth = heroCtx.measureText(powerRestoreLabel).width;
+          const powerRestoreLabelX = clamp(powerRestoreX, pad.left + powerRestoreWidth / 2 + 2, w - pad.right - powerRestoreWidth / 2 - 2);
+          heroCtx.textAlign = "center";
+          heroCtx.textBaseline = "alphabetic";
+          heroCtx.fillText(powerRestoreLabel, powerRestoreLabelX, h - pad.bottom - 8);
+          heroCtx.textBaseline = "middle";
+        }
       }
 
       const labelText = noPenalty ? "ไม่เสียค่าปรับ ฿0" : `฿${formatBahtCompact(r.estimatedPenalty)}`;
@@ -1537,7 +1545,7 @@ requestAnimationFrame(drawHeroChart);
 
 function heroChartValueAt(min) {
   if (!heroChartMeta) return null;
-  const { curveReferenceY, curveResetY, curveRate, isSelected, powerPoints } = heroChartMeta;
+  const { curveReferenceY, curveResetY, curveRate, isSelected, powerPoints, willTrip, dropMin, restoreMin } = heroChartMeta;
   const otcTemp = Math.min(curveReferenceY, curveResetY + curveRate * min);
   let gtPower = null;
   let tripped = false;
@@ -1549,7 +1557,7 @@ function heroChartValueAt(min) {
       if (d < nearestDist) { nearest = p; nearestDist = d; }
     });
     gtPower = nearest.mw;
-    tripped = gtPower <= 0.05;
+    tripped = Boolean(willTrip) && min >= dropMin && min < restoreMin;
   }
   return { otcTemp, gtPower, tripped };
 }
@@ -1572,7 +1580,7 @@ function updateHeroTooltip(clientX, clientY) {
 
   const timeLabel = min < 60 ? `${min.toFixed(1)} นาที` : `${(min / 60).toFixed(1)} ชม.`;
   let html = `<strong>เวลา: ${timeLabel} หลัง Reset</strong>`;
-  html += `<div class="tt-otc">OTC Actual: ${values.otcTemp.toFixed(1)}°C</div>`;
+  html += `<div class="tt-otc">OTC Recovery: ${values.otcTemp.toFixed(1)}°C</div>`;
   if (values.gtPower !== null) {
     html += `<div class="tt-power">GT Active Power: ${values.gtPower.toFixed(0)} MW</div>`;
     if (values.tripped) html += `<div class="tt-trip">⚠ GT TRIP</div>`;

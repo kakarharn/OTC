@@ -19,7 +19,7 @@
     <nav class="view-switch">
       <button type="button" data-view="executive" class="active">Dashboard</button>
       <button type="button" data-view="technical">Technical</button>
-      <span class="app-version" id="appVersion">v50</span>
+      <span class="app-version" id="appVersion">v52</span>
     </nav>
 
     <div class="sticky-summary" id="stickySummary">
@@ -115,10 +115,12 @@
               <div class="chart-tooltip" id="heroChartTooltip" hidden></div>
             </div>
             <div class="chart-legend">
-              <span><i class="dot dot-line"></i>OTC Actual (Temp)</span>
+              <span><i class="dot dot-line"></i>OTC Recovery</span>
+              <span><i class="dot dot-actual"></i>OTC Actual (572°C)</span>
               <span><i class="dot dot-power"></i>GT Active Power (MW)</span>
               <span><i class="dot dot-marker"></i>Startup Complete</span>
               <span><i class="dot dot-restore"></i>OTC Ready (572°C)</span>
+              <span><i class="dot dot-power-restore"></i>GT Power Restored</span>
               <span><i class="dot dot-trip"></i>GT Trip (กรณีเกิดขึ้น)</span>
             </div>
           </div>
@@ -458,12 +460,6 @@
               </label>
               <label>Trip Restart Duration (min)
                 <input id="tripRestartMinInput" type="number" value="300" min="0" step="1">
-              </label>
-              <label>GT Unit Active Power (MW)
-                <input id="gtUnitPowerInput" type="number" value="240" min="0" step="1">
-              </label>
-              <label>GT Power Decline Rate (MW / min)
-                <input id="gtPowerDeclineRateInput" type="number" value="1" min="0.01" step="0.1">
               </label>
               <p class="hint">Worst-case: Loss of Flame ระหว่าง Baseload Window ทำให้กำลังผลิตค้างที่ Floor นี้จนกว่า Restart กับ Resumption จะเสร็จ (ใช้เฉพาะ HOT/WARM)</p>
             </div>
