@@ -520,6 +520,8 @@ body.view-technical #view-technical { display: block; }
   animation: tripBadgePulse 1.6s ease-in-out infinite;
 }
 
+.trip-badge[hidden] { display: none; }
+
 @keyframes tripBadgePulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(251, 93, 111, 0.4); }
   50% { box-shadow: 0 0 0 5px rgba(251, 93, 111, 0); }
@@ -1941,7 +1943,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
     <nav class="view-switch">
       <button type="button" data-view="executive" class="active">Dashboard</button>
       <button type="button" data-view="technical">Technical</button>
-      <span class="app-version" id="appVersion">v60</span>
+      <span class="app-version" id="appVersion">v61</span>
     </nav>
 
     <div class="sticky-summary" id="stickySummary">
@@ -2412,7 +2414,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
     </div>
 
     <script>
-const APP_VERSION = "v60";
+const APP_VERSION = "v61";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
