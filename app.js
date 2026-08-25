@@ -1,4 +1,4 @@
-const APP_VERSION = "v58";
+const APP_VERSION = "v59";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -1326,7 +1326,7 @@ function drawHeroChart(now) {
 
     /* ---- Right axis: GT Active Power (MW) — คนละหน่วยกับแกนซ้าย ทำแกนแยกให้ชัด ---- */
     if (Boolean(execState.scenario)) {
-      const gtFullAxis = Math.max(1, GT_ILLUSTRATIVE_FULL);
+      const gtFullAxis = Math.max(1, appliedConfig.refActivePower);
       const powerAxisYFor = (mw) => pad.top + (1 - mw / gtFullAxis) * plotH;
 
       heroCtx.strokeStyle = hexToRgba(POWER_LINE_COLOR, 0.5);
@@ -1381,11 +1381,12 @@ function drawHeroChart(now) {
         heroCtx.setLineDash([]);
       }
 
-      /* ---- GT Active Power (หน่วยเดียว): เต็ม 240 MW จนถึง Startup Complete แล้วลด 1 MW/min
-             จนกว่าจะ "ชน" เส้น OTC ที่ไต่ขึ้น (สัดส่วนเดียวกันบนกราฟ) แล้วไหลตามขึ้นไปจบที่ 240 พร้อม OTC ที่ 572°C
-             ถ้าลงถึง 0 ก่อนจะชนกัน ให้ค้างที่ 0 = GT Trip ---- */
-      const gtFull = GT_ILLUSTRATIVE_FULL;
-      const declineRate = GT_ILLUSTRATIVE_DECLINE_RATE;
+      /* ---- GT Active Power (สเกลจริงตรงกับ Result Card): เต็ม 710 MW จนถึง Startup Complete แล้วลด
+             จนกว่าจะ "ชน" เส้น OTC ที่ไต่ขึ้น (สัดส่วนเดียวกันบนกราฟ) แล้วไหลตามขึ้นไปจบที่ 710 พร้อม OTC ที่ 572°C
+             ถ้าลงถึง Floor จริงก่อนจะชนกัน ให้ค้างที่ Floor = GT Trip (เฉพาะ HOT/WARM) ---- */
+      const gtFull = appliedConfig.refActivePower;
+      const floorMw = r.predictedPower;
+      const declineRate = GT_ILLUSTRATIVE_DECLINE_RATE * ((gtFull - floorMw) / GT_ILLUSTRATIVE_FULL);
       const powerYFor = (mw) => pad.top + (1 - mw / gtFull) * plotH;
 
       let crossed = false;
@@ -1400,21 +1401,21 @@ function drawHeroChart(now) {
         if (min < duration) {
           mw = gtFull;
         } else if (tripped) {
-          mw = 0;
+          mw = floorMw;
         } else if (crossed) {
           const tempNow = Math.min(curveReferenceY, curveResetY + curveRate * min);
-          mw = gtFull * (tempNow / curveReferenceY);
+          mw = floorMw + (gtFull - floorMw) * (tempNow / curveReferenceY);
         } else {
-          const decline = Math.max(0, gtFull - (min - duration) * declineRate);
+          const decline = Math.max(floorMw, gtFull - (min - duration) * declineRate);
           const tempNow = Math.min(curveReferenceY, curveResetY + curveRate * min);
-          const tracked = gtFull * (tempNow / curveReferenceY);
+          const tracked = floorMw + (gtFull - floorMw) * (tempNow / curveReferenceY);
           if (tracked >= decline) {
             crossed = true;
             mw = tracked;
-          } else if (decline <= 0 && tripEligible) {
+          } else if (decline <= floorMw && tripEligible) {
             tripped = true;
             tripMinX = min;
-            mw = 0;
+            mw = floorMw;
           } else {
             mw = decline;
           }
@@ -1438,8 +1439,8 @@ function drawHeroChart(now) {
 
       if (tripped && tripMinX !== null) {
         heroCtx.beginPath();
-        heroCtx.moveTo(xFor(tripMinX), powerYFor(0));
-        heroCtx.lineTo(xFor(totalMin), powerYFor(0));
+        heroCtx.moveTo(xFor(tripMinX), powerYFor(floorMw));
+        heroCtx.lineTo(xFor(totalMin), powerYFor(floorMw));
         heroCtx.strokeStyle = "#fb5d6f";
         heroCtx.lineWidth = 2.4;
         heroCtx.stroke();
@@ -1451,7 +1452,7 @@ function drawHeroChart(now) {
         const tripLabelX = clamp(xFor(tripMinX) + 6 + tripLabelWidth / 2, pad.left + tripLabelWidth / 2 + 2, w - pad.right - tripLabelWidth / 2 - 2);
         heroCtx.textAlign = "center";
         heroCtx.textBaseline = "alphabetic";
-        heroCtx.fillText(tripLabel, tripLabelX, powerYFor(0) - 6);
+        heroCtx.fillText(tripLabel, tripLabelX, powerYFor(floorMw) - 6);
         heroCtx.textBaseline = "middle";
       }
 
