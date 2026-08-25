@@ -1941,7 +1941,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
     <nav class="view-switch">
       <button type="button" data-view="executive" class="active">Dashboard</button>
       <button type="button" data-view="technical">Technical</button>
-      <span class="app-version" id="appVersion">v59</span>
+      <span class="app-version" id="appVersion">v60</span>
     </nav>
 
     <div class="sticky-summary" id="stickySummary">
@@ -2412,7 +2412,7 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
     </div>
 
     <script>
-const APP_VERSION = "v59";
+const APP_VERSION = "v60";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -3163,8 +3163,6 @@ const NO_PENALTY_COLOR = "#35d68f";
 const AXIS_LABEL_COLOR = "#8298a6";
 const AXIS_LINE_COLOR = "#28414d";
 const POWER_LINE_COLOR = "#e8a53d";
-const GT_ILLUSTRATIVE_FULL = 240; // สเกลภาพประกอบของกราฟ Hero Chart เท่านั้น ไม่ผูกกับตัวเลขค่าปรับจริง
-const GT_ILLUSTRATIVE_DECLINE_RATE = 1;
 const RESTORATION_LINE_COLOR = "#7dd3fc";
 
 // ============================================================
@@ -3251,14 +3249,39 @@ function computeTripScenario(bacRate) {
 // HOT/WARM มีโอกาส Trip จาก Loss of Flame จริง (OTC กดลึกเกิน Trip Floor ทั้งคู่ตามข้อมูลจริง)
 // ฟังก์ชันนี้รวม Logic การสลับไปใช้ตัวเลข Trip Scenario (340 MW คงที่ + Restart/Resumption 9 ชม.คงที่)
 // เป็นค่าหลักสำหรับทุกจุดในแอปที่ต้องอ้างอิงผลลัพธ์ของ HOT/WARM ให้ตรงกันหมด
+const TRIP_THRESHOLD_MW = 450; // ถ้า MW ตกไปเจอ OTC Recovery ต่ำกว่านี้ = Trip จริง (ค่าที่ผู้ใช้กำหนดเอง)
+
 function computeScenarioWithTrip(sc, rampRateCPerMin, bacRate) {
   const r = computeScenario(appliedConfig[sc.durationKey], rampRateCPerMin, 0, bacRate);
-  const isHotWarm = sc.key === "hot" || sc.key === "warm";
-  const rawMwLoss = r.yGap * appliedConfig.mwLossFactor;
-  const maxRealisticLoss = Math.max(0, appliedConfig.refActivePower - appliedConfig.tripFloorMw);
-  const wouldHitFloor = rawMwLoss > maxRealisticLoss;
-  const willTrip = isHotWarm && wouldHitFloor;
-  if (!willTrip) return { ...r, willTrip };
+
+  // crossingMW = MW ณ จุดที่เส้น OTC Actual (ไหลลงจาก 572 ตอน Startup Complete) ไปเจอเส้น OTC Recovery (ไล่ขึ้นจาก 0)
+  // ใช้สูตรล้วนๆ ไม่เช็คชื่อ Condition — ถ้าจุดนี้ต่ำกว่า TRIP_THRESHOLD_MW ถือว่า Trip จริง
+  const crossingMW = appliedConfig.refActivePower - (appliedConfig.mwLossFactor * r.yGap) / 2;
+  const willTrip = r.postEventOccurred && crossingMW < TRIP_THRESHOLD_MW;
+
+  if (!willTrip) {
+    // ไม่ Trip: ใช้ MW ที่จุดชนกัน (crossingMW) เป็นค่าต่ำสุดจริงที่ใช้คิดทั้ง DRA1 และ DSN/DDF
+    // เวลา DRA1 = จาก Startup Complete จนถึง OTC Recovered (rawR.recoveryRemainingMin) + Resumption Auto 4 ชม.
+    const deviation = Math.max(0, appliedConfig.refActivePower - crossingMW);
+    const eventHours = r.postEventOccurred ? (r.recoveryRemainingMin / 60 + appliedConfig.resumptionHr) : 0;
+    const dra1Total = bacRate * deviation * PPA_WEIGHT * eventHours;
+    const draKy = bacRate * deviation * PPA_WEIGHT;
+    const dsn = deviation < PPA_DEVIATION_THRESHOLD_MW ? 0 : draKy * PPA_EH;
+    const ddf = r.postEventOccurred ? ddfStepFunction(deviation) * PPA_TIME_FACE : 0;
+    const thresholdPenalty = Math.max(dsn, ddf);
+    const estimatedPenalty = dra1Total + thresholdPenalty;
+    return {
+      ...r,
+      mwLoss: deviation,
+      predictedPower: crossingMW,
+      totalPenaltyDurationHr: eventHours,
+      estimatedPenalty,
+      dra1Total,
+      thresholdPenalty,
+      willTrip: false
+    };
+  }
+
   const tripR = computeTripScenario(bacRate);
   return {
     ...r,
@@ -3795,49 +3818,51 @@ function drawHeroChart(now) {
         heroCtx.setLineDash([]);
       }
 
-      /* ---- GT Active Power (สเกลจริงตรงกับ Result Card): เต็ม 710 MW จนถึง Startup Complete แล้วลด
-             จนกว่าจะ "ชน" เส้น OTC ที่ไต่ขึ้น (สัดส่วนเดียวกันบนกราฟ) แล้วไหลตามขึ้นไปจบที่ 710 พร้อม OTC ที่ 572°C
-             ถ้าลงถึง Floor จริงก่อนจะชนกัน ให้ค้างที่ Floor = GT Trip (เฉพาะ HOT/WARM) ---- */
+      /* ---- GT Active Power: ใช้ค่า r (จาก computeScenarioWithTrip) ตรงๆ — สูตรเดียวกับ Result Card เป๊ะ
+             ไม่มีทางเพี้ยนจากกัน เพราะไม่คำนวณแยกอีกต่อไป
+             Trip: ไหลลง 710->450 (จุด Trip จริง) แล้วดิ่งไป 340 ค้างจนครบ 9 ชม. แล้วกลับ 710
+             ไม่ Trip: ไหลลง 710->crossingMW (ตรงจุดที่ชนกับ OTC Recovery) แล้วไล่ขึ้นตาม Recovery กลับ 710 ---- */
       const gtFull = appliedConfig.refActivePower;
-      const floorMw = r.predictedPower;
-      const declineRate = GT_ILLUSTRATIVE_DECLINE_RATE * ((gtFull - floorMw) / GT_ILLUSTRATIVE_FULL);
+      const declineRate = curveRate * appliedConfig.mwLossFactor; // ตกตามสูตรจริง: Gap(°C/min) x mwLossFactor = MW/min
       const powerYFor = (mw) => pad.top + (1 - mw / gtFull) * plotH;
-
-      let crossed = false;
-      let tripped = false;
-      let tripMinX = null;
       const powerPoints = [];
-      const tripEligible = sc.key === "hot" || sc.key === "warm"; // COLD ไม่มีทาง Trip ตามสูตรจริง ต้องกันไว้ในกราฟด้วย
+      let tripMinX = null;
+      let tripEndX = null;
 
-      for (let i = 0; i <= steps; i += 1) {
-        const min = (totalMin / steps) * i;
-        let mw;
-        if (min < duration) {
-          mw = gtFull;
-        } else if (tripped) {
-          mw = floorMw;
-        } else if (crossed) {
-          const tempNow = Math.min(curveReferenceY, curveResetY + curveRate * min);
-          mw = floorMw + (gtFull - floorMw) * (tempNow / curveReferenceY);
-        } else {
-          const decline = Math.max(floorMw, gtFull - (min - duration) * declineRate);
-          const tempNow = Math.min(curveReferenceY, curveResetY + curveRate * min);
-          const tracked = floorMw + (gtFull - floorMw) * (tempNow / curveReferenceY);
-          if (tracked >= decline) {
-            crossed = true;
-            mw = tracked;
-          } else if (decline <= floorMw && tripEligible) {
-            tripped = true;
-            tripMinX = min;
-            mw = floorMw;
-          } else {
-            mw = decline;
-          }
+      if (r.willTrip) {
+        tripMinX = Math.min(totalMin, duration + (gtFull - TRIP_THRESHOLD_MW) / declineRate);
+        tripEndX = Math.min(totalMin, duration + r.totalPenaltyDurationHr * 60);
+        for (let i = 0; i <= steps; i += 1) {
+          const min = (totalMin / steps) * i;
+          let mw;
+          if (min < duration) mw = gtFull;
+          else if (min < tripMinX) mw = gtFull - declineRate * (min - duration);
+          else if (min < tripEndX) mw = r.predictedPower;
+          else mw = gtFull;
+          powerPoints.push({ min, mw });
         }
-        powerPoints.push({ min, mw });
+      } else if (r.postEventOccurred) {
+        const crossMin = Math.min(totalMin, duration + (gtFull - r.predictedPower) / declineRate);
+        for (let i = 0; i <= steps; i += 1) {
+          const min = (totalMin / steps) * i;
+          let mw;
+          if (min < duration) mw = gtFull;
+          else if (min < crossMin) mw = gtFull - declineRate * (min - duration);
+          else if (min < recoveryCompleteMin) {
+            mw = r.predictedPower + (gtFull - r.predictedPower) * ((min - crossMin) / Math.max(0.001, recoveryCompleteMin - crossMin));
+          } else mw = gtFull;
+          powerPoints.push({ min, mw });
+        }
+      } else {
+        for (let i = 0; i <= steps; i += 1) {
+          powerPoints.push({ min: (totalMin / steps) * i, mw: gtFull });
+        }
       }
 
       heroChartMeta.powerPoints = powerPoints;
+      heroChartMeta.willTrip = r.willTrip;
+      heroChartMeta.tripMinX = tripMinX;
+      heroChartMeta.tripEndX = tripEndX;
       heroChartMeta.gtFull = gtFull;
 
       heroCtx.beginPath();
@@ -3851,10 +3876,10 @@ function drawHeroChart(now) {
       heroCtx.lineWidth = 2;
       heroCtx.stroke();
 
-      if (tripped && tripMinX !== null) {
+      if (r.willTrip && tripMinX !== null) {
         heroCtx.beginPath();
-        heroCtx.moveTo(xFor(tripMinX), powerYFor(floorMw));
-        heroCtx.lineTo(xFor(totalMin), powerYFor(floorMw));
+        heroCtx.moveTo(xFor(tripMinX), powerYFor(r.predictedPower));
+        heroCtx.lineTo(xFor(tripEndX), powerYFor(r.predictedPower));
         heroCtx.strokeStyle = "#fb5d6f";
         heroCtx.lineWidth = 2.4;
         heroCtx.stroke();
@@ -3866,7 +3891,7 @@ function drawHeroChart(now) {
         const tripLabelX = clamp(xFor(tripMinX) + 6 + tripLabelWidth / 2, pad.left + tripLabelWidth / 2 + 2, w - pad.right - tripLabelWidth / 2 - 2);
         heroCtx.textAlign = "center";
         heroCtx.textBaseline = "alphabetic";
-        heroCtx.fillText(tripLabel, tripLabelX, powerYFor(floorMw) - 6);
+        heroCtx.fillText(tripLabel, tripLabelX, powerYFor(r.predictedPower) - 6);
         heroCtx.textBaseline = "middle";
       }
 
@@ -3997,7 +4022,7 @@ function heroChartValueAt(min) {
       if (d < nearestDist) { nearest = p; nearestDist = d; }
     });
     gtPower = nearest.mw;
-    tripped = gtPower <= 0.05;
+    tripped = Boolean(heroChartMeta.willTrip) && min >= heroChartMeta.tripMinX && min < heroChartMeta.tripEndX;
   }
   return { otcTemp, otcActual, gtPower, tripped };
 }
