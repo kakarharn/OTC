@@ -19,7 +19,7 @@
     <nav class="view-switch">
       <button type="button" data-view="executive" class="active">Dashboard</button>
       <button type="button" data-view="technical">Technical</button>
-      <span class="app-version" id="appVersion">v66</span>
+      <span class="app-version" id="appVersion">v68</span>
     </nav>
 
     <div class="sticky-summary" id="stickySummary">
@@ -320,6 +320,17 @@
               </div>
             </div>
             <p class="rge-hint">X และ Y มีผลทันที (Y = ค่าที่บังคับให้กระโดดไปตรงๆ โดยไม่ผ่าน Ramp) · TU / TD / NRM ต้องกด Apply ด้านบนก่อนถึงจะมีผล</p>
+
+            <div class="quick-action-bar">
+              <div class="quick-action-info">
+                <span class="quick-action-title">ไม่แน่ใจว่าต้องแก้ตรงไหน?</span>
+                <span class="quick-action-desc">ปรับ TU ให้เหลือ 10ms ทันที เพื่อให้ OTC ไต่กลับสู่ค่าปกติเร็วที่สุด</span>
+              </div>
+              <div class="quick-action-buttons">
+                <button type="button" class="btn btn-amber" id="quickAdjustTuButton">⚡ Adjust TU → 10ms</button>
+                <button type="button" class="btn" id="quickResetTuButton">↺ Reset TU → ค่าเดิม</button>
+              </div>
+            </div>
           </section>
 
           <section class="panel chart-panel">

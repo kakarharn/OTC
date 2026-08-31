@@ -378,9 +378,13 @@ body.view-technical #view-technical { display: block; }
   background: var(--panel-soft);
   overflow: hidden;
   opacity: 0;
+  cursor: pointer;
   transform: translateY(18px) scale(0.98);
   transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease;
 }
+
+.mini-chart-card:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+.mini-chart-card:active { transform: scale(0.985); }
 
 .mini-chart-card.in-view { opacity: 1; transform: translateY(0) scale(1); }
 .mini-chart-card[data-mini="hot"].in-view { transition-delay: 0s; }
@@ -1514,6 +1518,32 @@ body.view-technical #view-technical { display: block; }
 .rge-block span { display: block; font-family: var(--font-display); font-size: 1.7rem; font-weight: 700; letter-spacing: 0.04em; }
 .rge-block small { margin-top: 8px; color: var(--muted); font-family: var(--font-mono); font-size: 0.7rem; }
 .rge-hint { color: var(--muted-dim); font-size: 0.76rem; }
+
+.quick-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px dashed var(--amber-line);
+  background: var(--amber-dim);
+}
+
+.quick-action-info { display: flex; flex-direction: column; gap: 3px; min-width: 200px; }
+.quick-action-title { font-family: var(--font-display); font-weight: 700; font-size: 0.88rem; color: var(--ink); }
+.quick-action-desc { font-size: 0.76rem; color: var(--muted); }
+
+.quick-action-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.quick-action-buttons .btn { white-space: nowrap; }
+
+@media (max-width: 520px) {
+  .quick-action-bar { flex-direction: column; align-items: stretch; }
+  .quick-action-buttons { flex-direction: column; }
+  .quick-action-buttons .btn { width: 100%; }
+}
 
 /* --- Chart (fixed sizing, no layout feedback loop) --- */
 

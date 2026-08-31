@@ -1,4 +1,4 @@
-const APP_VERSION = "v66";
+const APP_VERSION = "v68";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -263,6 +263,30 @@ function discardAllChanges() {
 
 applyButton.addEventListener("click", applyAllChanges);
 discardButton.addEventListener("click", discardAllChanges);
+
+/* ---- Quick Action: ปรับ/คืนค่า TU แบบทันที สำหรับคนที่ไม่แน่ใจว่าต้องแก้ตรงไหน ---- */
+const quickAdjustTuButton = document.querySelector("#quickAdjustTuButton");
+const quickResetTuButton = document.querySelector("#quickResetTuButton");
+const DEFAULT_TU_UNIT = "min";
+const DEFAULT_TU_VALUE = "1";
+
+if (quickAdjustTuButton) {
+  quickAdjustTuButton.addEventListener("click", () => {
+    inputs.timeUnit.value = "ms";
+    inputs.tu.value = "10";
+    refreshPending();
+    applyAllChanges();
+  });
+}
+
+if (quickResetTuButton) {
+  quickResetTuButton.addEventListener("click", () => {
+    inputs.timeUnit.value = DEFAULT_TU_UNIT;
+    inputs.tu.value = DEFAULT_TU_VALUE;
+    refreshPending();
+    applyAllChanges();
+  });
+}
 
 [inputs.nrm, inputs.hotMin, inputs.warmMin, inputs.coldMin, inputs.referenceY, inputs.refActivePower,
   inputs.mwLossFactor, inputs.resumptionHr, inputs.tuAfterFix,
@@ -1529,7 +1553,7 @@ const miniMwEls = {
   cold: document.querySelector("#miniMwCold")
 };
 
-function drawMiniChart(key, glowT) {
+function drawMiniChart(key, cycle) {
   const canvas = miniCanvases[key];
   if (!canvas || !canvas.parentElement) return;
   const rect = canvas.parentElement.getBoundingClientRect();
@@ -1557,6 +1581,7 @@ function drawMiniChart(key, glowT) {
   const plotH = h - pad.top - pad.bottom;
   const yFor = (val) => pad.top + (1 - val / curveReferenceY) * plotH;
   const xFor = (min) => pad.left + (min / totalMin) * plotW;
+  const valAt = (min) => Math.min(curveReferenceY, curveRate * min);
   const color = SCENARIO_COLORS[key];
 
   /* กริดจางๆ */
@@ -1568,15 +1593,12 @@ function drawMiniChart(key, glowT) {
   ctx.stroke();
 
   /* เส้น OTC Recovery */
-  const steps = 40;
-  const pts = [];
+  const steps = 48;
   ctx.beginPath();
   for (let i = 0; i <= steps; i += 1) {
     const min = (totalMin / steps) * i;
-    const val = Math.min(curveReferenceY, curveRate * min);
     const px = xFor(min);
-    const py = yFor(val);
-    pts.push([px, py]);
+    const py = yFor(valAt(min));
     if (i === 0) ctx.moveTo(px, py);
     else ctx.lineTo(px, py);
   }
@@ -1607,22 +1629,57 @@ function drawMiniChart(key, glowT) {
     ctx.stroke();
   }
 
-  /* เอฟเฟกต์: จุดเรืองแสงไหลไปตามเส้นกราฟวนซ้ำ */
-  const glowIdx = Math.min(pts.length - 1, Math.floor(glowT * pts.length));
-  const [gx, gy] = pts[glowIdx];
-  const glow = ctx.createRadialGradient(gx, gy, 0, gx, gy, 15);
+  /* ---- เอฟเฟกต์: จุดเรืองแสงไหลไปตามเส้นแบบต่อเนื่องจริง (ไม่กระโดดจุด) ----
+     0.00-0.72 ไต่ขึ้นด้วย Ease-Out (เร็ว→ช้าตอนใกล้ถึงเป้า)
+     0.72-0.90 หยุดพักที่ปลายทางเป้า ให้เห็นชัดว่าไปถึงแล้ว
+     0.90-1.00 จางหายแล้วเริ่มใหม่ที่จุดเริ่มต้น */
+  let travel;
+  let opacity = 1;
+  if (cycle < 0.72) {
+    const t = cycle / 0.72;
+    travel = 1 - (1 - t) * (1 - t) * (1 - t); // ease-out cubic
+  } else if (cycle < 0.9) {
+    travel = 1;
+  } else {
+    travel = 1;
+    opacity = 1 - (cycle - 0.9) / 0.1;
+  }
+  const glowMin = travel * totalMin;
+  const gx = xFor(glowMin);
+  const gy = yFor(valAt(glowMin));
+
+  /* หางดาวหาง (Comet Trail): จุดจางๆ ไล่หลังตำแหน่งปัจจุบัน */
+  const trailSteps = 6;
+  for (let i = trailSteps; i >= 1; i -= 1) {
+    const trailTravel = Math.max(0, travel - i * 0.018);
+    const tMin = trailTravel * totalMin;
+    const tx = xFor(tMin);
+    const ty = yFor(valAt(tMin));
+    const trailAlpha = (1 - i / trailSteps) * 0.35 * opacity;
+    ctx.beginPath();
+    ctx.arc(tx, ty, 2.4, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = trailAlpha;
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  /* จุดเรืองแสงหลัก พร้อม Pulse ขนาดเบาๆ */
+  const pulse = 1 + Math.sin(cycle * Math.PI * 10) * 0.12;
+  const glow = ctx.createRadialGradient(gx, gy, 0, gx, gy, 16 * pulse);
   glow.addColorStop(0, color);
   glow.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = glow;
-  ctx.globalAlpha = 0.85;
+  ctx.globalAlpha = 0.85 * opacity;
   ctx.beginPath();
-  ctx.arc(gx, gy, 15, 0, Math.PI * 2);
+  ctx.arc(gx, gy, 16 * pulse, 0, Math.PI * 2);
   ctx.fill();
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha = opacity;
   ctx.beginPath();
   ctx.arc(gx, gy, 3, 0, Math.PI * 2);
   ctx.fillStyle = "#ffffff";
   ctx.fill();
+  ctx.globalAlpha = 1;
 
   const badge = miniBadges[key];
   if (badge) {
@@ -1630,7 +1687,7 @@ function drawMiniChart(key, glowT) {
     badge.classList.toggle("is-trip", r.willTrip);
   }
   const mwEl = miniMwEls[key];
-  if (mwEl) mwEl.textContent = `${r.predictedPower.toFixed(0)} MW`;
+  if (mwEl && !mwEl.dataset.locked) mwEl.textContent = `${r.predictedPower.toFixed(0)} MW`;
 }
 
 function drawAllMiniCharts(now) {
@@ -1638,17 +1695,52 @@ function drawAllMiniCharts(now) {
     requestAnimationFrame(drawAllMiniCharts);
     return;
   }
-  const glowT = (now % 3400) / 3400;
-  drawMiniChart("hot", glowT);
-  drawMiniChart("warm", glowT);
-  drawMiniChart("cold", glowT);
+  const loopDuration = 3200;
+  const stagger = { hot: 0, warm: 260, cold: 520 };
+  ["hot", "warm", "cold"].forEach((key) => {
+    const cycle = ((now + stagger[key]) % loopDuration) / loopDuration;
+    drawMiniChart(key, cycle);
+  });
   requestAnimationFrame(drawAllMiniCharts);
 }
 requestAnimationFrame(drawAllMiniCharts);
 
+/* ---- คลิกที่การ์ดเพื่อเลือก Condition นั้นแล้วเลื่อนขึ้นไปดูผลลัพธ์ทันที ---- */
+document.querySelectorAll(".mini-chart-card").forEach((card) => {
+  const key = card.dataset.mini;
+  card.setAttribute("tabindex", "0");
+  card.setAttribute("role", "button");
+  card.setAttribute("aria-label", `เลือก ${key.toUpperCase()} Startup Condition`);
+  const activate = () => {
+    selectCondition(key);
+    document.querySelector("#pitchHero").scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  card.addEventListener("click", activate);
+  card.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      activate();
+    }
+  });
+});
+
+/* ---- Reveal + นับเลข MW วิ่งขึ้นตอนเลื่อนมาเห็นครั้งแรก ---- */
 const miniRevealObserver = new IntersectionObserver((entries) => {
   entries.forEach((entry) => {
-    if (entry.isIntersecting) entry.target.classList.add("in-view");
+    if (!entry.isIntersecting) return;
+    entry.target.classList.add("in-view");
+    const key = entry.target.dataset.mini;
+    const mwEl = miniMwEls[key];
+    if (mwEl && !mwEl.dataset.animated) {
+      mwEl.dataset.animated = "1";
+      mwEl.dataset.locked = "1";
+      const sc = SCENARIOS.find((s) => s.key === key);
+      const curveRate = Math.max(0.1, currentRampRateCPerMin());
+      const penaltyRateEffective = inputsReady() ? execState.penaltyRate : appliedConfig.penaltyRate;
+      const r = computeScenarioWithTrip(sc, curveRate, penaltyRateEffective);
+      animateNumber(mwEl, 0, r.predictedPower, 900, (v) => `${v.toFixed(0)} MW`);
+      setTimeout(() => { delete mwEl.dataset.locked; }, 950);
+    }
   });
 }, { threshold: 0.2 });
 document.querySelectorAll(".mini-chart-card").forEach((card) => miniRevealObserver.observe(card));
