@@ -1,4 +1,4 @@
-const APP_VERSION = "v61";
+const APP_VERSION = "v65";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -290,7 +290,7 @@ function convertTimeInputs(nextUnit) {
 
 function getSettings() {
   return {
-    initialY: numberValue(inputs.initialY, 572),
+    initialY: numberValue(inputs.initialY, 0),
     x: state.xTarget,
     tuSeconds: appliedConfig.tuSeconds,
     tdSeconds: appliedConfig.tdSeconds,
@@ -695,14 +695,6 @@ const resAdditionalRecovery = document.querySelector("#resAdditionalRecovery");
 const resAdditionalRecoveryLabel = document.querySelector("#resAdditionalRecoveryLabel");
 const resPenaltyDuration = document.querySelector("#resPenaltyDuration");
 const resPenalty = document.querySelector("#resPenalty");
-const detailToggle = document.querySelector("#detailToggle");
-const detailPanel = document.querySelector("#detailPanel");
-const detailYAtComplete = document.querySelector("#detailYAtComplete");
-const detailReferenceY = document.querySelector("#detailReferenceY");
-const detailRampRate = document.querySelector("#detailRampRate");
-const detailDuration = document.querySelector("#detailDuration");
-const detailDra1 = document.querySelector("#detailDra1");
-const detailThreshold = document.querySelector("#detailThreshold");
 const penaltyTimelineLocked = document.querySelector("#penaltyTimelineLocked");
 const penaltyTimelineContent = document.querySelector("#penaltyTimelineContent");
 const ptRecoveryTime = document.querySelector("#ptRecoveryTime");
@@ -711,9 +703,6 @@ const ptReadyLabel = document.querySelector("#ptReadyLabel");
 const ptResumptionTime = document.querySelector("#ptResumptionTime");
 const ptTotalTime = document.querySelector("#ptTotalTime");
 const tripRiskWrap = document.querySelector("#tripRiskWrap");
-const narrativeLocked = document.querySelector("#narrativeLocked");
-const narrativeText = document.querySelector("#narrativeText");
-const mechGapNote = document.querySelector("#mechGapNote");
 const compareRateNote = document.querySelector("#compareRateNote");
 const savingsLabel = document.querySelector("#savingsLabel");
 const compareCells = {
@@ -944,39 +933,6 @@ function animateDetailNumber(el, toValue, formatter) {
   animateNumber(el, 0, to, 700, formatter);
 }
 
-detailToggle.addEventListener("click", () => {
-  const isOpen = detailToggle.getAttribute("aria-expanded") === "true";
-  detailToggle.setAttribute("aria-expanded", String(!isOpen));
-  detailPanel.hidden = isOpen;
-  detailToggle.classList.toggle("open", !isOpen);
-
-  if (!isOpen && execState.scenario) {
-    const meta = SCENARIOS.find((sc) => sc.key === execState.scenario);
-    const rate = currentRampRateCPerMin();
-    const r = computeScenario(appliedConfig[meta.durationKey], rate, execState.resetY, execState.penaltyRate);
-    animateDetailNumber(detailYAtComplete, r.yAtComplete, (v) => `${v.toFixed(0)}°C`);
-    animateDetailNumber(detailReferenceY, appliedConfig.referenceY, (v) => `${v.toFixed(0)}°C`);
-    animateDetailNumber(detailRampRate, rate, (v) => `${v.toFixed(2)} °C/min`);
-    animateDetailNumber(detailDuration, appliedConfig[meta.durationKey], (v) => `${v.toFixed(0)} min`);
-  }
-});
-
-function buildNarrative(meta, r, willTrip) {
-  if (willTrip) {
-    const totalText = formatHoursMinutes(r.totalPenaltyDurationHr * 60);
-    return `${meta.label}: คาดว่า GT จะ Trip จาก Loss of Flame (Firing Temperature ต่ำต่อเนื่องขณะ IGV ค้างที่ 100%) กำลังผลิตจะเหลือ ${r.predictedPower.toFixed(0)} MW จนกว่าจะ Restart และผ่าน Resumption รวม ${totalText} คาดว่าค่าปรับอยู่ที่ ฿${formatBaht(r.estimatedPenalty)}`;
-  }
-
-  if (!r.postEventOccurred) {
-    return `${meta.label}: OTC Controller Recovery ทันเวลาก่อน Startup เสร็จ ไม่มี MW Loss และไม่มีค่าปรับ Post Event`;
-  }
-
-  const recoveryText = formatHoursMinutes(r.recoveryRemainingMin);
-  const postEventText = formatHoursMinutes(r.totalPenaltyDurationHr * 60);
-
-  return `${meta.label}: OTC Recovery ไม่ทัน Startup ทำให้กำลังผลิตต่ำกว่าอ้างอิงประมาณ ${r.mwLoss.toFixed(0)} MW ต้องรอ Recovery เพิ่ม ${recoveryText} รวม Resumption อีก ${appliedConfig.resumptionHr} ชม. เป็น Post Event รวม ${postEventText} คาดว่าค่าปรับอยู่ที่ ฿${formatBaht(r.estimatedPenalty)}`;
-}
-
 function renderExecutive() {
   const unlocked = revealed && inputsReady() && execState.scenario;
   const rate = currentRampRateCPerMin();
@@ -1002,8 +958,6 @@ function renderExecutive() {
   if (!unlocked) {
     resultLocked.hidden = false;
     resultCard.hidden = true;
-    narrativeLocked.hidden = false;
-    narrativeText.hidden = true;
     penaltyTimelineLocked.hidden = false;
     penaltyTimelineContent.hidden = true;
     tripRiskWrap.hidden = true;
@@ -1026,17 +980,6 @@ function renderExecutive() {
   setKpiValue(resAdditionalRecovery, formatHoursMinutes(r.recoveryRemainingMin));
   setKpiValue(resPenaltyDuration, formatHoursMinutes(r.totalPenaltyDurationHr * 60));
   setKpiValue(resPenalty, `฿${formatBaht(r.estimatedPenalty)}`);
-
-  detailYAtComplete.textContent = `${r.yAtComplete.toFixed(0)}°C`;
-  detailReferenceY.textContent = `${appliedConfig.referenceY.toFixed(0)}°C`;
-  detailRampRate.textContent = `${rate.toFixed(2)} °C/min`;
-  detailDuration.textContent = `${appliedConfig[meta.durationKey]} min`;
-  detailDra1.textContent = `฿${formatBaht(r.dra1Total)}`;
-  detailThreshold.textContent = `฿${formatBaht(r.thresholdPenalty)}`;
-
-  narrativeLocked.hidden = true;
-  narrativeText.hidden = false;
-  narrativeText.textContent = buildNarrative(meta, r, willTrip);
 
   penaltyTimelineLocked.hidden = true;
   penaltyTimelineContent.hidden = false;
@@ -1098,7 +1041,7 @@ function renderCompareTable(rate) {
     pctEl.textContent = minutesCut > 0 ? `-${formatHoursMinutes(minutesCut)}` : "—";
   });
 
-  compareRateNote.textContent = `Current Ramp Rate ${rate.toFixed(2)} °C/min → Adjust TU Override (เทียบเท่า TU=10ms)`;
+  compareRateNote.textContent = `Current Ramp Rate ${rate.toFixed(2)} °C/min → หลังดำเนินมาตรการ (Recovery ภายในไม่กี่วินาที)`;
 
   const displayCut = selectedCut !== null ? selectedCut : maxPenaltyCut;
   const displayScenario = execState.scenario ? SCENARIOS.find((s) => s.key === execState.scenario) : maxCutScenario;
@@ -1129,7 +1072,7 @@ const revealObserver = new IntersectionObserver((entries) => {
   });
 }, { threshold: 0.3, rootMargin: "0px 0px -8% 0px" });
 
-document.querySelectorAll(".pitch-section, .mech-step, .pt-step, .pt-arrow, .pt-total").forEach((section) => revealObserver.observe(section));
+document.querySelectorAll(".pitch-section, .pt-step, .pt-arrow, .pt-total").forEach((section) => revealObserver.observe(section));
 
 /* ---------- sticky summary bar ---------- */
 
@@ -1158,32 +1101,11 @@ function updateStickySummary() {
   }
   const meta = SCENARIOS.find((sc) => sc.key === execState.scenario);
   const rate = currentRampRateCPerMin();
-  const r = computeScenario(appliedConfig[meta.durationKey], rate, execState.resetY, execState.penaltyRate);
+  const r = computeScenarioWithTrip(meta, rate, execState.penaltyRate);
   stickyTag.textContent = `${meta.tag} START`;
   stickyValue.textContent = r.postEventOccurred ? `฿${formatBaht(r.estimatedPenalty)}` : "ไม่มีค่าปรับ";
   stickySummary.classList.add("visible");
 }
-
-document.querySelectorAll(".mech-step").forEach((step) => {
-  const toggle = () => {
-    const wasActive = step.classList.contains("active");
-    document.querySelectorAll(".mech-step.active").forEach((s) => {
-      s.classList.remove("active");
-      s.setAttribute("aria-expanded", "false");
-    });
-    if (!wasActive) {
-      step.classList.add("active");
-      step.setAttribute("aria-expanded", "true");
-    }
-  };
-  step.addEventListener("click", toggle);
-  step.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      toggle();
-    }
-  });
-});
 
 /* ============================================================
    View switching
