@@ -1,4 +1,4 @@
-const APP_VERSION = "v65";
+const APP_VERSION = "v66";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -1508,6 +1508,150 @@ function drawHeroChart(now) {
   requestAnimationFrame(drawHeroChart);
 }
 requestAnimationFrame(drawHeroChart);
+
+/* ============================================================
+   Mini Charts: เปรียบเทียบทั้ง 3 Startup Condition พร้อมกัน
+   ============================================================ */
+
+const miniCanvases = {
+  hot: document.querySelector("#miniChartHot"),
+  warm: document.querySelector("#miniChartWarm"),
+  cold: document.querySelector("#miniChartCold")
+};
+const miniBadges = {
+  hot: document.querySelector("#miniBadgeHot"),
+  warm: document.querySelector("#miniBadgeWarm"),
+  cold: document.querySelector("#miniBadgeCold")
+};
+const miniMwEls = {
+  hot: document.querySelector("#miniMwHot"),
+  warm: document.querySelector("#miniMwWarm"),
+  cold: document.querySelector("#miniMwCold")
+};
+
+function drawMiniChart(key, glowT) {
+  const canvas = miniCanvases[key];
+  if (!canvas || !canvas.parentElement) return;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const scale = Math.min(window.devicePixelRatio || 1, 2);
+  const w = Math.max(120, rect.width);
+  const h = canvas.clientHeight || 108;
+  canvas.width = Math.round(w * scale);
+  canvas.height = Math.round(h * scale);
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  const sc = SCENARIOS.find((s) => s.key === key);
+  const duration = appliedConfig[sc.durationKey];
+  const curveRate = Math.max(0.1, currentRampRateCPerMin());
+  const curveReferenceY = appliedConfig.referenceY !== 0 ? appliedConfig.referenceY : 0.01;
+  const penaltyRateEffective = inputsReady() ? execState.penaltyRate : appliedConfig.penaltyRate;
+  const r = computeScenarioWithTrip(sc, curveRate, penaltyRateEffective);
+
+  const maxDurationMin = Math.max(appliedConfig.hotMin, appliedConfig.warmMin, appliedConfig.coldMin);
+  const totalMin = Math.max(maxDurationMin * 1.15, (curveReferenceY / curveRate) * 1.05);
+
+  const pad = { left: 8, right: 8, top: 12, bottom: 10 };
+  const plotW = w - pad.left - pad.right;
+  const plotH = h - pad.top - pad.bottom;
+  const yFor = (val) => pad.top + (1 - val / curveReferenceY) * plotH;
+  const xFor = (min) => pad.left + (min / totalMin) * plotW;
+  const color = SCENARIO_COLORS[key];
+
+  /* กริดจางๆ */
+  ctx.strokeStyle = "rgba(255,255,255,0.05)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, pad.top + plotH / 2);
+  ctx.lineTo(w - pad.right, pad.top + plotH / 2);
+  ctx.stroke();
+
+  /* เส้น OTC Recovery */
+  const steps = 40;
+  const pts = [];
+  ctx.beginPath();
+  for (let i = 0; i <= steps; i += 1) {
+    const min = (totalMin / steps) * i;
+    const val = Math.min(curveReferenceY, curveRate * min);
+    const px = xFor(min);
+    const py = yFor(val);
+    pts.push([px, py]);
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.globalAlpha = 0.9;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  /* เส้นประ Startup Complete */
+  const sx = xFor(duration);
+  ctx.setLineDash([2, 3]);
+  ctx.strokeStyle = "rgba(255,255,255,0.22)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(sx, pad.top);
+  ctx.lineTo(sx, h - pad.bottom);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  /* แถบ GT TRIP บางๆ ถ้า Trip */
+  if (r.willTrip) {
+    ctx.strokeStyle = "rgba(251,93,111,0.7)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(sx, h - pad.bottom - 2);
+    ctx.lineTo(w - pad.right, h - pad.bottom - 2);
+    ctx.stroke();
+  }
+
+  /* เอฟเฟกต์: จุดเรืองแสงไหลไปตามเส้นกราฟวนซ้ำ */
+  const glowIdx = Math.min(pts.length - 1, Math.floor(glowT * pts.length));
+  const [gx, gy] = pts[glowIdx];
+  const glow = ctx.createRadialGradient(gx, gy, 0, gx, gy, 15);
+  glow.addColorStop(0, color);
+  glow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = glow;
+  ctx.globalAlpha = 0.85;
+  ctx.beginPath();
+  ctx.arc(gx, gy, 15, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.beginPath();
+  ctx.arc(gx, gy, 3, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+
+  const badge = miniBadges[key];
+  if (badge) {
+    badge.textContent = r.willTrip ? "⚠ TRIP" : "ไม่ Trip";
+    badge.classList.toggle("is-trip", r.willTrip);
+  }
+  const mwEl = miniMwEls[key];
+  if (mwEl) mwEl.textContent = `${r.predictedPower.toFixed(0)} MW`;
+}
+
+function drawAllMiniCharts(now) {
+  if (!bodyEl.classList.contains("view-executive")) {
+    requestAnimationFrame(drawAllMiniCharts);
+    return;
+  }
+  const glowT = (now % 3400) / 3400;
+  drawMiniChart("hot", glowT);
+  drawMiniChart("warm", glowT);
+  drawMiniChart("cold", glowT);
+  requestAnimationFrame(drawAllMiniCharts);
+}
+requestAnimationFrame(drawAllMiniCharts);
+
+const miniRevealObserver = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    if (entry.isIntersecting) entry.target.classList.add("in-view");
+  });
+}, { threshold: 0.2 });
+document.querySelectorAll(".mini-chart-card").forEach((card) => miniRevealObserver.observe(card));
 
 function heroChartValueAt(min) {
   if (!heroChartMeta) return null;
