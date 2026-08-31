@@ -403,12 +403,40 @@ body.view-technical #view-technical { display: block; }
 }
 
 .mini-chart-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-family: var(--font-mono);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   color: var(--muted);
 }
+
+.mini-chart-icon { flex: none; opacity: 0.85; }
+.mini-chart-card[data-mini="hot"] .mini-chart-icon { color: var(--hot); }
+.mini-chart-card[data-mini="warm"] .mini-chart-icon { color: var(--warm); }
+.mini-chart-card[data-mini="cold"] .mini-chart-icon { color: var(--cold); }
+
+.mini-chart-severity {
+  margin-top: 8px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line-soft);
+  overflow: hidden;
+}
+
+.mini-chart-severity-fill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  transition: width 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mini-chart-card[data-mini="hot"] .mini-chart-severity-fill { background: linear-gradient(90deg, var(--hot), #ff8a97); }
+.mini-chart-card[data-mini="warm"] .mini-chart-severity-fill { background: linear-gradient(90deg, var(--warm), #ffe08a); }
+.mini-chart-card[data-mini="cold"] .mini-chart-severity-fill { background: linear-gradient(90deg, var(--cold), #7ee2ff); }
 
 .mini-chart-badge {
   font-family: var(--font-mono);
@@ -843,10 +871,7 @@ body.view-technical #view-technical { display: block; }
 }
 
 .scroll-hint {
-  position: absolute;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
+  margin-top: 36px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1285,6 +1310,28 @@ body.view-technical #view-technical { display: block; }
   align-items: center;
   gap: 16px;
   margin-bottom: 28px;
+}
+
+.brand-credit {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  padding-left: 16px;
+  border-left: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--muted-dim);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.brand-credit strong { color: var(--teal); font-size: 0.78rem; font-weight: 700; }
+
+@media (max-width: 560px) {
+  .brand-bar { flex-wrap: wrap; row-gap: 10px; }
+  .brand-credit { margin-left: 60px; border-left: none; padding-left: 0; align-items: flex-start; }
 }
 
 .brand-logo {

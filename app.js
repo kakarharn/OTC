@@ -1,4 +1,4 @@
-const APP_VERSION = "v68";
+const APP_VERSION = "v69";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -1552,6 +1552,22 @@ const miniMwEls = {
   warm: document.querySelector("#miniMwWarm"),
   cold: document.querySelector("#miniMwCold")
 };
+const miniSeverityEls = {
+  hot: document.querySelector("#miniSeverityHot"),
+  warm: document.querySelector("#miniSeverityWarm"),
+  cold: document.querySelector("#miniSeverityCold")
+};
+
+function updateMiniSeverity() {
+  const curveRate = Math.max(0.1, currentRampRateCPerMin());
+  const penaltyRateEffective = inputsReady() ? execState.penaltyRate : appliedConfig.penaltyRate;
+  const penalties = SCENARIOS.map((sc) => computeScenarioWithTrip(sc, curveRate, penaltyRateEffective).estimatedPenalty);
+  const maxPenalty = Math.max(1, ...penalties);
+  SCENARIOS.forEach((sc, i) => {
+    const el = miniSeverityEls[sc.key];
+    if (el) el.style.width = `${Math.max(4, (penalties[i] / maxPenalty) * 100)}%`;
+  });
+}
 
 function drawMiniChart(key, cycle) {
   const canvas = miniCanvases[key];
@@ -1618,6 +1634,24 @@ function drawMiniChart(key, cycle) {
   ctx.lineTo(sx, h - pad.bottom);
   ctx.stroke();
   ctx.setLineDash([]);
+
+  /* พื้นที่แรเงาแสดงขนาด Gap จริง ณ จุด Startup Complete — ยิ่งพื้นที่ใหญ่ ยิ่งสูญเสียมาก */
+  const gapVal = valAt(duration);
+  const gapTopY = yFor(curveReferenceY);
+  const gapBottomY = yFor(gapVal);
+  const fullRecoveryMin = Math.min(totalMin, curveReferenceY / curveRate);
+  const crossX = xFor(fullRecoveryMin);
+  if (crossX - sx > 2 && gapBottomY - gapTopY > 2) {
+    ctx.beginPath();
+    ctx.moveTo(sx, gapTopY);
+    ctx.lineTo(crossX, gapTopY);
+    ctx.lineTo(sx, gapBottomY);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.1;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
 
   /* แถบ GT TRIP บางๆ ถ้า Trip */
   if (r.willTrip) {
@@ -1729,6 +1763,7 @@ const miniRevealObserver = new IntersectionObserver((entries) => {
   entries.forEach((entry) => {
     if (!entry.isIntersecting) return;
     entry.target.classList.add("in-view");
+    updateMiniSeverity();
     const key = entry.target.dataset.mini;
     const mwEl = miniMwEls[key];
     if (mwEl && !mwEl.dataset.animated) {
