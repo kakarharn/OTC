@@ -19,7 +19,7 @@
     <nav class="view-switch">
       <button type="button" data-view="executive" class="active">Dashboard</button>
       <button type="button" data-view="technical">Technical</button>
-      <span class="app-version" id="appVersion">v69</span>
+      <span class="app-version" id="appVersion">v70</span>
     </nav>
 
     <div class="sticky-summary" id="stickySummary">
@@ -456,10 +456,10 @@
               <label>Trip Floor Active Power (MW)
                 <input id="tripFloorMwInput" type="number" value="340" min="0" step="1">
               </label>
-              <label>Trip Restart Duration (min)
-                <input id="tripRestartMinInput" type="number" value="300" min="0" step="1">
+              <label>Trip Restart Ratio (× Startup Duration)
+                <input id="tripRestartRatioInput" type="number" value="0.5" min="0" max="1" step="0.05">
               </label>
-              <p class="hint">Worst-case: Loss of Flame ระหว่าง Baseload Window ทำให้กำลังผลิตค้างที่ Floor นี้จนกว่า Restart กับ Resumption จะเสร็จ (ใช้เฉพาะ HOT/WARM)</p>
+              <p class="hint">Worst-case: Loss of Flame ระหว่าง Baseload Window ทำให้กำลังผลิตค้างที่ Floor นี้จนกว่า Restart จะเสร็จ — เวลา Restart = Startup Duration ของ Condition นั้น × อัตราส่วนนี้ (เช่น HOT 180 นาที × 0.5 = 90 นาที) บวก Resumption 4 ชม. (ใช้เฉพาะ HOT/WARM)</p>
             </div>
           </details>
 

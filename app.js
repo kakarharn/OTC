@@ -1,4 +1,4 @@
-const APP_VERSION = "v69";
+const APP_VERSION = "v70";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -21,7 +21,7 @@ let appliedConfig = {
   penaltyRate: 428.6801,
   rampRateAfterFix: 6000,
   tripFloorMw: 340,
-  tripRestartMin: 300
+  tripRestartRatio: 0.5
 };
 
 let execState = {
@@ -56,7 +56,7 @@ const inputs = {
   resumptionHr: document.querySelector("#resumptionHrInput"),
   tuAfterFix: document.querySelector("#tuAfterFixInput"),
   tripFloorMw: document.querySelector("#tripFloorMwInput"),
-  tripRestartMin: document.querySelector("#tripRestartMinInput"),
+  tripRestartRatio: document.querySelector("#tripRestartRatioInput"),
   window: document.querySelector("#windowInput")
 };
 
@@ -188,7 +188,7 @@ const PENDING_FIELDS = [
   { key: "resumptionHr", input: inputs.resumptionHr, min: 0 },
   { key: "rampRateAfterFix", input: inputs.tuAfterFix, min: 0.01 },
   { key: "tripFloorMw", input: inputs.tripFloorMw, min: 0 },
-  { key: "tripRestartMin", input: inputs.tripRestartMin, min: 0 }
+  { key: "tripRestartRatio", input: inputs.tripRestartRatio, min: 0 }
 ];
 
 function typedTuSeconds() {
@@ -290,7 +290,7 @@ if (quickResetTuButton) {
 
 [inputs.nrm, inputs.hotMin, inputs.warmMin, inputs.coldMin, inputs.referenceY, inputs.refActivePower,
   inputs.mwLossFactor, inputs.resumptionHr, inputs.tuAfterFix,
-  inputs.tripFloorMw, inputs.tripRestartMin,
+  inputs.tripFloorMw, inputs.tripRestartRatio,
   inputs.tu, inputs.td].forEach((el) => el.addEventListener("input", refreshPending));
 
 inputs.timeUnit.addEventListener("change", () => {
@@ -826,10 +826,13 @@ function computeScenario(durationMin, rampRateCPerMin, resetY, bacRate) {
   };
 }
 
-function computeTripScenario(bacRate) {
+function computeTripScenario(bacRate, startupDurationMin) {
   const mwLoss = Math.max(0, appliedConfig.refActivePower - appliedConfig.tripFloorMw);
+  // Restart หลัง Trip ใช้เวลา = Startup Duration ของ Condition นั้น x อัตราส่วน Restart
+  // (ค่าจริง HOT: Startup 180 นาที x 0.5 = 90 นาที = 1.5 ชม.)
   // ลากยาวที่ Trip Floor ตั้งแต่ Trip จนกว่า Restart จะเสร็จ บวก Resumption Auto (Worst Case)
-  const eventHours = appliedConfig.tripRestartMin / 60 + appliedConfig.resumptionHr;
+  const restartMin = (startupDurationMin || 0) * appliedConfig.tripRestartRatio;
+  const eventHours = restartMin / 60 + appliedConfig.resumptionHr;
   const deviation = mwLoss;
 
   const dra1Rate = bacRate * deviation * PPA_WEIGHT;
@@ -842,7 +845,7 @@ function computeTripScenario(bacRate) {
 
   const estimatedPenalty = dra1Total + thresholdPenalty;
   const totalPenaltyDurationHr = eventHours;
-  return { floorMw: appliedConfig.tripFloorMw, mwLoss, totalPenaltyDurationHr, estimatedPenalty, dra1Total, thresholdPenalty };
+  return { floorMw: appliedConfig.tripFloorMw, mwLoss, restartMin, totalPenaltyDurationHr, estimatedPenalty, dra1Total, thresholdPenalty };
 }
 
 // HOT/WARM มีโอกาส Trip จาก Loss of Flame จริง (OTC กดลึกเกิน Trip Floor ทั้งคู่ตามข้อมูลจริง)
@@ -881,12 +884,12 @@ function computeScenarioWithTrip(sc, rampRateCPerMin, bacRate) {
     };
   }
 
-  const tripR = computeTripScenario(bacRate);
+  const tripR = computeTripScenario(bacRate, appliedConfig[sc.durationKey]);
   return {
     ...r,
     mwLoss: tripR.mwLoss,
     predictedPower: appliedConfig.refActivePower - tripR.mwLoss,
-    recoveryRemainingMin: appliedConfig.tripRestartMin,
+    recoveryRemainingMin: tripR.restartMin,
     totalPenaltyDurationHr: tripR.totalPenaltyDurationHr,
     estimatedPenalty: tripR.estimatedPenalty,
     dra1Total: tripR.dra1Total,
