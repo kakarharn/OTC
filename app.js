@@ -1,4 +1,4 @@
-const APP_VERSION = "v70";
+const APP_VERSION = "v71";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -849,7 +849,7 @@ function computeTripScenario(bacRate, startupDurationMin) {
 }
 
 // HOT/WARM มีโอกาส Trip จาก Loss of Flame จริง (OTC กดลึกเกิน Trip Floor ทั้งคู่ตามข้อมูลจริง)
-// ฟังก์ชันนี้รวม Logic การสลับไปใช้ตัวเลข Trip Scenario (340 MW คงที่ + Restart/Resumption 9 ชม.คงที่)
+// ฟังก์ชันนี้รวม Logic การสลับไปใช้ตัวเลข Trip Scenario (340 MW คงที่ + Restart = Startup Duration x tripRestartRatio + Resumption 4 ชม.)
 // เป็นค่าหลักสำหรับทุกจุดในแอปที่ต้องอ้างอิงผลลัพธ์ของ HOT/WARM ให้ตรงกันหมด
 const TRIP_THRESHOLD_MW = 450; // ถ้า MW ตกไปเจอ OTC Recovery ต่ำกว่านี้ = Trip จริง (ค่าที่ผู้ใช้กำหนดเอง)
 
@@ -1355,7 +1355,7 @@ function drawHeroChart(now) {
 
       /* ---- GT Active Power: ใช้ค่า r (จาก computeScenarioWithTrip) ตรงๆ — สูตรเดียวกับ Result Card เป๊ะ
              ไม่มีทางเพี้ยนจากกัน เพราะไม่คำนวณแยกอีกต่อไป
-             Trip: ไหลลง 710->450 (จุด Trip จริง) แล้วดิ่งไป 340 ค้างจนครบ 9 ชม. แล้วกลับ 710
+             Trip: ไหลลง 710->450 (จุด Trip จริง) แล้วดิ่งไป 340 ค้างจนครบ Restart+Resumption (ตาม tripRestartRatio) แล้วกลับ 710
              ไม่ Trip: ไหลลง 710->crossingMW (ตรงจุดที่ชนกับ OTC Recovery) แล้วไล่ขึ้นตาม Recovery กลับ 710 ---- */
       const gtFull = appliedConfig.refActivePower;
       const declineRate = curveRate * appliedConfig.mwLossFactor; // ตกตามสูตรจริง: Gap(°C/min) x mwLossFactor = MW/min
