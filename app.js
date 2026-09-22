@@ -1,4 +1,4 @@
-const APP_VERSION = "v74";
+const APP_VERSION = "v75";
 const TA_SECONDS = 0.008;
 
 /* ============================================================

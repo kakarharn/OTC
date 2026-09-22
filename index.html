@@ -93,6 +93,45 @@
           </div>
         </section>
 
+        <section class="pitch-section" id="pitchIncident">
+          <div class="pitch-inner">
+            <span class="pitch-eyebrow">Root Cause · ECRS Fix</span>
+            <h2 class="section-title">เกิดอะไรขึ้น และแก้ไขอย่างไร</h2>
+            <p class="section-lede">สรุปเหตุการณ์จริงที่ผลักดันข้อเสนอนี้ และแนวทางแก้ไขตามหลัก ECRS เพื่อลดระยะเวลา OTC Recovery หลังการ Reset GT Controller ก่อนการ Startup GT</p>
+
+            <div class="incident-grid">
+              <div class="incident-card incident-card-problem">
+                <span class="incident-card-tag">⚠ ก่อนปรับปรุง — ปัญหาที่เกิดขึ้น</span>
+                <p class="incident-card-text">เมื่อวันที่ 8 มีนาคม 2569 เกิด GT Controller Fault ทำให้ระบบ DCS บางส่วนไม่สามารถใช้งานได้ จึงแจ้งแผนกบำรุงรักษาเข้าตรวจสอบและแก้ไข โดยการ Reset GT Controller ส่งผลให้ค่า OTC Reference เปลี่ยนจาก 572°C เป็น 0°C และเกิด OTC Recovery ด้วยอัตรา TU = 1 min/°C ใช้เวลาประมาณ 9 ชั่วโมง จึงกลับสู่ค่า 572°C ทำให้เกิดบทปรับจากการสูญเสียค่าความพร้อมจ่าย</p>
+                <div class="incident-stat-row">
+                  <div><span>OTC Recovery (เดิม)</span><strong>~9 ชั่วโมง</strong></div>
+                  <div><span>ค่าปรับ Post Event (HOT)</span><strong>฿4,536,040</strong></div>
+                </div>
+              </div>
+
+              <div class="incident-card incident-card-fix">
+                <span class="incident-card-tag incident-card-tag-fix">✓ หลังปรับปรุง — ECRS (Simplify)</span>
+                <p class="incident-card-text">กลุ่มผู้ปฏิบัติงาน แผนก หดก3/1-ฟ. ใช้หลักแนวคิดของ ECRS โดยใช้ตัว S = Simplify ด้วยการปรับค่า TU ของ RGE (R1) เมื่อตรวจพบ OTC Reference ไม่เป็นไปตามค่าปกติ เพื่อให้ระบบ OTC กลับสู่สภาวะพร้อมก่อนการ Startup GT หลังจากการ Reset GT Controller ทุกครั้ง ให้ตรวจสอบ OTC Reference หากไม่เท่ากับ 572°C ให้ดำเนินการดังนี้</p>
+                <ol class="fix-steps">
+                  <li><span class="fix-step-num">1</span><span>ดำเนินการขณะเครื่องอยู่ในสถานะ Reserved Shutdown และก่อนเริ่ม Startup</span></li>
+                  <li><span class="fix-step-num">2</span><span>ทำการปรับ TU ของ RGE (R1) เป็น 10 มิลลิวินาที ชั่วคราว</span></li>
+                  <li><span class="fix-step-num">3</span><span>ตรวจสอบค่า OTC Reference กลับสู่ 572°C ภายในประมาณ 6 วินาที</span></li>
+                  <li><span class="fix-step-num">4</span><span>เมื่อ OTC Reference กลับสู่ 572°C แล้ว ให้ปรับค่า TU กลับสู่ค่าปกติ และเริ่ม Startup GT ตามปกติ</span></li>
+                </ol>
+              </div>
+            </div>
+
+            <div class="incident-result-strip">
+              <div class="incident-result-arrow">
+                <span class="incident-result-old">~9 ชั่วโมง</span>
+                <span class="incident-result-connector">→</span>
+                <span class="incident-result-new">~6 วินาที</span>
+              </div>
+              <p class="incident-result-caption">ผลจากการปรับปรุงคือ OTC Recovery ลดจากประมาณ 9 ชั่วโมง เหลือประมาณ 6 วินาที ลดความเสี่ยงเครื่อง Trip และลดโอกาสเกิดค่าปรับในทุก Startup Condition โดยไม่ส่งผลกระทบต่อกระบวนการ Startup GT และความต่อเนื่องในส่วนงานเดินเครื่องโรงไฟฟ้า</p>
+            </div>
+          </div>
+        </section>
+
         <section class="pitch-section" id="pitchChart">
           <div class="pitch-inner">
             <span class="pitch-eyebrow tone-teal">Controller Recovery · Active Power</span>
@@ -446,7 +485,7 @@
               <label>Effective Rate หลัง Adjust TU (°C / min)
                 <input id="tuAfterFixInput" type="number" value="6000" min="0.01" step="1">
               </label>
-              <p class="hint">เทียบเท่า Adjust TU=10ms ที่ RGE(R1) เป็นมาตรการฉุกเฉินชั่วคราว ไม่ใช่การปรับ RGE ถาวร</p>
+              <p class="hint">เทียบเท่า Adjust TU = 10 มิลลิวินาที ที่ RGE (R1) เป็นมาตรการฉุกเฉินชั่วคราว ไม่ใช่การปรับ RGE ถาวร</p>
             </div>
           </details>
 

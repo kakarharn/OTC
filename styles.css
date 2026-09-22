@@ -300,7 +300,7 @@ body.view-technical #view-technical { display: block; }
   overflow: hidden;
 }
 
-#heroChart { position: absolute; inset: 0; display: block; width: 100%; height: 100%; cursor: crosshair; }
+#heroChart { position: absolute; inset: 0; display: block; width: 100%; height: 100%; min-width: 0; cursor: crosshair; }
 
 .chart-tooltip {
   position: absolute;
@@ -459,6 +459,7 @@ body.view-technical #view-technical { display: block; }
 .mini-chart-canvas {
   display: block;
   width: 100%;
+  min-width: 0;
   height: 108px;
 }
 
@@ -770,6 +771,7 @@ body.view-technical #view-technical { display: block; }
 .pitch-inner {
   width: 100%;
   max-width: 980px;
+  min-width: 0;
   opacity: 0;
   transform: translateY(28px);
   transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
@@ -889,6 +891,163 @@ body.view-technical #view-technical { display: block; }
 @keyframes bob {
   0%, 100% { transform: translate(-50%, 0); }
   50% { transform: translate(-50%, 8px); }
+}
+
+/* --- Incident: root cause + ECRS fix --- */
+
+.incident-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: stretch;
+  margin-bottom: 20px;
+}
+
+.incident-card {
+  padding: 26px 26px 24px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+}
+
+.incident-card-problem {
+  border-color: var(--hot-line);
+  background: linear-gradient(160deg, var(--hot-dim), var(--panel-soft));
+}
+
+.incident-card-fix {
+  border-color: var(--mw-dim);
+  background: linear-gradient(160deg, var(--mw-dim), var(--panel-soft));
+}
+
+.incident-card-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 16px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--hot);
+}
+
+.incident-card-tag-fix { color: var(--mw); }
+
+.incident-card-text {
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.68;
+  margin-bottom: 18px;
+}
+
+.incident-stat-row {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px dashed var(--line-soft);
+}
+
+.incident-stat-row div { display: flex; flex-direction: column; gap: 4px; }
+
+.incident-stat-row span {
+  font-size: 0.74rem;
+  color: var(--muted-dim);
+}
+
+.incident-stat-row strong {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  color: var(--hot);
+  font-variant-numeric: tabular-nums;
+}
+
+.fix-steps {
+  list-style: none;
+  margin: 0 0 auto;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.fix-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.9rem;
+  color: var(--ink);
+  line-height: 1.55;
+}
+
+.fix-step-num {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--mw-dim);
+  border: 1px solid var(--mw);
+  color: var(--mw);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.incident-result-strip {
+  padding: 26px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  text-align: center;
+}
+
+.incident-result-arrow {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.incident-result-old {
+  font-family: var(--font-mono);
+  font-size: clamp(1.3rem, 3vw, 1.7rem);
+  font-weight: 700;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.incident-result-connector {
+  color: var(--muted-dim);
+  font-size: 1.1rem;
+}
+
+.incident-result-new {
+  font-family: var(--font-mono);
+  font-size: clamp(1.3rem, 3vw, 1.7rem);
+  font-weight: 700;
+  color: var(--mw);
+  text-shadow: 0 0 20px rgba(53, 214, 143, 0.4);
+  font-variant-numeric: tabular-nums;
+}
+
+.incident-result-caption {
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.6;
+  max-width: 68ch;
+  margin: 0 auto;
 }
 
 /* --- Mechanism timeline --- */
@@ -1109,6 +1268,10 @@ body.view-technical #view-technical { display: block; }
   backdrop-filter: blur(10px);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
   text-align: center;
+  /* .savings-stamp-mark::before is a decorative burst ring sized via a large
+     negative inset (see below); contain it here so it can never push the
+     page's own scrollable width out on narrow viewports. */
+  overflow: hidden;
 }
 
 .savings-stamp-title {
@@ -1137,11 +1300,12 @@ body.view-technical #view-technical { display: block; }
   border-radius: 10px;
   border: 3px dashed var(--line-soft);
   font-family: var(--font-mono);
-  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-size: clamp(1.1rem, 4vw, 2.8rem);
   font-weight: 700;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  max-width: 100%;
 }
 
 .savings-stamp-old::after {
@@ -1223,7 +1387,7 @@ body.view-technical #view-technical { display: block; }
 .savings-stamp-mark strong {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-size: clamp(1.1rem, 4vw, 2.8rem);
   color: var(--mw);
   text-shadow: 0 0 24px rgba(53, 214, 143, 0.5);
   font-variant-numeric: tabular-nums;
@@ -1828,6 +1992,27 @@ input[type="range"] { padding: 0; height: 34px; accent-color: var(--teal); backg
   .pt-step { min-width: 90px; }
   .pt-arrow { display: none; }
   .trip-risk-wrap { padding: 14px 16px; }
+
+  .incident-grid { grid-template-columns: 1fr; gap: 14px; }
+  .incident-card { padding: 20px 18px; }
+  .incident-result-strip { padding: 20px 18px; }
+  .incident-stat-row { gap: 16px 22px; }
+
+  .savings-stamp-row { gap: 14px; }
+  .savings-stamp-old,
+  .savings-stamp-mark {
+    padding: 8px 16px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .savings-stamp-mark { display: inline-flex; }
+  .savings-stamp-old,
+  .savings-stamp-mark strong {
+    white-space: normal;
+    text-align: center;
+    line-height: 1.2;
+    max-width: 100%;
+  }
 
   .tech-shell { padding: 10px; padding-top: 64px; padding-bottom: 84px; gap: 10px; }
   .tech-topbar { padding: 14px 16px; flex-wrap: wrap; gap: 10px; }
