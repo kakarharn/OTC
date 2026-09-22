@@ -19,7 +19,7 @@
     <nav class="view-switch">
       <button type="button" data-view="executive" class="active">Dashboard</button>
       <button type="button" data-view="technical">Technical</button>
-      <span class="app-version" id="appVersion">v71</span>
+      <span class="app-version" id="appVersion">v73</span>
     </nav>
 
     <div class="sticky-summary" id="stickySummary">
@@ -182,7 +182,7 @@
                   <div class="pt-arrow">→</div>
                   <div class="pt-step">
                     <span class="pt-dot pt-dot-ok"></span>
-                    <span class="pt-label">Resumption Process</span>
+                    <span class="pt-label" id="ptResumptionLabel">Resumption Process</span>
                     <span class="pt-time" id="ptResumptionTime">—</span>
                   </div>
                   <div class="pt-arrow">→</div>
@@ -459,7 +459,7 @@
               <label>Trip Restart Ratio (× Startup Duration)
                 <input id="tripRestartRatioInput" type="number" value="0.5" min="0" max="1" step="0.05">
               </label>
-              <p class="hint">Worst-case: Loss of Flame ระหว่าง Baseload Window ทำให้กำลังผลิตค้างที่ Floor นี้จนกว่า Restart จะเสร็จ — เวลา Restart = Startup Duration ของ Condition นั้น × อัตราส่วนนี้ (เช่น HOT 180 นาที × 0.5 = 90 นาที) บวก Resumption 4 ชม. (ใช้เฉพาะ HOT/WARM)</p>
+              <p class="hint">Worst-case: Loss of Flame ระหว่าง Baseload Window ทำให้กำลังผลิตค้างที่ Floor นี้จนกว่าจะกลับมาปกติ — เวลา Restart = Startup Duration ของ Condition นั้น × อัตราส่วนนี้ (เช่น HOT 180 นาที × 0.5 = 90 นาที) พอ Restart เสร็จ OTC ยังไม่ถึง 572°C จึงบวกเวลาที่ต้องไต่ต่อด้วยอัตรา Ramp ปกติ (ตัวเดียวกับ WARM/COLD) จนกว่าจะครบ — ไม่บวก Resumption ซ้ำอีก (ใช้เฉพาะ HOT/WARM)</p>
             </div>
           </details>
 

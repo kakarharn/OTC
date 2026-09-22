@@ -1,4 +1,4 @@
-const APP_VERSION = "v71";
+const APP_VERSION = "v73";
 const TA_SECONDS = 0.008;
 
 /* ============================================================
@@ -724,6 +724,7 @@ const penaltyTimelineContent = document.querySelector("#penaltyTimelineContent")
 const ptRecoveryTime = document.querySelector("#ptRecoveryTime");
 const ptRecoveryLabel = document.querySelector("#ptRecoveryLabel");
 const ptReadyLabel = document.querySelector("#ptReadyLabel");
+const ptResumptionLabel = document.querySelector("#ptResumptionLabel");
 const ptResumptionTime = document.querySelector("#ptResumptionTime");
 const ptTotalTime = document.querySelector("#ptTotalTime");
 const tripRiskWrap = document.querySelector("#tripRiskWrap");
@@ -826,13 +827,17 @@ function computeScenario(durationMin, rampRateCPerMin, resetY, bacRate) {
   };
 }
 
-function computeTripScenario(bacRate, startupDurationMin) {
+function computeTripScenario(bacRate, startupDurationMin, otcRampRecoveryMin) {
   const mwLoss = Math.max(0, appliedConfig.refActivePower - appliedConfig.tripFloorMw);
   // Restart หลัง Trip ใช้เวลา = Startup Duration ของ Condition นั้น x อัตราส่วน Restart
   // (ค่าจริง HOT: Startup 180 นาที x 0.5 = 90 นาที = 1.5 ชม.)
-  // ลากยาวที่ Trip Floor ตั้งแต่ Trip จนกว่า Restart จะเสร็จ บวก Resumption Auto (Worst Case)
+  // พอ GT Restart เสร็จ OTC Controller ยังไม่ถึง 572°C — ต้องไต่ต่อด้วยอัตรา Ramp ปกติ (ตัวเดียวกับ WARM/COLD)
+  // ไม่บวก Resumption ซ้ำอีกสำหรับกรณี Trip — รวมแล้วปัดเป็นชั่วโมงกลมๆ (ตัดเศษนาทีทิ้ง ไม่ใช้เลขเศษในการคิดค่าปรับ)
   const restartMin = (startupDurationMin || 0) * appliedConfig.tripRestartRatio;
-  const eventHours = restartMin / 60 + appliedConfig.resumptionHr;
+  const rawTotalMin = restartMin + (otcRampRecoveryMin || 0);
+  const totalMin = Math.round(rawTotalMin / 60) * 60;
+  const adjustedOtcRampRecoveryMin = Math.max(0, totalMin - restartMin);
+  const eventHours = totalMin / 60;
   const deviation = mwLoss;
 
   const dra1Rate = bacRate * deviation * PPA_WEIGHT;
@@ -845,11 +850,12 @@ function computeTripScenario(bacRate, startupDurationMin) {
 
   const estimatedPenalty = dra1Total + thresholdPenalty;
   const totalPenaltyDurationHr = eventHours;
-  return { floorMw: appliedConfig.tripFloorMw, mwLoss, restartMin, totalPenaltyDurationHr, estimatedPenalty, dra1Total, thresholdPenalty };
+  return { floorMw: appliedConfig.tripFloorMw, mwLoss, restartMin, otcRampRecoveryMin: adjustedOtcRampRecoveryMin, totalPenaltyDurationHr, estimatedPenalty, dra1Total, thresholdPenalty };
 }
 
 // HOT/WARM มีโอกาส Trip จาก Loss of Flame จริง (OTC กดลึกเกิน Trip Floor ทั้งคู่ตามข้อมูลจริง)
-// ฟังก์ชันนี้รวม Logic การสลับไปใช้ตัวเลข Trip Scenario (340 MW คงที่ + Restart = Startup Duration x tripRestartRatio + Resumption 4 ชม.)
+// ฟังก์ชันนี้รวม Logic การสลับไปใช้ตัวเลข Trip Scenario (340 MW คงที่ + Restart = Startup Duration x tripRestartRatio
+// + เวลาที่ OTC ไต่กลับ 572°C ด้วยอัตรา Ramp ปกติ — ไม่บวก Resumption 4 ชม. ซ้ำสำหรับกรณี Trip)
 // เป็นค่าหลักสำหรับทุกจุดในแอปที่ต้องอ้างอิงผลลัพธ์ของ HOT/WARM ให้ตรงกันหมด
 const TRIP_THRESHOLD_MW = 450; // ถ้า MW ตกไปเจอ OTC Recovery ต่ำกว่านี้ = Trip จริง (ค่าที่ผู้ใช้กำหนดเอง)
 
@@ -864,8 +870,12 @@ function computeScenarioWithTrip(sc, rampRateCPerMin, bacRate) {
   if (!willTrip) {
     // ไม่ Trip: ใช้ MW ที่จุดชนกัน (crossingMW) เป็นค่าต่ำสุดจริงที่ใช้คิดทั้ง DRA1 และ DSN/DDF
     // เวลา DRA1 = จาก Startup Complete จนถึง OTC Recovered (rawR.recoveryRemainingMin) + Resumption Auto 4 ชม.
+    // รวมแล้วปัดเป็นชั่วโมงกลมๆ (ตัดเศษนาทีทิ้ง ไม่ใช้เลขเศษในการคิดค่าปรับ) — ส่วน Additional OTC Recovery รับเศษที่ปัดไป
     const deviation = Math.max(0, appliedConfig.refActivePower - crossingMW);
-    const eventHours = r.postEventOccurred ? (r.recoveryRemainingMin / 60 + appliedConfig.resumptionHr) : 0;
+    const rawTotalMin = r.postEventOccurred ? (r.recoveryRemainingMin + appliedConfig.resumptionHr * 60) : 0;
+    const totalMin = r.postEventOccurred ? Math.round(rawTotalMin / 60) * 60 : 0;
+    const adjustedRecoveryMin = r.postEventOccurred ? Math.max(0, totalMin - appliedConfig.resumptionHr * 60) : 0;
+    const eventHours = totalMin / 60;
     const dra1Total = bacRate * deviation * PPA_WEIGHT * eventHours;
     const draKy = bacRate * deviation * PPA_WEIGHT;
     const dsn = deviation < PPA_DEVIATION_THRESHOLD_MW ? 0 : draKy * PPA_EH;
@@ -876,6 +886,7 @@ function computeScenarioWithTrip(sc, rampRateCPerMin, bacRate) {
       ...r,
       mwLoss: deviation,
       predictedPower: crossingMW,
+      recoveryRemainingMin: adjustedRecoveryMin,
       totalPenaltyDurationHr: eventHours,
       estimatedPenalty,
       dra1Total,
@@ -884,12 +895,13 @@ function computeScenarioWithTrip(sc, rampRateCPerMin, bacRate) {
     };
   }
 
-  const tripR = computeTripScenario(bacRate, appliedConfig[sc.durationKey]);
+  const tripR = computeTripScenario(bacRate, appliedConfig[sc.durationKey], r.recoveryRemainingMin);
   return {
     ...r,
     mwLoss: tripR.mwLoss,
     predictedPower: appliedConfig.refActivePower - tripR.mwLoss,
     recoveryRemainingMin: tripR.restartMin,
+    otcRampRecoveryMin: tripR.otcRampRecoveryMin,
     totalPenaltyDurationHr: tripR.totalPenaltyDurationHr,
     estimatedPenalty: tripR.estimatedPenalty,
     dra1Total: tripR.dra1Total,
@@ -1010,9 +1022,12 @@ function renderExecutive() {
 
   penaltyTimelineLocked.hidden = true;
   penaltyTimelineContent.hidden = false;
-  const resumptionMinForDisplay = r.postEventOccurred ? appliedConfig.resumptionHr * 60 : 0;
+  const resumptionMinForDisplay = willTrip
+    ? (r.otcRampRecoveryMin || 0)
+    : (r.postEventOccurred ? appliedConfig.resumptionHr * 60 : 0);
   ptRecoveryLabel.textContent = willTrip ? "GT Restart" : "Additional OTC Recovery";
   ptReadyLabel.textContent = willTrip ? "Restart Complete" : "OTC Controller Ready";
+  ptResumptionLabel.textContent = willTrip ? "OTC ไต่กลับ 572°C" : "Resumption Process";
   animateMinutesNumber(ptRecoveryTime, r.recoveryRemainingMin);
   animateMinutesNumber(ptResumptionTime, resumptionMinForDisplay);
   animateMinutesNumber(ptTotalTime, r.totalPenaltyDurationHr * 60);
@@ -1355,7 +1370,7 @@ function drawHeroChart(now) {
 
       /* ---- GT Active Power: ใช้ค่า r (จาก computeScenarioWithTrip) ตรงๆ — สูตรเดียวกับ Result Card เป๊ะ
              ไม่มีทางเพี้ยนจากกัน เพราะไม่คำนวณแยกอีกต่อไป
-             Trip: ไหลลง 710->450 (จุด Trip จริง) แล้วดิ่งไป 340 ค้างจนครบ Restart+Resumption (ตาม tripRestartRatio) แล้วกลับ 710
+             Trip: ไหลลง 710->450 (จุด Trip จริง) แล้วดิ่งไป 340 ค้างจนครบ Restart+เวลาไต่ OTC กลับ 572°C (ไม่บวก Resumption) แล้วกลับ 710
              ไม่ Trip: ไหลลง 710->crossingMW (ตรงจุดที่ชนกับ OTC Recovery) แล้วไล่ขึ้นตาม Recovery กลับ 710 ---- */
       const gtFull = appliedConfig.refActivePower;
       const declineRate = curveRate * appliedConfig.mwLossFactor; // ตกตามสูตรจริง: Gap(°C/min) x mwLossFactor = MW/min
